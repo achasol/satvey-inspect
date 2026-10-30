@@ -1,0 +1,163 @@
+{
+  "nrbi": {
+    "source_id": "nrbi",
+    "source_url": "https://www.nrbi.nl/voor-opleveringskeuring-nieuwbouw.pdf",
+    "category": "candidate_report",
+    "reuse_status": "not_established",
+    "status": "extracted",
+    "sha256": "28ec0d031b39f78aa5a92c932cdb7c7960e922cf38e4449c9573557fec39a896",
+    "catalogue_sha256": "28ec0d031b39f78aa5a92c932cdb7c7960e922cf38e4449c9573557fec39a896",
+    "bytes": 2875613,
+    "page_count": 11,
+    "placement_count": 37
+  },
+  "roof_zutphen": {
+    "source_id": "roof_zutphen",
+    "source_url": "https://www.roofsignal.nl/downloads/RoofSignal-praktijkrapport-zutphen-geanonimiseerd.pdf",
+    "category": "candidate_report",
+    "reuse_status": "not_established",
+    "status": "extracted",
+    "sha256": "f3e270127e28679e20d6b0919c143022bf2af56c28e5b5ed4f5b2559794d0c9f",
+    "catalogue_sha256": "f3e270127e28679e20d6b0919c143022bf2af56c28e5b5ed4f5b2559794d0c9f",
+    "bytes": 4471997,
+    "page_count": 23,
+    "placement_count": 47
+  },
+  "roof_deventer": {
+    "source_id": "roof_deventer",
+    "source_url": "https://www.roofsignal.nl/downloads/RoofSignal-praktijkrapport-deventer-geanonimiseerd.pdf",
+    "category": "candidate_report",
+    "reuse_status": "not_established",
+    "status": "extracted",
+    "sha256": "d622689373efe95cfc408d12d38cdbe8c2a5d1fa55fa336ee6e248cf8d6248db",
+    "catalogue_sha256": "d622689373efe95cfc408d12d38cdbe8c2a5d1fa55fa336ee6e248cf8d6248db",
+    "bytes": 5288065,
+    "page_count": 21,
+    "placement_count": 42
+  },
+  "bijn": {
+    "source_id": "bijn",
+    "source_url": "https://www.bouwkeuringvergelijk.nl/voorbeeld-bouwkundig-rapport.pdf",
+    "category": "candidate_report",
+    "reuse_status": "not_established",
+    "status": "extracted",
+    "sha256": "69b53f0b652e5295d514dbf763b0ca0c57ed624f6ea950438e09b02ec8198a8b",
+    "catalogue_sha256": "69b53f0b652e5295d514dbf763b0ca0c57ed624f6ea950438e09b02ec8198a8b",
+    "bytes": 5049812,
+    "page_count": 39,
+    "placement_count": 214
+  },
+  "setelkeur": {
+    "source_id": "setelkeur",
+    "source_url": "https://setelkeur.nl/wp-content/uploads/2015/03/Voorbeeld-rapport.pdf",
+    "category": "candidate_report",
+    "reuse_status": "not_established",
+    "status": "extracted",
+    "sha256": "bc95bd5a408f3257b937eba64531fed7b4ed30b9cad00dc09af3b2eba50973f6",
+    "catalogue_sha256": "bc95bd5a408f3257b937eba64531fed7b4ed30b9cad00dc09af3b2eba50973f6",
+    "bytes": 3074755,
+    "page_count": 53,
+    "placement_count": 186
+  },
+  "veh": {
+    "source_id": "veh",
+    "source_url": "https://www.eigenhuis.nl/kontent-assets/0a476483-b2ac-0128-c5e1-a80361083e05/4d18fb78-bc2b-4c0b-9512-955866a92b8b/voorbeeld-rapport-btk-juni-2021%20(1).pdf",
+    "category": "candidate_report",
+    "reuse_status": "not_established",
+    "status": "extracted",
+    "sha256": "3ab44cc0f79907fbcef638899f0adc56a39155e6e5f89603a375f93e29b8ca70",
+    "catalogue_sha256": "3ab44cc0f79907fbcef638899f0adc56a39155e6e5f89603a375f93e29b8ca70",
+    "bytes": 821972,
+    "page_count": 21,
+    "placement_count": 63
+  },
+  "mjop_large": {
+    "source_id": "mjop_large",
+    "source_url": "https://www.mjopbeheer.nl/voorbeelden/voorbeeld-groot-naoorlogs.pdf",
+    "category": "candidate_report",
+    "reuse_status": "not_established",
+    "status": "extracted",
+    "sha256": "efa239011e09c3cb61e504f0fa3a14a39f9ba447cc0eac5d633d965298460c80",
+    "catalogue_sha256": "efa239011e09c3cb61e504f0fa3a14a39f9ba447cc0eac5d633d965298460c80",
+    "bytes": 6862869,
+    "page_count": 63,
+    "placement_count": 64
+  },
+  "pbs": {
+    "source_id": "pbs",
+    "source_url": "https://pbsvastgoed.nl/assets/uploads/Voorbeeld-Conditiemeting-NEN-2767.pdf",
+    "category": "candidate_report",
+    "reuse_status": "not_established",
+    "status": "extracted",
+    "sha256": "1a79f210d9f7ff527d2ae0915d079c588e9f8c659235ed30475ebc00632851ef",
+    "catalogue_sha256": "1a79f210d9f7ff527d2ae0915d079c588e9f8c659235ed30475ebc00632851ef",
+    "bytes": 1849791,
+    "page_count": 19,
+    "placement_count": 55
+  },
+  "inspectiehuis": {
+    "source_id": "inspectiehuis",
+    "source_url": "https://vlnn.nl/app/uploads/2020/11/6.-Inspectierapport.pdf",
+    "category": "candidate_report",
+    "reuse_status": "not_established",
+    "status": "extracted",
+    "sha256": "cc5762baf6a86f68bdceb1716cf0a4a844bfa0da982dd6593ba698620f720638",
+    "catalogue_sha256": "cc5762baf6a86f68bdceb1716cf0a4a844bfa0da982dd6593ba698620f720638",
+    "bytes": 1453843,
+    "page_count": 21,
+    "placement_count": 53
+  },
+  "steeds": {
+    "source_id": "steeds",
+    "source_url": "https://steeds.nl/wp-content/uploads/2021/09/Voorbeeldrapport-MDOP-Maastrichtsestraat.pdf",
+    "category": "candidate_report_web_access_only",
+    "reuse_status": "not_established",
+    "status": "extracted",
+    "sha256": "6aa89e0b8ced558d1541f37657816239bc1523046b6092373d4581cb72c7b50a",
+    "catalogue_sha256": null,
+    "bytes": 2936808,
+    "page_count": 65,
+    "placement_count": 152
+  },
+  "mjop_small": {
+    "source_id": "mjop_small",
+    "source_url": "https://www.mjopbeheer.nl/voorbeelden/voorbeeld-klein-vooroorlogs.pdf",
+    "category": "candidate_comparison_report",
+    "reuse_status": "not_established",
+    "status": "extracted",
+    "sha256": "82b030f0fa09503a87b2db313b993eedc76750ee62e9660f0618c166d609125d",
+    "catalogue_sha256": "82b030f0fa09503a87b2db313b993eedc76750ee62e9660f0618c166d609125d",
+    "bytes": 2302057,
+    "page_count": 43,
+    "placement_count": 35
+  },
+  "dutchdetect": {
+    "source_id": "dutchdetect",
+    "source_url": "https://www.dutchdetect.nl/rapportage/voorbeeldrapport",
+    "category": "candidate_report_excerpt",
+    "reuse_status": "not_established",
+    "status": "excerpt_review_required",
+    "sha256": "6af2837cfa2654b52aa5a3878bc8b1922f6b8b573349be54441d0e19d33a6c56",
+    "catalogue_sha256": "6af2837cfa2654b52aa5a3878bc8b1922f6b8b573349be54441d0e19d33a6c56",
+    "bytes": 1287012,
+    "excerpts": [
+      {
+        "url": "https://static.wixstatic.com/media/438638_590f58bacb98444a873410e0fb448207~mv2.webp",
+        "sha256": "35727455b8a9816d9d04b31dc4d8333f55be8dcb84941ceb93d0576db994cd80",
+        "width": 1600,
+        "height": 2263,
+        "path": "reports/35727455b8a9816d9d04.image",
+        "status": "mixed_excerpt_requires_modality_and_pairing_review"
+      },
+      {
+        "url": "https://static.wixstatic.com/media/438638_590f58bacb98444a873410e0fb448207~mv2.webp/v1/fill/w_147,h_208,al_c,q_80,usm_0.66_1.00_0.01,blur_2,enc_avif,quality_auto/dutchdetect-fotorapportage-pagina-8.webp",
+        "sha256": "27292aef28e79636834d79f49553624ce279eb78f5a02304ba4789746d2abdb9",
+        "width": 147,
+        "height": 208,
+        "path": "reports/27292aef28e79636834d.image",
+        "status": "mixed_excerpt_requires_modality_and_pairing_review"
+      }
+    ],
+    "html_changed_since_catalogue": false
+  }
+}

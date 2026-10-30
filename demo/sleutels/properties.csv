@@ -1,0 +1,9 @@
+sourceObjectId,objectNumber,address,postcode,city,complexId,complexName,objectType,buildYear,area,areaType,areaUnit,sourceStatus
+DEMO-LEI-001,VHE-00001,Lakenstraat 24 (demo),2311 AA,Leiden,DEMO-C1,Demo · Binnenstad,Appartement,1978,68,Gebruiksoppervlakte (demowaarde),m2,In mutatie
+DEMO-LEI-002,VHE-00002,Singelhof 8-A (demo),2312 AB,Leiden,DEMO-C2,Demo · Binnenstad,Portiekwoning,1982,74,Gebruiksoppervlakte (demowaarde),m2,In mutatie
+DEMO-LEI-003,VHE-00003,Rijnkade 42 (demo),2315 AC,Leiden,DEMO-C3,Demo · Leiden Noord,Appartement,1976,63,Gebruiksoppervlakte (demowaarde),m2,In mutatie
+DEMO-LEI-004,VHE-00004,Molenpad 16 (demo),2321 AD,Leiden,DEMO-C4,Demo · Zuidwest,Eengezinswoning,1988,91,Gebruiksoppervlakte (demowaarde),m2,Verhuurd
+DEMO-LEI-005,VHE-00005,Zijlpoort 36 (demo),2316 AE,Leiden,DEMO-C1,Demo · Leiden Noord,Appartement,1972,58,Gebruiksoppervlakte (demowaarde),m2,In mutatie
+DEMO-LEI-006,VHE-00006,Plantsoenhof 7 (demo),2313 AF,Leiden,DEMO-C2,Demo · Tuinstad,Maisonnette,1990,83,Gebruiksoppervlakte (demowaarde),m2,In mutatie
+DEMO-LEI-007,VHE-00007,Rijnzicht 13 (demo),2324 AG,Leiden,DEMO-C3,Demo · Zuidwest,Appartement,2006,81,Gebruiksoppervlakte (demowaarde),m2,In mutatie
+DEMO-LEI-008,VHE-00008,Professorenhof 22 (demo),2313 AH,Leiden,DEMO-C4,Demo · Tuinstad,Seniorenwoning,1998,72,Gebruiksoppervlakte (demowaarde),m2,In mutatie

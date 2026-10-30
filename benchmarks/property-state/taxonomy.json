@@ -1,0 +1,37 @@
+{
+  "version": "0.1.0",
+  "faultTypes": {
+    "cracking": "Visible cracks or splits; no inference about structural cause.",
+    "coating_deterioration": "Peeling, missing, weathered or visibly incomplete paint/coating.",
+    "corrosion": "Visible corrosion or rust deposits on metal.",
+    "material_loss": "Visible erosion, holes, crumbling or loss of material; no hidden decay diagnosis.",
+    "joint_or_sealant_defect": "Visible gaps, deterioration or incomplete finishing of joints/sealant.",
+    "damaged_component": "Visible breakage, deformation or torn component.",
+    "displaced_component": "Visibly shifted, misaligned or out-of-position component.",
+    "contamination": "Visible debris, deposits or surface contamination; do not identify mould species.",
+    "moisture_staining": "Visible staining associated in the source with moisture; does not establish active leakage.",
+    "standing_water": "Visible ponding; does not establish duration or drainage performance.",
+    "unfinished_surface": "Visible unfinished surface or missing finishing at an identifiable junction."
+  },
+  "components": {
+    "roof_covering": "Roof surfaces and roof tiles.",
+    "roof_flashing": "Flashing, roof junctions and penetration seals.",
+    "roof_penetration": "Chimneys, outlets, skylights and roof penetrations.",
+    "gutter": "Gutters and gutter enclosures.",
+    "drainage": "Rainwater pipes, connections and brackets.",
+    "masonry": "Brickwork, pointing and masonry sills.",
+    "concrete": "Concrete elements.",
+    "exterior_timber": "External timber cladding, boards and trim, excluding window/door frames.",
+    "window_or_door": "Windows, doors, frames and glazing.",
+    "sanitary_fixture": "Baths, shower trays, toilets and basins, including their immediate sealant junctions.",
+    "tiling": "Tiles and grout.",
+    "interior_wall": "Interior wall surfaces.",
+    "ceiling": "Ceilings and ceiling junctions.",
+    "floor": "Floor surfaces and floor junctions.",
+    "electrical_fitting": "Visible switches and sockets; no electrical functionality judgment.",
+    "metalwork": "Railings and other metalwork."
+  },
+  "reviewScope": "Every scored image is reviewed for all visible faults in this taxonomy. Absence of a report finding is never evidence of a negative.",
+  "language": "nl",
+  "descriptionScoring": "Manual rubric only. Canonical tags measure structured identification, not the correctness of unrestricted prose."
+}

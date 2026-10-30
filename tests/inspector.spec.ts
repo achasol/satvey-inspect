@@ -239,7 +239,7 @@ test('canonical email domain goes directly to SSO without showing a password', a
   await expect(page.getByLabel(/^Wachtwoord/)).toHaveCount(0);
 });
 
-test('photos become reviewed observations and an immutable report', async ({ page }) => {
+test('photos become reviewed observations and a signed immutable report', async ({ page }) => {
   await login(page);
   await inspection(page);
   await capture(page);
@@ -249,6 +249,11 @@ test('photos become reviewed observations and an immutable report', async ({ pag
     .getByLabel('Beschrijving', { exact: true })
     .fill('De wandafwerking naast de douche is beschadigd.');
   await page.getByRole('button', { name: 'Goedkeuren', exact: true }).click();
+  await expect(
+    page
+      .getByRole('region', { name: 'Bevinding beoordelen', exact: true })
+      .getByText('Goedgekeurd', { exact: true }),
+  ).toBeVisible();
   await page.getByText('Overzicht vastgelegd?', { exact: true }).click();
   await page
     .getByRole('group', { name: 'Antwoord', exact: true })
@@ -275,10 +280,44 @@ test('photos become reviewed observations and an immutable report', async ({ pag
   await page.getByRole('button', { name: 'badkamer.png verwijderen', exact: true }).click();
   await page.getByRole('link', { name: 'Rapport', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Rapport vastleggen', exact: true })).toBeEnabled();
-  page.once('dialog', (dialog) => dialog.accept());
   await page.getByRole('button', { name: 'Rapport vastleggen', exact: true }).click();
+  const finalise = page.getByRole('dialog', { name: 'Inspectie afronden', exact: true });
+  await expect(finalise.getByText('Handtekeningen (optioneel)', { exact: true })).toBeVisible();
+  await expect(
+    finalise.getByRole('button', { name: 'Rapport definitief vastleggen', exact: true }),
+  ).toBeEnabled();
+  for (const [index, name] of ['Sanne Inspecteur', 'Robin Bewoner'].entries()) {
+    await finalise.getByRole('button', { name: 'Ondertekenaar toevoegen', exact: true }).click();
+    await finalise.getByLabel('Naam ondertekenaar', { exact: true }).nth(index).fill(name);
+    const pad = finalise.getByRole('img', {
+      name: `Handtekening ondertekenaar ${index + 1}`,
+      exact: true,
+    });
+    await pad.scrollIntoViewIfNeeded();
+    const box = (await pad.boundingBox())!;
+    await page.mouse.move(box.x + box.width * 0.15, box.y + box.height * 0.6);
+    await page.mouse.down();
+    await page.mouse.move(box.x + box.width * 0.4, box.y + box.height * 0.2, { steps: 8 });
+    await page.mouse.move(box.x + box.width * 0.8, box.y + box.height * 0.7, { steps: 8 });
+    await page.mouse.up();
+  }
+  const signatureAxe = await new AxeBuilder({ page })
+    .include('[role="dialog"]')
+    .withTags(['wcag2a', 'wcag2aa', 'wcag21aa'])
+    .analyze();
+  expect(signatureAxe.violations).toEqual([]);
+  await finalise
+    .getByRole('button', { name: 'Rapport definitief vastleggen', exact: true })
+    .click();
   await expect(
     page.getByRole('heading', { name: 'Vastgelegd rapport', exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole('region', { name: 'Vastgelegde handtekeningen', exact: true }),
+  ).toContainText('Robin Bewoner');
+  await page.reload();
+  await expect(
+    page.getByRole('img', { name: 'Handtekening van Sanne Inspecteur', exact: true }),
   ).toBeVisible();
   const downloadEvent = page.waitForEvent('download');
   const pdfResponse = page.waitForResponse((response) => response.url().endsWith('/report/pdf'));
@@ -300,6 +339,95 @@ test('photos become reviewed observations and an immutable report', async ({ pag
   await expect(page.getByRole('button', { name: 'Rapport vastleggen', exact: true })).toHaveCount(
     0,
   );
+  const iid = page.url().match(/inspections\/([^/]+)/)![1];
+  const account = await (await page.request.get('/api/v1/me')).json();
+  const base = `/api/v1/orgs/${account.organisations[0].id}`;
+  const signed = await (await page.request.get(`${base}/inspections/${iid}/report`)).json();
+  expect(signed.signatures.map((signature: { role: string }) => signature.role)).toEqual([
+    'inspector',
+    'resident',
+  ]);
+  await page.getByRole('button', { name: 'Inspectie verwijderen', exact: true }).click();
+  await page
+    .getByRole('dialog', { name: 'Inspectie verwijderen', exact: true })
+    .getByRole('button', { name: 'Definitief verwijderen', exact: true })
+    .click();
+  await expect(page.getByRole('heading', { name: 'Inspecties', exact: true })).toBeVisible();
+  expect((await page.request.get(`${base}/inspections/${iid}/report`)).status()).toBe(404);
+});
+
+test('inspection deletion confirms the address, handles failure and removes local drafts', async ({
+  page,
+}) => {
+  await login(page);
+  const address = await inspection(page);
+  const iid = page.url().match(/inspections\/([^/]+)/)![1];
+  const account = await (await page.request.get('/api/v1/me')).json();
+  const base = `/api/v1/orgs/${account.organisations[0].id}`;
+  const scope = `${account.user.id}:${account.organisations[0].id}`;
+  const path = `${base}/inspections/${iid}`;
+  const dossier = await (await page.request.get(path)).json();
+  await page.getByRole('link', { name: 'Alle inspecties', exact: true }).click();
+  await page.getByLabel('Inspecties zoeken', { exact: true }).fill(address);
+  const remove = page.getByRole('button', {
+    name: `Inspectie verwijderen: ${address}`,
+    exact: true,
+  });
+  await remove.click();
+  const dialog = page.getByRole('dialog', { name: 'Inspectie verwijderen', exact: true });
+  await expect(dialog).toContainText(address);
+  await dialog.getByRole('button', { name: 'Annuleren', exact: true }).click();
+  expect((await page.request.get(path)).status()).toBe(200);
+  await page.evaluate(
+    async ({ scope, iid }) => {
+      const modulePath = '/src/workspace/outbox.ts';
+      const outbox = await import(modulePath);
+      await outbox.draftPut(`${scope}:inspectionDraft:${iid}:camera`, { id: 'local-draft' });
+      await outbox.saveAction({
+        id: `delete-test-${iid}`,
+        scope,
+        inspectionId: iid,
+        kind: 'edit',
+        path: '/unused',
+        payload: {},
+        state: 'conflict',
+        createdAt: Date.now(),
+      });
+    },
+    { scope, iid },
+  );
+  let fail = true;
+  await page.route(`**/api/v1${path.replace('/api/v1', '')}`, (route) => {
+    if (route.request().method() === 'DELETE' && fail)
+      return route.fulfill({ status: 503, json: { error: 'Tijdelijk niet beschikbaar' } });
+    return route.continue();
+  });
+  await remove.click();
+  await dialog.getByRole('button', { name: 'Definitief verwijderen', exact: true }).click();
+  await expect(dialog.getByRole('alert')).toContainText('Tijdelijk niet beschikbaar');
+  expect((await page.request.get(path)).status()).toBe(200);
+  fail = false;
+  await dialog.getByRole('button', { name: 'Definitief verwijderen', exact: true }).click();
+  await expect(dialog).toBeHidden();
+  await expect(remove).toHaveCount(0);
+  expect((await page.request.get(`${base}/properties/${dossier.inspection.propertyId}`)).ok()).toBe(
+    true,
+  );
+  const remaining = await page.evaluate(
+    async ({ scope, iid }) => {
+      const modulePath = '/src/workspace/outbox.ts';
+      const outbox = await import(modulePath);
+      return {
+        draft: await outbox.draftGet(`${scope}:inspectionDraft:${iid}:camera`),
+        pending: (await outbox.actions(scope)).filter(
+          (action: { inspectionId: string }) => action.inspectionId === iid,
+        ),
+      };
+    },
+    { scope, iid },
+  );
+  expect(remaining.draft).toBeUndefined();
+  expect(remaining.pending).toEqual([]);
 });
 
 test('inline findings can be approved, rejected and corrected without an edit step', async ({

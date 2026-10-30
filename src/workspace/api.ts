@@ -225,6 +225,7 @@ export type Dossier = {
   transcriptionJobs?: { mediaId: string; status: string; error: string }[];
 };
 export type Report = Omit<Dossier, 'jobs' | 'observations' | 'assessments'> & {
+  signatures?: ReportSignature[];
   id: string;
   createdAt: string;
   observations: Pick<
@@ -239,6 +240,12 @@ export type Report = Omit<Dossier, 'jobs' | 'observations' | 'assessments'> & {
     photoIds?: string[];
   }[];
 };
+export type SignatureInput = {
+  name: string;
+  role: 'inspector' | 'resident' | 'other';
+  strokes: PhotoPoint[][];
+};
+export type ReportSignature = SignatureInput & { signedAt: string; collectedBy: string };
 export type NormOutcome = 'acceptable' | 'unacceptable' | 'not_assessable' | 'not_applicable';
 export type NormExample = {
   id: string;
@@ -303,7 +310,6 @@ export type RoomElement = {
   description: string;
   rooms: string[];
   aliases: string[];
-  aiGuidance: string;
   archived: boolean;
   version: number;
 };

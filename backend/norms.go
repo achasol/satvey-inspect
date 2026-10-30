@@ -87,7 +87,7 @@ func validateNorms(in normDocument, publish bool) error {
 		if r.Priority != "low" && r.Priority != "medium" && r.Priority != "high" {
 			return fail(400, "Kies een prioriteit")
 		}
-		if len(r.Acceptable) > 3000 || len(r.Unacceptable) > 3000 || len(r.AIGuidance) > 3000 || len(r.SourceURLs) > 8 {
+		if len(r.Acceptable) > 3000 || len(r.Unacceptable) > 3000 || len(r.AIGuidance) > 6500 || len(r.SourceURLs) > 8 {
 			return fail(400, "De maatregel is te lang")
 		}
 		if publish && (strings.TrimSpace(r.Acceptable) == "" || strings.TrimSpace(r.Unacceptable) == "" || strings.TrimSpace(r.AIGuidance) == "") {

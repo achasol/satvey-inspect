@@ -63,7 +63,19 @@ function notify() {
   window.dispatchEvent(new Event('satvey-outbox'));
 }
 export async function saveAction(action: Action) {
-  await dbCall('outbox', 'readwrite', (s) => s.put(action, action.id));
+  const db = await database();
+  await new Promise<void>((resolve, reject) => {
+    const tx = db.transaction(['outbox', 'cache'], 'readwrite');
+    const deleted = tx
+      .objectStore('cache')
+      .get(`${action.scope}:deletedInspection:${action.inspectionId}`);
+    deleted.onsuccess = () => {
+      if (!deleted.result) tx.objectStore('outbox').put(action, action.id);
+    };
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+    tx.onabort = () => reject(tx.error || new Error('Opslaan mislukt'));
+  });
   notify();
 }
 export async function removeAction(id: string) {
@@ -93,6 +105,54 @@ export const cacheGet = <T>(key: string) =>
   dbCall<T | undefined>('cache', 'readonly', (s) => s.get(key));
 export const cachePut = (key: string, value: unknown) =>
   dbCall('cache', 'readwrite', (s) => s.put(value, key));
+
+export async function forgetInspection(
+  scope: string,
+  path: string,
+  inspectionId: string,
+  observationIds: string[],
+) {
+  const cached = await cacheGet<{ observations?: { id: string }[] }>(`${scope}:${path}`);
+  const observationKeys = new Set(
+    [...observationIds, ...(cached?.observations || []).map((o) => o.id)].map(
+      (id) => `${scope}:observation:${id}`,
+    ),
+  );
+  const db = await database();
+  await new Promise<void>((resolve, reject) => {
+    const tx = db.transaction(['outbox', 'drafts', 'cache'], 'readwrite');
+    tx.objectStore('cache').put(true, `${scope}:deletedInspection:${inspectionId}`);
+    for (const name of ['outbox', 'drafts', 'cache']) {
+      const request = tx.objectStore(name).openCursor();
+      request.onsuccess = () => {
+        const cursor = request.result;
+        if (!cursor) return;
+        const key = String(cursor.key);
+        if (
+          (name === 'outbox' &&
+            cursor.value.scope === scope &&
+            cursor.value.inspectionId === inspectionId) ||
+          (name === 'drafts' &&
+            (key.startsWith(`${scope}:capture:${inspectionId}:`) ||
+              key.startsWith(`${scope}:inspectionDraft:${inspectionId}:`) ||
+              observationKeys.has(key))) ||
+          (name === 'cache' && (key === `${scope}:${path}` || key.startsWith(`${scope}:${path}/`)))
+        ) {
+          cursor.delete();
+        } else if (name === 'cache' && key === `${scope}:${path.slice(0, path.lastIndexOf('/'))}`) {
+          cursor.update((cursor.value as { id: string }[]).filter((i) => i.id !== inspectionId));
+        }
+        cursor.continue();
+      };
+    }
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+    tx.onabort = () =>
+      reject(tx.error || new Error('Lokale inspectiegegevens verwijderen mislukt'));
+  });
+  notify();
+  window.dispatchEvent(new Event('satvey-drafts'));
+}
 export const draftGet = <T = { roomId: string; files: LocalMedia[] }>(key: string) =>
   dbCall<T | undefined>('drafts', 'readonly', (s) => s.get(key));
 export async function draftPut(key: string, value: unknown) {
@@ -126,12 +186,17 @@ export async function pendingDraftCount(
   return values.filter((value) => value && (value.id || value.draft || value.files?.length)).length;
 }
 let activeScope = '',
-  syncing = false;
+  syncing = false,
+  resyncScope = '';
 export function setScope(scope: string) {
   activeScope = scope;
 }
 export async function sync(scope: string) {
-  if (syncing || activeScope !== scope || !navigator.onLine) return;
+  if (activeScope !== scope || !navigator.onLine) return;
+  if (syncing) {
+    resyncScope = scope;
+    return;
+  }
   syncing = true;
   try {
     for (const action of await actions(scope)) {
@@ -177,6 +242,9 @@ export async function sync(scope: string) {
     }
   } finally {
     syncing = false;
+    const next = resyncScope;
+    resyncScope = '';
+    if (next) await sync(next);
   }
 }
 export function useOutbox(scope: string) {

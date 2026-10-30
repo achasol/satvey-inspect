@@ -1,0 +1,30 @@
+{
+  "generator": "built-in image_gen",
+  "purpose": "Synthetic inspection evidence for fictional De Sleutels demo properties; no real properties or residents.",
+  "assets": [
+    {
+      "file": "images/bathroom.png",
+      "prompt": "Use case: photorealistic-natural. Create one photorealistic smartphone inspection photograph for a fictional Dutch social-rental flat demo, landscape 4:3 composition. A modest empty bathroom in a late-1970s Netherlands apartment: off-white small ceramic wall tiles, compact white washbasin, chrome tap, white shower tray, practical daylight mixed with overhead light, no people, no personal items. Include a realistically small dark speckled discoloured patch along one short section of the shower silicone seam and a little dust on a round ventilation grille, while most surfaces are intact. Clear inspection overview, believable ordinary wear, natural handheld camera imperfection, neutral documentary colours. Show visible surface facts only, no dramatic decay or flooding. This is a synthetic demo photo, not a real property. Do not include text, captions, logos, watermarks, street signs or collage panels."
+    },
+    {
+      "file": "images/kitchen.png",
+      "prompt": "Use case: photorealistic-natural. Create one photorealistic smartphone inspection photograph for a fictional Dutch social-rental flat demo, landscape 4:3 composition. A modest empty Dutch apartment kitchen from the 1990s: cream laminate cupboard doors, simple pale grey laminate worktop, stainless steel sink with chrome tap, square white tiled splashback, daylight from an unseen window. Camera overview clearly showing the lower cupboards and sink area. One lower cupboard door is slightly misaligned, with a narrow uneven gap; there is a small chipped edge on the front of the laminate worktop. The rest is ordinary, clean and usable with realistic mild wear. Documentary rental inspection photography, practical neutral light, crisp material details, no people, no personal belongings. This is a synthetic demo photo, not a real property. No text, captions, brand logos, watermark or montage."
+    },
+    {
+      "file": "images/hallway.png",
+      "prompt": "Use case: photorealistic-natural. Create one photorealistic smartphone inspection photograph for a fictional Dutch social-rental flat demo, landscape 4:3 composition. An empty practical entrance hall in a Netherlands apartment: white plaster walls, light oak-effect laminate floor, simple grey skirting boards, plain interior white doors with silver lever handles, a partly visible closed utility cupboard. View from just inside the front door into the hall; everyday daylight, realistic mild scuffs on a lower door frame but generally tidy and intact. Calm neutral documentary inspection image, ordinary midrange rental property, natural handheld camera perspective, no luxury styling, no people, no identifying paperwork. This is a synthetic demo photo, not a real property. No text, captions, logos, watermark or collage."
+    },
+    {
+      "file": "images/living-room.png",
+      "prompt": "Use case: photorealistic-natural. One photorealistic documentary smartphone photograph, landscape 4:3, for a fictional Netherlands rental inspection demo. Empty modest social-rental flat living room built around 1980, white plaster walls, plain white ceiling, oak-effect laminate floor with grey skirting, white radiator beneath a broad double-glazed window looking onto an anonymous Dutch brick apartment block. Normal overcast daylight, no furniture or people. The visible walls and floor are clean and intact with only ordinary light wear; practical neutral colours, no luxury styling. Frame a useful wide room overview from the doorway, realistic camera perspective. No text, brands, identifying street numbers, watermark, collage or measurement overlays. Synthetic demonstration property."
+    },
+    {
+      "file": "images/bedroom.png",
+      "prompt": "Use case: photorealistic-natural. One photorealistic documentary smartphone photograph, landscape 4:3, for a fictional Dutch rental property inspection. Small empty bedroom in a modest Netherlands apartment, clean white walls, white ceiling, light grey laminate floor, a simple white framed window and white panel radiator, no furniture or people. Overcast daylight, realistic ordinary rental property detail, a few very faint normal scuff marks on the skirting board; the visible surfaces are generally intact. Useful wide view from the door, practical neutral light, believable handheld camera image. No text, brands, address details, watermark, collage or measurement overlays. Synthetic demonstration property."
+    },
+    {
+      "file": "images/exterior.png",
+      "prompt": "Use case: photorealistic-natural. One photorealistic documentary smartphone photograph, landscape 4:3, for a fictional Leiden social-housing property demo. Exterior entrance of an anonymous 1970s Dutch brick low-rise apartment building, red-brown brick facade, practical white window frames, a grey shared entry door, simple metal bicycle racks and tidy pavement, overcast Netherlands daylight. The building is modest, well maintained with ordinary weathering; useful inspection overview at pedestrian height. No people, no house numbers, street signs, readable names or logos, no dramatic damage or luxury architecture. This is a fictional synthetic building, not an identifiable real property. No captions, watermarks, collage or graphic overlays."
+    }
+  ]
+}

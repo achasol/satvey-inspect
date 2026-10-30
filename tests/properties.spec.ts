@@ -50,15 +50,29 @@ test('administrator imports a catalog and inspector selects a source identity', 
   await page.goto('/app');
   await page.getByRole('button', { name: 'Inspectie toevoegen', exact: true }).click();
   dialog = page.getByRole('dialog');
-  await expect(dialog.getByLabel('Adres', { exact: true })).toHaveCount(0);
+  await expect(dialog.getByLabel(/^Adres/)).toHaveCount(0);
+  await expect(dialog.getByLabel('Inspectieformat', { exact: true })).toHaveCount(0);
+  await expect(
+    dialog.getByRole('button', { name: 'Deze woning gebruiken', exact: true }),
+  ).toHaveCount(0);
   await dialog.getByLabel('Zoek woning', { exact: true }).fill(unique);
   await dialog
     .getByRole('list', { name: 'Gevonden woningen' })
     .getByRole('button')
     .filter({ hasText: address })
     .click();
+  await expect(dialog.getByLabel('Zoek woning', { exact: true })).toHaveCount(0);
   await expect(dialog.getByRole('region', { name: 'Gekozen woning' })).toContainText('1982');
   await dialog.getByLabel('Inspectieformat', { exact: true }).selectOption(format.id);
+  await dialog.getByRole('button', { name: 'Vorige stap', exact: true }).click();
+  await expect(dialog.getByLabel('Inspectieformat', { exact: true })).toHaveCount(0);
+  const selected = dialog
+    .getByRole('list', { name: 'Gevonden woningen' })
+    .getByRole('button')
+    .filter({ hasText: address });
+  await expect(selected).toHaveAttribute('aria-pressed', 'true');
+  await selected.click();
+  await expect(dialog.getByLabel('Inspectieformat', { exact: true })).toHaveValue(format.id);
   await dialog.getByRole('button', { name: 'Aanmaken en opnemen', exact: true }).click();
   await expect(page.getByRole('heading', { name: address, exact: true })).toBeVisible();
   const path = `${base}/inspections/${page.url().match(/inspections\/([^/]+)/)![1]}`;
@@ -80,8 +94,55 @@ test('provisional inspection requires administrator link and explicitly adopts l
   let dialog = page.getByRole('dialog');
   await dialog.getByRole('button', { name: 'Voorlopige woning aanmaken', exact: true }).click();
   const provisionalAddress = `Voorlopig ${unique}`;
+  await expect(dialog.getByLabel('Inspectieformat', { exact: true })).toHaveCount(0);
+  await expect(
+    dialog.getByRole('button', { name: 'Deze woning gebruiken', exact: true }),
+  ).toBeDisabled();
+  const creations: string[] = [];
+  page.on('request', (request) => {
+    if (
+      request.method() === 'POST' &&
+      [base + '/properties', base + '/inspections'].some((path) => request.url().endsWith(path))
+    )
+      creations.push(request.url());
+  });
   await dialog.getByLabel(/^Adres/).fill(provisionalAddress);
+  await dialog.getByText('Adresdetails (optioneel)', { exact: true }).click();
+  await dialog.getByLabel('Postcode', { exact: true }).fill('2311 AB');
+  await dialog.getByLabel('Plaats', { exact: true }).fill('Leiden');
+  await dialog.getByLabel(/^Adres/).press('Enter');
+  await expect(
+    dialog.getByRole('heading', { name: 'Woning en inspectieformat', exact: true }),
+  ).toBeFocused();
+  await expect(dialog.getByRole('region', { name: 'Gekozen woning' })).toContainText(
+    provisionalAddress,
+  );
+  await expect(dialog.getByRole('region', { name: 'Gekozen woning' })).toContainText('Leiden');
+  await expect(dialog.getByLabel('Zoek woning', { exact: true })).toHaveCount(0);
   await dialog.getByLabel('Inspectieformat', { exact: true }).selectOption(format.id);
+  await dialog.getByText('Afspraak toevoegen (optioneel)', { exact: true }).click();
+  await dialog.getByLabel('Afspraak (optioneel)', { exact: true }).fill('2026-11-16T10:30');
+  expect(creations).toEqual([]);
+  await dialog.getByRole('button', { name: 'Vorige stap', exact: true }).click();
+  await expect(dialog.getByRole('heading', { name: 'Woning kiezen', exact: true })).toBeFocused();
+  await expect(dialog.getByLabel(/^Adres/)).toHaveValue(provisionalAddress);
+  await expect(dialog.getByLabel('Postcode', { exact: true })).toHaveValue('2311 AB');
+  await expect(dialog.getByLabel('Plaats', { exact: true })).toHaveValue('Leiden');
+  await expect(dialog.getByLabel('Inspectieformat', { exact: true })).toHaveCount(0);
+  await dialog.getByRole('button', { name: 'Deze woning gebruiken', exact: true }).click();
+  await expect(dialog.getByLabel('Inspectieformat', { exact: true })).toHaveValue(format.id);
+  await expect(dialog.getByLabel('Afspraak (optioneel)', { exact: true })).toHaveValue(
+    '2026-11-16T10:30',
+  );
+  expect(creations).toEqual([]);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(
+    true,
+  );
+  const wizardAxe = await new AxeBuilder({ page })
+    .include('[role="dialog"]')
+    .withTags(['wcag2a', 'wcag2aa', 'wcag21aa'])
+    .analyze();
+  expect(wizardAxe.violations).toEqual([]);
   await dialog.getByRole('button', { name: 'Aanmaken en opnemen', exact: true }).click();
   await expect(page.getByRole('heading', { name: provisionalAddress, exact: true })).toBeVisible();
   const iid = page.url().match(/inspections\/([^/]+)/)![1],

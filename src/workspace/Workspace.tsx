@@ -21,6 +21,7 @@ import {
   RefreshCw,
   Settings,
   Square,
+  Trash2,
   Upload,
   WifiOff,
   X,
@@ -41,6 +42,7 @@ import type {
   Organisation,
   Property,
   Report,
+  SignatureInput,
 } from './api';
 
 import {
@@ -48,6 +50,7 @@ import {
   draftGet,
   draftPut,
   draftRemove,
+  forgetInspection,
   pendingDraftCount,
   enqueueEdit,
   removeAction,
@@ -64,6 +67,7 @@ import { useResource } from './useResource';
 import { NormsModule, outcomeLabels } from './Norms';
 
 import { FormatsModule } from './Formats';
+import { ReportSignatures, SignaturesEditor } from './Signatures';
 
 import { TalkingGuide, FormatRoomReview, FormatReportResults } from './FormatReview';
 
@@ -838,40 +842,133 @@ function InspectionList({
             .filter((i) => `${i.address} ${i.city}`.toLowerCase().includes(query.toLowerCase()))
 
             .map((i) => (
-              <Link
-                key={i.id}
-                to={`/app/inspections/${i.id}/${i.status === 'final' ? 'report' : 'capture'}`}
-                className={s.inspectionRow}
-              >
-                <span className={`${s.propertyIcon} ${propertyIconTone(i.propertyId)}`}>
-                  <House size={23} />
-                </span>
-
-                <span className={s.rowAddress}>
-                  <strong>{i.address}</strong>
-
-                  <span>
-                    {i.postcode} {i.city}
+              <div key={i.id} className={s.inspectionItem}>
+                <Link
+                  to={`/app/inspections/${i.id}/${i.status === 'final' ? 'report' : 'capture'}`}
+                  className={`${s.inspectionRow} ${canWrite ? s.inspectionRowWithActions : ''}`}
+                >
+                  <span className={`${s.propertyIcon} ${propertyIconTone(i.propertyId)}`}>
+                    <House size={23} />
                   </span>
-                </span>
 
-                <span className={s.rowDate}>
-                  {kindLabel(i.kind)}
+                  <span className={s.rowAddress}>
+                    <strong>{i.address}</strong>
 
-                  <small>{dateLabel(i.scheduledAt)}</small>
-                </span>
+                    <span>
+                      {i.postcode} {i.city}
+                    </span>
+                  </span>
 
-                <Badge tone={i.status === 'final' ? 'success' : 'neutral'}>
-                  {i.status === 'final' ? 'Vastgelegd' : 'Open'}
-                </Badge>
+                  <span className={s.rowDate}>
+                    {kindLabel(i.kind)}
 
-                <ChevronRight size={19} />
-              </Link>
+                    <small>{dateLabel(i.scheduledAt)}</small>
+                  </span>
+
+                  <Badge tone={i.status === 'final' ? 'success' : 'neutral'}>
+                    {i.status === 'final' ? 'Vastgelegd' : 'Open'}
+                  </Badge>
+
+                  <ChevronRight size={19} />
+                </Link>
+                {canWrite && (
+                  <div className={s.inspectionDeleteAction}>
+                    <DeleteInspection base={base} scope={scope} inspection={i} iconOnly />
+                  </div>
+                )}
+              </div>
             ))}
         </div>
       )}
 
       {create && <NewInspection base={base} scope={scope} onClose={() => setCreate(false)} />}
+    </>
+  );
+}
+
+function DeleteInspection({
+  base,
+  scope,
+  inspection,
+  iconOnly = false,
+  onDeleted,
+}: {
+  base: string;
+  scope: string;
+  inspection: Inspection;
+  iconOnly?: boolean;
+  onDeleted?: () => void;
+}) {
+  const [open, setOpen] = useState(false),
+    [busy, setBusy] = useState(false),
+    [error, setError] = useState('');
+  async function remove() {
+    setBusy(true);
+    setError('');
+    const path = `${base}/inspections/${inspection.id}`;
+    try {
+      if (!navigator.onLine)
+        throw new Error('Maak verbinding met internet om de inspectie te verwijderen.');
+      let observationIds: string[] = [];
+      try {
+        const dossier = await api<Dossier>(path);
+        observationIds = dossier.observations.map((o) => o.id);
+        await api(path, { method: 'DELETE' });
+      } catch (e) {
+        // A retry after a lost response may find an already deleted dossier.
+        if (!(e instanceof ApiError) || e.status !== 404) throw e;
+      }
+      await forgetInspection(scope, path, inspection.id, observationIds);
+      setOpen(false);
+      onDeleted?.();
+      announceRefresh();
+    } catch (e) {
+      setError(errorText(e));
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <>
+      <Button
+        variant="ghost"
+        size="sm"
+        icon={<Trash2 size={17} />}
+        aria-label={iconOnly ? `Inspectie verwijderen: ${inspection.address}` : undefined}
+        title={iconOnly ? 'Inspectie verwijderen' : undefined}
+        onClick={() => {
+          setError('');
+          setOpen(true);
+        }}
+      >
+        {!iconOnly && 'Inspectie verwijderen'}
+      </Button>
+      <Dialog
+        open={open}
+        onOpenChange={(next) => {
+          if (!busy) setOpen(next);
+        }}
+        title="Inspectie verwijderen"
+        description={`${kindLabel(inspection.kind)} · ${inspection.address}`}
+        closeLabel="Sluiten"
+      >
+        <div className={s.stack}>
+          <p>
+            Deze inspectie, alle opnamen, beoordelingen en het eventuele rapport worden definitief
+            verwijderd. Ook lokale concepten op dit apparaat worden verwijderd. De woning blijft
+            beschikbaar voor nieuwe inspecties.
+          </p>
+          {error && <ErrorNotice>{error}</ErrorNotice>}
+          <div className={s.actions}>
+            <Button variant="secondary" disabled={busy} onClick={() => setOpen(false)}>
+              Annuleren
+            </Button>
+            <Button variant="destructive" loading={busy} onClick={() => void remove()}>
+              Definitief verwijderen
+            </Button>
+          </div>
+        </div>
+      </Dialog>
     </>
   );
 }
@@ -886,9 +983,11 @@ function NewInspection({
   onClose: () => void;
 }) {
   const navigate = useNavigate();
-  const [formats, setFormats] = useState<InspectionFormat[]>([]),
+  const [step, setStep] = useState<1 | 2>(1),
+    [formats, setFormats] = useState<InspectionFormat[]>([]),
     [formatVersionId, setFormatVersionId] = useState(''),
-    [formatReady, setFormatReady] = useState(false);
+    [formatReady, setFormatReady] = useState(false),
+    [formatError, setFormatError] = useState('');
   const [propertyChoice, setPropertyChoice] = useState(''),
     [chosenProperty, setChosenProperty] = useState<Property>(),
     [address, setAddress] = useState(''),
@@ -898,8 +997,21 @@ function NewInspection({
     [error, setError] = useState(''),
     [busy, setBusy] = useState(false);
   const ids = useRef({ property: uuid(), inspection: uuid() }),
+    propertyQuery = useRef(''),
+    stepHeading = useRef<HTMLHeadingElement>(null),
     selectedFormat = formats.find((f) => f.id === formatVersionId),
-    newProperty = propertyChoice === 'new';
+    newProperty = propertyChoice === 'new',
+    propertyReady = newProperty ? !!address.trim() : !!chosenProperty;
+  function selectProperty(property: Property) {
+    setPropertyChoice(property.id);
+    setChosenProperty(property);
+    setError('');
+    setStep(2);
+  }
+  useEffect(() => {
+    stepHeading.current?.focus();
+    stepHeading.current?.scrollIntoView({ block: 'nearest' });
+  }, [step]);
   useEffect(() => {
     void api<InspectionFormat[]>(`${base}/formats`)
       .then((all) => {
@@ -908,18 +1020,23 @@ function NewInspection({
         setFormats(published);
         setFormatVersionId(published.find((f) => f.kind === 'pre')?.id || published[0]?.id || '');
       })
-      .catch((e) => setError(errorText(e)))
+      .catch((e) => setFormatError(errorText(e)))
       .finally(() => setFormatReady(true));
   }, [base]);
   async function submit(e: FormEvent) {
     e.preventDefault();
+    if (step === 1 && !newProperty) return;
     setError('');
-    if (!selectedFormat) {
-      setError('Kies een gepubliceerd inspectieformat.');
+    if (!propertyReady) {
+      setError('Kies een woning uit de catalogus of vul het adres van een voorlopige woning in.');
       return;
     }
-    if (!propertyChoice) {
-      setError('Kies een woning uit de catalogus of maak een voorlopige woning aan.');
+    if (step === 1) {
+      setStep(2);
+      return;
+    }
+    if (!selectedFormat) {
+      setError('Kies een gepubliceerd inspectieformat.');
       return;
     }
     setBusy(true);
@@ -949,149 +1066,185 @@ function NewInspection({
     <Dialog
       open
       onOpenChange={(open) => {
-        if (!open) onClose();
+        if (!open && !busy) onClose();
       }}
       title="Inspectie toevoegen"
-      description="Kies de woning en het inspectieformat."
+      description={`Stap ${step} van 2 ? ${step === 1 ? 'Woning kiezen' : 'Format kiezen'}`}
       closeLabel="Sluiten"
       fullOnMobile
     >
       <form onSubmit={submit} className={s.stack}>
-        {!newProperty && (
+        <ol className={s.creationSteps} aria-label="Stappen inspectie aanmaken">
+          <li aria-current={step === 1 ? 'step' : undefined}>
+            <span>1</span> Woning
+          </li>
+          <li aria-current={step === 2 ? 'step' : undefined}>
+            <span>2</span> Format
+          </li>
+        </ol>
+        <h3 ref={stepHeading} tabIndex={-1}>
+          {step === 1 ? 'Woning kiezen' : 'Woning en inspectieformat'}
+        </h3>
+        {step === 1 ? (
           <>
-            <PropertyPicker
-              base={base}
-              scope={scope}
-              selected={propertyChoice}
-              onSelect={(property) => {
-                setPropertyChoice(property.id);
-                setChosenProperty(property);
-              }}
-            />
-            {chosenProperty && (
-              <section aria-label="Gekozen woning">
-                <h3>Gekozen woning</h3>
-                <PropertyFacts property={chosenProperty} />
-                {chosenProperty.linkState === 'provisional' && (
-                  <p className={s.warning}>
-                    Een beheerder moet deze woning vóór het vastleggen aan een bronobject koppelen.
-                  </p>
-                )}
-              </section>
-            )}
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={() => {
-                setPropertyChoice('new');
-                setChosenProperty(undefined);
-              }}
-            >
-              Voorlopige woning aanmaken
-            </Button>
-          </>
-        )}
-        {newProperty && (
-          <>
-            <p className={s.warning}>
-              Je kunt direct opnemen. Een beheerder moet de bronkoppeling bevestigen voordat het
-              rapport kan worden vastgelegd.
-            </p>
-            <Button type="button" variant="ghost" onClick={() => setPropertyChoice('')}>
-              Terug naar woningcatalogus
-            </Button>
-          </>
-        )}
-        {newProperty && (
-          <Field
-            label="Adres"
-            placeholder="Straat en huisnummer"
-            autoComplete="street-address"
-            required
-            maxLength={240}
-            value={address}
-            onChange={(e) => setAddress(e.target.value)}
-          />
-        )}
-        {newProperty && address.trim().length >= 3 && (
-          <details open>
-            <summary>Controleer mogelijke bestaande woningen</summary>
-            <PropertyPicker
-              base={base}
-              scope={scope}
-              initialQuery={address}
-              label="Zoek mogelijke bestaande woning"
-              onSelect={(property) => {
-                setPropertyChoice(property.id);
-                setChosenProperty(property);
-              }}
-            />
-          </details>
-        )}
-        <Select label="Inspectieformat" value={formatVersionId} onChange={setFormatVersionId}>
-          <option value="">Kies een gepubliceerd format</option>
-          {(['pre', 'final'] as const).map((kind) => (
-            <optgroup key={kind} label={kindLabel(kind)}>
-              {formats
-                .filter((f) => f.kind === kind)
-                .map((f) => (
-                  <option key={f.id} value={f.id}>
-                    {f.name} - versie {f.number}
-                  </option>
-                ))}
-            </optgroup>
-          ))}
-        </Select>
-        {selectedFormat && <p className={s.muted}>{kindLabel(selectedFormat.kind)}</p>}
-        {formatReady && !formats.length && (
-          <p className={s.warning}>
-            Laat kwaliteitsbeheer eerst een inspectieformat publiceren.{' '}
-            <Link to="/app/formats" onClick={onClose}>
-              Inspectieformats openen
-            </Link>
-          </p>
-        )}
-        <details>
-          <summary>
-            {newProperty
-              ? 'Adresdetails en afspraak (optioneel)'
-              : 'Afspraak toevoegen (optioneel)'}
-          </summary>
-          <div className={s.stack} style={{ paddingTop: 14 }}>
-            {newProperty && (
-              <div className={s.twoColumns}>
-                <Field
-                  label="Postcode"
-                  autoComplete="postal-code"
-                  maxLength={20}
-                  value={postcode}
-                  onChange={(e) => setPostcode(e.target.value)}
+            {!newProperty ? (
+              <>
+                <PropertyPicker
+                  base={base}
+                  scope={scope}
+                  selected={propertyChoice}
+                  initialQuery={propertyQuery.current}
+                  onSelect={selectProperty}
                 />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => {
+                    propertyQuery.current = '';
+                    setPropertyChoice('new');
+                    setChosenProperty(undefined);
+                  }}
+                >
+                  Voorlopige woning aanmaken
+                </Button>
+              </>
+            ) : (
+              <>
+                <p className={s.warning}>
+                  Je kunt direct opnemen. Een beheerder moet de bronkoppeling bevestigen voordat het
+                  rapport kan worden vastgelegd.
+                </p>
+                <Button type="button" variant="ghost" onClick={() => setPropertyChoice('')}>
+                  Terug naar woningcatalogus
+                </Button>
                 <Field
-                  label="Plaats"
-                  autoComplete="address-level2"
-                  maxLength={120}
-                  value={city}
-                  onChange={(e) => setCity(e.target.value)}
+                  label="Adres"
+                  placeholder="Straat en huisnummer"
+                  autoComplete="street-address"
+                  required
+                  maxLength={240}
+                  value={address}
+                  onChange={(e) => setAddress(e.target.value)}
+                />
+                <details>
+                  <summary>Adresdetails (optioneel)</summary>
+                  <div className={s.twoColumns} style={{ paddingTop: 14 }}>
+                    <Field
+                      label="Postcode"
+                      autoComplete="postal-code"
+                      maxLength={20}
+                      value={postcode}
+                      onChange={(e) => setPostcode(e.target.value)}
+                    />
+                    <Field
+                      label="Plaats"
+                      autoComplete="address-level2"
+                      maxLength={120}
+                      value={city}
+                      onChange={(e) => setCity(e.target.value)}
+                    />
+                  </div>
+                </details>
+                {address.trim().length >= 3 && (
+                  <details open>
+                    <summary>Controleer mogelijke bestaande woningen</summary>
+                    <PropertyPicker
+                      base={base}
+                      scope={scope}
+                      initialQuery={address}
+                      label="Zoek mogelijke bestaande woning"
+                      onSelect={selectProperty}
+                    />
+                  </details>
+                )}
+              </>
+            )}
+          </>
+        ) : (
+          <>
+            <section aria-label="Gekozen woning">
+              <h3>Gekozen woning</h3>
+              <PropertyFacts
+                property={newProperty ? { address, postcode, city } : chosenProperty!}
+              />
+              {(newProperty || chosenProperty?.linkState === 'provisional') && (
+                <p className={s.warning}>
+                  Een beheerder moet deze woning v??r het vastleggen aan een bronobject koppelen.
+                </p>
+              )}
+            </section>
+            <Select label="Inspectieformat" value={formatVersionId} onChange={setFormatVersionId}>
+              <option value="">Kies een gepubliceerd format</option>
+              {(['pre', 'final'] as const).map((kind) => (
+                <optgroup key={kind} label={kindLabel(kind)}>
+                  {formats
+                    .filter((f) => f.kind === kind)
+                    .map((f) => (
+                      <option key={f.id} value={f.id}>
+                        {f.name} - versie {f.number}
+                      </option>
+                    ))}
+                </optgroup>
+              ))}
+            </Select>
+            {selectedFormat && <p className={s.muted}>{kindLabel(selectedFormat.kind)}</p>}
+            {!formatReady && <p role="status">Inspectieformats laden?</p>}
+            {formatError && <ErrorNotice>{formatError}</ErrorNotice>}
+            {formatReady && !formatError && !formats.length && (
+              <p className={s.warning}>
+                Laat kwaliteitsbeheer eerst een inspectieformat publiceren.{' '}
+                <Link to="/app/formats" onClick={onClose}>
+                  Inspectieformats openen
+                </Link>
+              </p>
+            )}
+            <details>
+              <summary>Afspraak toevoegen (optioneel)</summary>
+              <div style={{ paddingTop: 14 }}>
+                <Field
+                  label="Afspraak (optioneel)"
+                  type="datetime-local"
+                  value={scheduled}
+                  onChange={(e) => setScheduled(e.target.value)}
                 />
               </div>
-            )}
-            <Field
-              label="Afspraak (optioneel)"
-              type="datetime-local"
-              value={scheduled}
-              onChange={(e) => setScheduled(e.target.value)}
-            />
-          </div>
-        </details>
+            </details>
+          </>
+        )}
         {error && <ErrorNotice>{error}</ErrorNotice>}
-        <Button
-          type="submit"
-          loading={busy}
-          disabled={!formatReady || !selectedFormat || !propertyChoice}
-        >
-          Aanmaken en opnemen <ArrowRight size={16} />
-        </Button>
+        <div className={s.actions}>
+          {step === 2 && (
+            <Button
+              type="button"
+              variant="secondary"
+              disabled={busy}
+              onClick={() => {
+                propertyQuery.current =
+                  chosenProperty?.objectNumber || chosenProperty?.address || '';
+                setError('');
+                setStep(1);
+              }}
+            >
+              <ArrowLeft size={16} /> Vorige stap
+            </Button>
+          )}
+          {step === 1 ? (
+            newProperty && (
+              <Button key="next" type="submit" disabled={!propertyReady}>
+                Deze woning gebruiken <ArrowRight size={16} />
+              </Button>
+            )
+          ) : (
+            <Button
+              key="create"
+              type="submit"
+              loading={busy}
+              disabled={!formatReady || !selectedFormat || !propertyReady}
+            >
+              Aanmaken en opnemen <ArrowRight size={16} />
+            </Button>
+          )}
+        </div>
       </form>
     </Dialog>
   );
@@ -1126,6 +1279,7 @@ function InspectionWorkspace({
     { data, error, cached } = useResource<Dossier>(scope, path),
     [roomId, setRoomId] = useState(''),
     [cameraOpen, setCameraOpen] = useState(false);
+  const navigate = useNavigate();
 
   const write = can(org, 'inspections.write') && data?.inspection.status !== 'final';
 
@@ -1194,11 +1348,21 @@ function InspectionWorkspace({
           </p>
         </div>
 
-        <Badge tone={data.inspection.status === 'final' ? 'success' : 'neutral'}>
-          {data.inspection.status === 'final'
-            ? 'Vastgelegd'
-            : `${reviewed}/${data.format ? data.rooms.length : data.batches.length} ${data.format ? 'ruimtes' : 'opnamen'} beoordeeld`}
-        </Badge>
+        <div className={s.actions}>
+          <Badge tone={data.inspection.status === 'final' ? 'success' : 'neutral'}>
+            {data.inspection.status === 'final'
+              ? 'Vastgelegd'
+              : `${reviewed}/${data.format ? data.rooms.length : data.batches.length} ${data.format ? 'ruimtes' : 'opnamen'} beoordeeld`}
+          </Badge>
+          {can(org, 'inspections.write') && (
+            <DeleteInspection
+              base={base}
+              scope={scope}
+              inspection={data.inspection}
+              onDeleted={() => navigate('/app', { replace: true })}
+            />
+          )}
+        </div>
       </div>
 
       {error && (
@@ -2459,7 +2623,9 @@ function ReportView({
   const [report, setReport] = useState<Report>(),
     [error, setError] = useState(''),
     [busy, setBusy] = useState(false),
-    [pdfBusy, setPDFBusy] = useState(false);
+    [pdfBusy, setPDFBusy] = useState(false),
+    [finaliseOpen, setFinaliseOpen] = useState(false),
+    [signatures, setSignatures] = useState<SignatureInput[]>([]);
 
   const [draftCount, setDraftCount] = useState<number>();
 
@@ -2554,9 +2720,18 @@ function ReportView({
       if ((await actions(scope)).some((a) => a.inspectionId === data.inspection.id))
         throw new Error('Synchroniseer eerst de wijzigingen op dit apparaat.');
 
-      const value = await api<Report>(`${path}/report`, json('POST', {}));
+      const value = await api<Report>(
+        `${path}/report`,
+        json('POST', {
+          signatures: signatures.filter(
+            (signature) => signature.name.trim() || signature.strokes.length,
+          ),
+        }),
+      );
 
       setReport(value);
+      setFinaliseOpen(false);
+      setSignatures([]);
 
       announceRefresh();
     } catch (e) {
@@ -2646,12 +2821,9 @@ function ReportView({
               disabled={!ready || data.inspection.propertySnapshot?.linkState !== 'linked'}
               loading={busy}
               onClick={() => {
-                if (
-                  window.confirm(
-                    'Rapport vastleggen? De bevindingen en bijbehorende media kunnen daarna niet meer worden gewijzigd.',
-                  )
-                )
-                  void finalise();
+                setError('');
+                setSignatures([]);
+                setFinaliseOpen(true);
               }}
             >
               Rapport vastleggen
@@ -2671,7 +2843,34 @@ function ReportView({
         <p className={s.warning}>Er staan nog {pending.length} wijzigingen op dit apparaat.</p>
       )}
 
-      {error && <ErrorNotice>{error}</ErrorNotice>}
+      {error && !finaliseOpen && <ErrorNotice>{error}</ErrorNotice>}
+
+      <Dialog
+        open={finaliseOpen}
+        onOpenChange={(open) => {
+          if (!busy) setFinaliseOpen(open);
+        }}
+        title="Inspectie afronden"
+        description={data.inspection.address}
+        closeLabel="Sluiten"
+        fullOnMobile
+      >
+        <div className={s.stack}>
+          <p>
+            Na het vastleggen kunnen het rapport, de opnamen en handtekeningen niet meer worden gewijzigd.
+          </p>
+          <SignaturesEditor value={signatures} onChange={setSignatures} disabled={busy} />
+          {error && <ErrorNotice>{error}</ErrorNotice>}
+          <div className={s.actions}>
+            <Button variant="secondary" disabled={busy} onClick={() => setFinaliseOpen(false)}>
+              Annuleren
+            </Button>
+            <Button loading={busy} onClick={() => void finalise()}>
+              Rapport definitief vastleggen
+            </Button>
+          </div>
+        </div>
+      </Dialog>
 
       <article className={s.report} aria-label="Inspectierapport">
         <header>
@@ -2789,6 +2988,7 @@ function ReportView({
             />
           </section>
         ))}
+        <ReportSignatures signatures={report?.signatures || []} />
       </article>
     </section>
   );

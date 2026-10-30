@@ -192,6 +192,63 @@
   overflow: hidden;
   background: var(--surface);
 }
+.creationSteps {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.creationSteps li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid var(--border);
+  color: var(--text-muted);
+}
+.creationSteps li[aria-current='step'] {
+  border-color: var(--primary);
+  color: var(--text);
+  font-weight: 600;
+}
+.creationSteps span {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--surface-subtle);
+  flex-shrink: 0;
+}
+.creationSteps [aria-current='step'] span {
+  background: var(--primary-soft);
+  color: var(--primary);
+}
+.signaturePad {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 10 / 3;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #fff;
+  color: #293128;
+  touch-action: none;
+  cursor: crosshair;
+}
+.signatureCard {
+  break-inside: avoid;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--border);
+}
+.signatureImage {
+  display: block;
+  width: 100%;
+  max-width: 420px;
+  height: 126px;
+}
 .inspectionRow {
   display: grid;
   grid-template-columns: 46px minmax(0, 1fr) 150px 104px 19px;
@@ -201,8 +258,20 @@
   min-height: 104px;
   border-bottom: 1px solid var(--border);
 }
-.inspectionRow:last-child {
+.inspectionItem {
+  position: relative;
+}
+.inspectionItem:last-child .inspectionRow {
   border-bottom: 0;
+}
+.inspectionRowWithActions {
+  padding-right: 78px;
+}
+.inspectionDeleteAction {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
 }
 .inspectionRow:hover {
   background: var(--surface-subtle);
@@ -897,6 +966,12 @@
     grid-template-columns: 36px minmax(0, 1fr) 96px;
     gap: 11px;
     padding: 18px 14px;
+  }
+  .inspectionRowWithActions {
+    padding-right: 58px;
+  }
+  .inspectionDeleteAction {
+    right: 4px;
   }
   .propertyIcon {
     width: 36px;

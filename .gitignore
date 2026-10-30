@@ -5,6 +5,7 @@ playwright-report/
 tests/artifacts/
 .cache/
 .codex/
+demo/sleutels/demo-summary.json
 *.tsbuildinfo
 .env*
 !.env.example

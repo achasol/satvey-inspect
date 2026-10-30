@@ -93,20 +93,21 @@ type pdfRoom struct {
 	PhotoRows                   [][]pdfPhoto
 }
 type pdfDocument struct {
-	Format                                                                       *formatDocument  `json:"format"`
-	Answers                                                                      []formatAnswer   `json:"answers"`
-	ID                                                                           string           `json:"id"`
-	CreatedAt                                                                    time.Time        `json:"createdAt"`
-	Inspection                                                                   pdfInspection    `json:"inspection"`
-	Organisation                                                                 reportPerson     `json:"organisation"`
-	CreatedBy                                                                    reportPerson     `json:"createdBy"`
-	FinalisedBy                                                                  reportPerson     `json:"finalisedBy"`
-	Rooms                                                                        []pdfRoom        `json:"rooms"`
-	Batches                                                                      []pdfBatch       `json:"batches"`
-	Media                                                                        []pdfPhoto       `json:"media"`
-	Observations                                                                 []pdfObservation `json:"observations"`
-	Assessments                                                                  []pdfAssessment  `json:"assessments"`
-	Norms                                                                        *normDocument    `json:"norms"`
+	Signatures                                                                   []reportSignature `json:"signatures"`
+	Format                                                                       *formatDocument   `json:"format"`
+	Answers                                                                      []formatAnswer    `json:"answers"`
+	ID                                                                           string            `json:"id"`
+	CreatedAt                                                                    time.Time         `json:"createdAt"`
+	Inspection                                                                   pdfInspection     `json:"inspection"`
+	Organisation                                                                 reportPerson      `json:"organisation"`
+	CreatedBy                                                                    reportPerson      `json:"createdBy"`
+	FinalisedBy                                                                  reportPerson      `json:"finalisedBy"`
+	Rooms                                                                        []pdfRoom         `json:"rooms"`
+	Batches                                                                      []pdfBatch        `json:"batches"`
+	Media                                                                        []pdfPhoto        `json:"media"`
+	Observations                                                                 []pdfObservation  `json:"observations"`
+	Assessments                                                                  []pdfAssessment   `json:"assessments"`
+	Norms                                                                        *normDocument     `json:"norms"`
 	Sections                                                                     []pdfRoom
 	Final                                                                        bool
 	Status, Kind, Reference, Date, GeneratedAt, Appointment                      string
@@ -124,6 +125,9 @@ func reportDate(value time.Time) string {
 	return value.In(zone).Format("02-01-2006 15:04")
 }
 func preparePDFDocument(doc *pdfDocument) error {
+	if err := prepareSignatures(doc.Signatures); err != nil {
+		return err
+	}
 	if !validID(doc.Inspection.ID) {
 		return fmt.Errorf("ongeldig rapport")
 	}

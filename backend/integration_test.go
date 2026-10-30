@@ -73,7 +73,7 @@ func setup(t *testing.T) *fixture {
 	f.client = &http.Client{Jar: jar}
 	t.Cleanup(func() {
 		f.server.Close()
-		rows, e := db.Query(ctx, "SELECT object_key FROM media WHERE org_id=$1 UNION ALL SELECT object_key FROM norm_assets WHERE org_id=$1", f.org)
+		rows, e := db.Query(ctx, "SELECT object_key FROM media WHERE org_id=$1 UNION ALL SELECT object_key FROM norm_assets WHERE org_id=$1 UNION ALL SELECT object_key FROM inspection_file_deletions WHERE org_id=$1", f.org)
 		if e == nil {
 			for rows.Next() {
 				var key string
@@ -84,7 +84,7 @@ func setup(t *testing.T) *fixture {
 		}
 		tx, e := db.Begin(ctx)
 		if e == nil {
-			for _, table := range []string{"property_events", "property_imports", "property_sync_jobs", "format_review_events", "scope_jobs", "format_answers", "transcription_jobs", "transcription_cache", "norm_assessments", "reports", "observations", "processing_jobs", "media", "batches", "rooms", "inspections", "properties", "property_sources", "memberships", "invitations", "oidc_states", "organisation_domains", "format_versions", "inspection_formats", "norm_versions", "norm_frameworks", "norm_assets", "room_elements", "organisation_roles"} {
+			for _, table := range []string{"inspection_file_deletions", "property_events", "property_imports", "property_sync_jobs", "format_review_events", "scope_jobs", "format_answers", "transcription_jobs", "transcription_cache", "norm_assessments", "reports", "observations", "processing_jobs", "media", "batches", "rooms", "inspections", "properties", "property_sources", "memberships", "invitations", "oidc_states", "organisation_domains", "format_versions", "inspection_formats", "norm_versions", "norm_frameworks", "norm_assets", "room_elements", "organisation_roles"} {
 				_, _ = tx.Exec(ctx, "DELETE FROM "+table+" WHERE org_id=$1", f.org)
 			}
 			_, _ = tx.Exec(ctx, "DELETE FROM organisations WHERE id=$1", f.org)

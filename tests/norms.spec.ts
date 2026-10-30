@@ -153,7 +153,7 @@ test('custom roles expose privileges and appear in invitation choices', async ({
 });
 
 test('quality managers define room elements and link measures to them', async ({ page }, info) => {
-  await login(page);
+  const base = await login(page);
   await page.getByRole('link', { name: 'Normen', exact: true }).click();
   await page.getByRole('link', { name: 'Ruimtes en elementen', exact: true }).click();
   await page.getByRole('button', { name: 'Element toevoegen', exact: true }).click();
@@ -162,14 +162,39 @@ test('quality managers define room elements and link measures to them', async ({
   await dialog.getByLabel(/^Naam element/).fill(name);
   await dialog.getByLabel('Wat is dit element?', { exact: true }).fill('Mengkraan bij de douche.');
   await dialog.getByRole('checkbox', { name: 'Badkamer', exact: true }).check();
-  await dialog
-    .getByLabel('Waar moet de AI bij dit element op letten?', { exact: true })
-    .fill('Let op lekkage bij de zichtbare aansluiting.');
+  await expect(dialog.getByLabel(/Waar moet de AI/)).toHaveCount(0);
   await dialog.getByLabel(/^Andere benamingen/).fill('faucet, mengkraan');
   await dialog.getByRole('button', { name: 'Element opslaan', exact: true }).click();
   await expect(dialog).toBeHidden();
   await page.getByLabel('Element zoeken', { exact: true }).fill(name);
   await page.getByLabel('Ruimte filteren', { exact: true }).selectOption('Badkamer');
+  await expect(page.getByRole('heading', { name, exact: true })).toBeVisible();
+  await expect(page.getByText('AI-aandachtspunten', { exact: true })).toHaveCount(0);
+  const catalog = await (await page.request.get(`${base}/elements`)).json();
+  expect(catalog.find((element: { name: string }) => element.name === name)).not.toHaveProperty(
+    'aiGuidance',
+  );
+  await page.getByRole('button', { name: 'Element bewerken', exact: true }).click();
+  await expect(dialog.getByLabel(/Waar moet de AI/)).toHaveCount(0);
+  await dialog
+    .getByLabel('Wat is dit element?', { exact: true })
+    .fill('Mengkraan aan de douchewand.');
+  await dialog.getByRole('button', { name: 'Element opslaan', exact: true }).click();
+  await expect(dialog).toBeHidden();
+  await expect(page.getByText('Mengkraan aan de douchewand.', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Element bewerken', exact: true }).click();
+  page.once('dialog', (confirmation) => confirmation.accept());
+  await dialog.getByRole('button', { name: 'Element archiveren', exact: true }).click();
+  await expect(dialog).toBeHidden();
+  await expect(page.getByRole('heading', { name, exact: true })).toHaveCount(0);
+  await page.getByRole('checkbox', { name: 'Gearchiveerde elementen tonen', exact: true }).check();
+  await page.getByRole('button', { name: 'Element bewerken', exact: true }).click();
+  page.once('dialog', (confirmation) => confirmation.accept());
+  await dialog.getByRole('button', { name: 'Element herstellen', exact: true }).click();
+  await expect(dialog).toBeHidden();
+  await page
+    .getByRole('checkbox', { name: 'Gearchiveerde elementen tonen', exact: true })
+    .uncheck();
   await expect(page.getByRole('heading', { name, exact: true })).toBeVisible();
   await page.getByLabel('Ruimte filteren', { exact: true }).selectOption('Keuken');
   await expect(page.getByRole('heading', { name, exact: true })).toHaveCount(0);
@@ -187,10 +212,20 @@ test('quality managers define room elements and link measures to them', async ({
   await expect(
     page.getByLabel("Ruimtes (komma's, * voor alle ruimtes)", { exact: true }),
   ).toHaveValue('Badkamer');
+  const guidance = `Let op lekkage bij de zichtbare aansluiting. ${'Controleer het bronbewijs. '.repeat(125)}`;
+  await expect(page.getByLabel('Waar moet de AI op letten?', { exact: true })).toHaveAttribute(
+    'maxlength',
+    '6500',
+  );
+  await expect(page.getByLabel('Acceptabel', { exact: true })).toHaveAttribute('maxlength', '3000');
+  await page.getByLabel('Waar moet de AI op letten?', { exact: true }).fill(guidance);
   await page.getByRole('button', { name: 'Concept opslaan', exact: true }).click();
   await expect(page.getByText('Concept opgeslagen', { exact: true })).toBeVisible();
   await page.reload();
   await expect(page.getByLabel('Object of bouwdeel', { exact: true })).toHaveValue(name);
+  await expect(page.getByLabel('Waar moet de AI op letten?', { exact: true })).toHaveValue(
+    guidance,
+  );
   await noOverflow(page);
   const axe = await new AxeBuilder({ page })
     .include('#workspace')

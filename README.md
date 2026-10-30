@@ -24,6 +24,22 @@ The credentials above are for local development. The bootstrap command creates r
 
 Copy `.env.example` to `.env` only when creating a new configuration; preserve an existing `.env`. Compose reads it automatically. `.env` is ignored by Git, excluded from Docker build contexts, and its values are never exposed as frontend configuration.
 
+## De Sleutels local demo (Windows)
+
+Start the prepared demo with Docker's API/storage services and a native Node.js 22.12+ frontend:
+
+```powershell
+.\scripts\start-sleutels-demo.ps1 -Seed
+```
+
+Open **http://localhost:5174/app**. Sign in with **demo@desleutels.local** / **SleutelsDemo2026!** and use **De Sleutels · Demo**. The existing local administrator is also added to this separate organisation. The accounts, addresses, property characteristics, evidence and policy are fictional demonstration data, not actual De Sleutels records or official quality policy.
+
+The demo contains eight Leiden-themed properties imported through the CSV flow, a published twelve-measure quality framework with illustrated examples, published pre-inspection and final-inspection formats, and six inspections. Start with **Lakenstraat 24 (demo)** to review prepared kitchen/bathroom findings, **Molenpad 16 (demo)** to record your own evidence, or **Rijnkade 42 (demo)** to view a completed report and download its PDF. **Singelhof 8-A (demo)** is fully reviewed and ready for finalisation; **Zijlpoort 36 (demo)** is partly captured; **Plantsoenhof 7 (demo)** is another completed report for benchmarking.
+
+Six synthetic inspection photographs are in `demo/sleutels/images`; their exact prompts and built-in image-generation provenance are in `demo/sleutels/image-prompts.json`. The reusable property import is `demo/sleutels/properties.csv`. The seeder uploads photos to the application's private storage, prepares manual demo findings and judgments through the real API, and uses mock analysis without paid inference calls. Existing completed/demo-edited dossiers are preserved when rerunning it. Generated local dossier links are written to the ignored `demo/sleutels/demo-summary.json`.
+
+Run `.\scripts\start-sleutels-demo.ps1` without `-Seed` to bring the services/frontend up without reapplying the demo catalog. Vite runs as a hidden background process, with its PID and logs under `.cache/sleutels-vite*`. `compose.demo.yaml` publishes the authenticated API on loopback port 8088 for this native frontend; other container services and data volumes remain in Compose. A custom `TRUSTED_ORIGINS` configuration must include `http://localhost:5174` and `http://127.0.0.1:5174`.
+
 ## Property catalog, VERA and CSV
 
 New inspections select a property from the organisation's catalog by object number, address or postcode. The stable identity is **organisation + source administration + source object ID**; an address or BAG reference never automatically merges properties. **Instellingen > Vastgoedkoppeling** lets administrators (`settings.manage`) configure sources, import files, test VERA connections, inspect sync jobs and confirm provisional-property links. Inspectors can search the catalog and refresh a VERA property with their existing inspection permissions.
@@ -84,11 +100,15 @@ Without a key, `auto` uses deterministic **Voorbeeldvoorstel** drafts. Force tha
 
 The adapter uses [Baseten's Model APIs](https://docs.baseten.co/inference/model-apis/overview) and the [GLM 5.3 Flash model](https://www.baseten.co/resources/changelog/glm-53-flash-available-on-baseten/).
 
+Inspection editors can permanently delete a draft or final inspection from the list or dossier after confirming its address. The dossier, reviews, report and local drafts are removed; the catalog property and shared formats/frameworks remain available. Migration 012 adds a durable object-deletion queue so storage cleanup can retry after temporary outages.
+
+When finalising an inspection, the confirmation dialog optionally collects handwritten signatures from up to ten signers, with name and role (inspector, resident or other attendee). Signatures are attached to the final report with a server timestamp and the collecting account ID. They appear in the report and PDF and cannot be edited after finalisation. Closing the confirmation dialog cancels the unsigned finalisation; signatures are only stored when the report is successfully finalised. Existing reports and finalisation without signatures remain supported.
+
 ## Norms, room elements and benchmarks
 
 Open **Normen** to manage organisation quality policy. The default **Kwaliteitsbeheerder** role can author policy without changing inspection evidence or organisation access. Create a draft from the researched baseline (12 measures, 24 original text examples), or start empty. Each measure defines rooms, an object/element, acceptable and unacceptable conditions, AI attention points, evidence modalities, priority and examples. Publishing requires both acceptable and unacceptable examples. Published versions are immutable; a revision starts as a separate draft. Each inspection selects a published version or no framework and retains its selection in the final report.
 
-**Normen > Ruimtes en elementen** is the room/element ontology. Define a recognizable element such as a faucet or wall, choose its rooms (including custom room names or all rooms), and add a description, alternate names and AI attention points. Eight editable starter definitions are installed for each organisation. Measures can reference these elements; selecting one fills its name and room scope. Archive an element to stop offering it to new inspections. Each new inspection snapshots the active element catalog. The worker sends only definitions matching its capture room to the model, including inspections without a framework. Catalog edits leave existing inspection context intact. Definitions describe possible components, not proof of presence or absence.
+**Normen > Ruimtes en elementen** is the room/element ontology. Define a recognizable element such as a faucet or wall, choose its rooms (including custom room names or all rooms), and add a factual description and alternate names. Acceptance criteria, AI attention points, evidence requirements and examples belong exclusively to framework measures. Eight editable starter definitions are installed for each organisation. Measures can reference these elements; selecting one fills its name and room scope. Archive an element to stop offering it to new inspections. Each new inspection snapshots the active element catalog. The worker sends only definitions matching its capture room to the model, including inspections without a framework. Catalog edits leave existing inspection context intact. Historical element attention points in old inspection snapshots are ignored when building analysis input. Definitions describe possible components, not proof of presence or absence. Migration 011 appends historical element attention points to linked draft measures without overwriting their existing instructions. If a framework has no draft, it clones its latest published version only when there are instructions to transfer. Published versions and inspection/report history remain unchanged; original element text is retained internally for history, including text with no linked measure. New organisations receive descriptive starter definitions without attention points. Framework AI instructions support up to 6,500 characters (the API validates UTF-8 bytes).
 
 Example photos and audio files use the private bucket and authenticated, tenant-scoped downloads. All example descriptions and transcripts enter norm context; up to eight reference photos are also sent as resized images. Reference images are explicitly separated from current evidence and cannot be cited as evidence for the inspected dwelling. Example audio is retained for playback; its manually entered transcript supplies model context.
 

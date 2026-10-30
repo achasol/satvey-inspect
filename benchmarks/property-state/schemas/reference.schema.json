@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["caseId", "sourceId", "provider", "groupId", "split", "track", "photos", "findings", "review", "limitations", "modality", "quality"],
+  "properties": {
+    "caseId": {"type": "string", "pattern": "^c_[0-9a-f]{20}$"},
+    "sourceId": {"type": "string"},
+    "provider": {"type": "string"},
+    "groupId": {"type": "string"},
+    "split": {"enum": ["development", "evaluation"]},
+    "track": {"enum": ["single_photo", "multi_photo"]},
+    "photos": {"type": "array", "minItems": 1, "items": {"type": "object", "required": ["photoId", "assetId", "sha256", "pixelSha256", "path", "provenance"]}},
+    "findings": {"type": "array", "items": {"type": "object", "required": ["findingId", "title", "description", "faultType", "component", "photoIds", "sourceFinding", "sourcePages"]}},
+    "review": {"type": "object", "required": ["status", "reviewer", "reviewedOn", "taxonomyExhaustive", "notes"], "properties": {"status": {"const": "visually_reviewed"}, "taxonomyExhaustive": {"const": true}}},
+    "limitations": {"type": "array", "items": {"type": "string"}},
+    "modality": {"type": "string"},
+    "quality": {"type": "string"}
+  }
+}

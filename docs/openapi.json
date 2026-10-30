@@ -5538,6 +5538,155 @@
             }
           }
         }
+      },
+      "delete": {
+        "summary": "Permanently delete an inspection and its dossier",
+        "operationId": "delete__orgs_org_inspections_inspection",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "inspection",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-Satvey-Request",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "const": "1"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Success"
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict or finalised inspection",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "File too large",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Unsupported media type",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Review incomplete",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Storage or processing unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "description": "Requires inspections.write. Deletes draft or final inspections, report, reviews and media records. Stored files are queued for retryable cleanup; the property and shared policy remain available."
       }
     },
     "/orgs/{org}/inspections/{inspection}/rooms": {
@@ -7283,14 +7432,22 @@
             }
           }
         },
-        "description": "All batches must be reviewed or excluded; all expected included media must be uploaded; analysis must be finished or explicitly skipped. Only approved text and associated photos enter the snapshot. Audio remains internal.",
+        "description": "Optional signatures include signer name, role and normalized handwritten strokes; timestamps and collector identity are assigned by the server and frozen in the report. All batches must be reviewed or excluded; all expected included media must be uploaded; analysis must be finished or explicitly skipped. Only approved text and associated photos enter the snapshot. Audio remains internal.",
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "type": "object",
-                "properties": {},
+                "properties": {
+                  "signatures": {
+                    "type": "array",
+                    "maxItems": 10,
+                    "items": {
+                      "$ref": "#/components/schemas/SignatureInput"
+                    }
+                  }
+                },
                 "required": [],
                 "additionalProperties": false
               }
@@ -8819,9 +8976,6 @@
                       "type": "string"
                     }
                   },
-                  "aiGuidance": {
-                    "type": "string"
-                  },
                   "archived": {
                     "type": "boolean"
                   },
@@ -9020,9 +9174,6 @@
                     "items": {
                       "type": "string"
                     }
-                  },
-                  "aiGuidance": {
-                    "type": "string"
                   },
                   "archived": {
                     "type": "boolean"
@@ -11824,6 +11975,120 @@
         ],
         "additionalProperties": false
       },
+      "SignatureInput": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "inspector",
+              "resident",
+              "other"
+            ]
+          },
+          "strokes": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 100,
+            "items": {
+              "type": "array",
+              "minItems": 2,
+              "items": {
+                "type": "object",
+                "properties": {
+                  "x": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1
+                  },
+                  "y": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1
+                  }
+                },
+                "required": [
+                  "x",
+                  "y"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "required": [
+          "name",
+          "role",
+          "strokes"
+        ],
+        "additionalProperties": false
+      },
+      "ReportSignature": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "inspector",
+              "resident",
+              "other"
+            ]
+          },
+          "strokes": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 100,
+            "items": {
+              "type": "array",
+              "minItems": 2,
+              "items": {
+                "type": "object",
+                "properties": {
+                  "x": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1
+                  },
+                  "y": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1
+                  }
+                },
+                "required": [
+                  "x",
+                  "y"
+                ],
+                "additionalProperties": false
+              }
+            }
+          },
+          "signedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "collectedBy": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "name",
+          "role",
+          "strokes",
+          "signedAt",
+          "collectedBy"
+        ],
+        "additionalProperties": false
+      },
       "Dossier": {
         "type": "object",
         "properties": {
@@ -11961,6 +12226,13 @@
           },
           "createdAt": {
             "type": "string"
+          },
+          "signatures": {
+            "type": "array",
+            "maxItems": 10,
+            "items": {
+              "$ref": "#/components/schemas/ReportSignature"
+            }
           },
           "norms": {
             "anyOf": [
@@ -12175,9 +12447,6 @@
               "type": "string"
             }
           },
-          "aiGuidance": {
-            "type": "string"
-          },
           "archived": {
             "type": "boolean"
           },
@@ -12191,7 +12460,6 @@
           "description",
           "rooms",
           "aliases",
-          "aiGuidance",
           "archived",
           "version"
         ],
@@ -12264,7 +12532,8 @@
             "type": "string"
           },
           "aiGuidance": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 6500
           },
           "modalities": {
             "type": "array",

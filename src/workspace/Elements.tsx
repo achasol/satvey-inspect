@@ -44,7 +44,8 @@ export function ElementsModule({
         <div>
           <h2>Ruimtes en elementen</h2>
           <p className={s.muted}>
-            Beschrijf welke onderdelen bij een ruimte horen en wat de AI moet herkennen.
+            Beschrijf welke elementen bij welke ruimtes horen. Beoordelingscriteria leg je vast in
+            normenkaders.
           </p>
         </div>
         {can(org, 'norms.manage') && (
@@ -99,11 +100,6 @@ export function ElementsModule({
             </div>
             <p>{e.description}</p>
             {e.aliases.length > 0 && <p className={s.muted}>Ook: {e.aliases.join(', ')}</p>}
-            <p>
-              <strong>AI-aandachtspunten</strong>
-              <br />
-              {e.aiGuidance || 'Nog niet ingevuld'}
-            </p>
             {can(org, 'norms.manage') && (
               <Button variant="secondary" size="sm" onClick={() => setEditing(e)}>
                 Element bewerken
@@ -116,8 +112,8 @@ export function ElementsModule({
         <p className={s.emptySmall}>Geen elementen voor deze selectie.</p>
       )}
       <p className={s.muted}>
-        Een element is context, geen bewijs dat het aanwezig is. Nieuwe inspecties bewaren een kopie
-        van deze definities; bestaande inspecties behouden hun context.
+        De catalogus beschrijft welke elementen bij een ruimte kunnen horen. Tijdens de inspectie leg
+        je vast wat daadwerkelijk aanwezig is.
       </p>
       {editing !== undefined && (
         <ElementEditor
@@ -151,7 +147,6 @@ function ElementEditor({
 }) {
   const [name, setName] = useState(element?.name || ''),
     [description, setDescription] = useState(element?.description || ''),
-    [guidance, setGuidance] = useState(element?.aiGuidance || ''),
     [aliases, setAliases] = useState(element?.aliases.join(', ') || ''),
     [selected, setSelected] = useState(element?.rooms || []),
     [custom, setCustom] = useState(''),
@@ -166,7 +161,6 @@ function ElementEditor({
         json(element ? 'PUT' : 'POST', {
           name,
           description,
-          aiGuidance: guidance,
           rooms: selected,
           aliases: aliases
             .split(',')
@@ -260,17 +254,6 @@ function ElementEditor({
             </Button>
           </div>
         </fieldset>
-        <label className={s.field}>
-          <span>Waar moet de AI op letten?</span>
-          <textarea
-            aria-label="Waar moet de AI bij dit element op letten?"
-            rows={3}
-            maxLength={3000}
-            placeholder="Bijvoorbeeld: zichtbare beschadiging en lekkage bij aansluitingen. Werking kan alleen na een beschreven test worden beoordeeld."
-            value={guidance}
-            onChange={(e) => setGuidance(e.target.value)}
-          />
-        </label>
         <Field
           label="Andere benamingen (optioneel)"
           placeholder="Mengkraan, faucet"

@@ -1,0 +1,28 @@
+{
+  "dataset": "property-state",
+  "version": "0.1.0",
+  "label_standard": "Codex visually reviewed; report grounded; not inspector approved",
+  "files": {
+    "references.jsonl": "2b5b917079ab9ebe0ed54a20d497336ef4aa4eeb0b68b366b4916d4382f5dfc6",
+    "annotations.jsonl": "42badd23ac8c50a55312df4597cd5bc19ff401257c79e9a7d77ea5f38c15cd44",
+    "taxonomy.json": "163b0f5be25194f9beba1fc5bbaff5cc72e89af9799865f950a624a1f0cd2def",
+    "sources-lock.json": "3543449c36992c4e3497302efa2cd6f6223760918473ffb57b0f4344ddc84c5d",
+    "exclusions.jsonl": "2713a6f0452973b7654b7809add4c2c63b55c0cecb9c751424e717afdf05152c",
+    "review-log.json": "d7d6a2dfacc0269481fc328bcf7d2484d447d3e42a608b48eb712a7fefa408ca"
+  },
+  "cases": 51,
+  "uniquePhotos": 43,
+  "split_groups": {
+    "bijn": "evaluation",
+    "inspectiehuis": "evaluation",
+    "mjop_large": "development",
+    "nrbi": "evaluation",
+    "pbs": "evaluation",
+    "roof_deventer": "evaluation",
+    "setelkeur": "evaluation",
+    "steeds": "development",
+    "veh": "evaluation"
+  },
+  "reuse_status": "not_established; local research artifact; no redistribution clearance",
+  "contamination_status": "public reports; not a contamination-free holdout"
+}

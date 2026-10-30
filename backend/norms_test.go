@@ -182,10 +182,32 @@ func TestRoomElementsAndPrivateExamples(t *testing.T) {
 	f := setup(t)
 	other := setup(t)
 	base := "/orgs/" + f.org
-	element := roomElement{Name: "Douchekraan", Description: "Mengkraan in de douche", Rooms: []string{"Badkamer"}, Aliases: []string{"faucet"}, AIGuidance: "Controleer de zichtbare aansluiting"}
+	element := roomElement{Name: "Douchekraan", Description: "Mengkraan in de douche", Rooms: []string{"Badkamer"}, Aliases: []string{"faucet"}}
 	created := f.request("POST", base+"/elements", element, 201)
+	if _, ok := created["aiGuidance"]; ok {
+		t.Fatal("element API exposed evaluation instructions")
+	}
+	f.request("POST", base+"/elements", map[string]any{"name": "Legacy input", "rooms": []string{"Badkamer"}, "aiGuidance": "Not an element field"}, 400)
 	eid := created["id"].(string)
+	if _, e := f.a.db.Exec(context.Background(), "UPDATE room_elements SET ai_guidance='HISTORICAL_CATALOG_GUIDANCE' WHERE id=$1", eid); e != nil {
+		t.Fatal(e)
+	}
 	path, roomID := f.inspection()
+	inspectionID := strings.Split(path, "/inspections/")[1]
+	var snapshot []byte
+	if e := f.a.db.QueryRow(context.Background(), "SELECT element_context FROM inspections WHERE id=$1", inspectionID).Scan(&snapshot); e != nil {
+		t.Fatal(e)
+	}
+	if bytes.Contains(snapshot, []byte("aiGuidance")) || bytes.Contains(snapshot, []byte("HISTORICAL_CATALOG_GUIDANCE")) {
+		t.Fatal("new inspection snapshot contains evaluation instructions")
+	}
+	// An old snapshot must retain its history without sending legacy instructions
+	// to either room-level or property-wide analysis.
+	if _, e := f.a.db.Exec(context.Background(), `UPDATE inspections SET element_context=(
+	 SELECT jsonb_agg(el || '{"aiGuidance":"LEGACY_ELEMENT_GUIDANCE"}'::jsonb)
+	 FROM jsonb_array_elements(element_context) el) WHERE id=$1`, inspectionID); e != nil {
+		t.Fatal(e)
+	}
 	var room string
 	if e := f.a.db.QueryRow(context.Background(), "SELECT name FROM rooms WHERE id=$1", roomID).Scan(&room); e != nil {
 		t.Fatal(e)
@@ -206,7 +228,7 @@ func TestRoomElementsAndPrivateExamples(t *testing.T) {
 	}
 	element.ID = eid
 	element.Version = 1
-	element.AIGuidance = "Changed guidance"
+	element.Description = "Changed description"
 	element.Archived = true
 	f.request("PUT", base+"/elements/"+eid, element, 200)
 	f.request("PUT", base+"/elements/"+eid, element, 409)
@@ -217,8 +239,22 @@ func TestRoomElementsAndPrivateExamples(t *testing.T) {
 	}
 	rawBefore, _ := json.Marshal(before.Elements)
 	rawAfter, _ := json.Marshal(after.Elements)
-	if !bytes.Equal(rawBefore, rawAfter) || !bytes.Contains(rawAfter, []byte("Controleer de zichtbare aansluiting")) {
+	if !bytes.Equal(rawBefore, rawAfter) || !bytes.Contains(rawAfter, []byte("Mengkraan in de douche")) || bytes.Contains(rawAfter, []byte("LEGACY_ELEMENT_GUIDANCE")) || bytes.Contains(rawAfter, []byte("aiGuidance")) {
 		t.Fatal("inspection context changed after catalog edit")
+	}
+	propertyInput, _, _, e := f.a.scopeInput(context.Background(), f.org, inspectionID, roomID, formatScope{Name: "Woning algemeen", Property: true}, "mock")
+	if e != nil {
+		t.Fatal(e)
+	}
+	rawProperty, _ := json.Marshal(propertyInput.Elements)
+	if len(propertyInput.Elements) == 0 || bytes.Contains(rawProperty, []byte("aiGuidance")) || bytes.Contains(rawProperty, []byte("LEGACY_ELEMENT_GUIDANCE")) {
+		t.Fatal("property-wide analysis leaked historical element instructions")
+	}
+	if e := f.a.db.QueryRow(context.Background(), "SELECT element_context FROM inspections WHERE id=$1", inspectionID).Scan(&snapshot); e != nil {
+		t.Fatal(e)
+	}
+	if !bytes.Contains(snapshot, []byte("LEGACY_ELEMENT_GUIDANCE")) {
+		t.Fatal("analysis rewrote historical inspection context")
 	}
 	asset := id()
 	png, _ := base64.StdEncoding.DecodeString("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aB1sAAAAASUVORK5CYII=")
@@ -250,17 +286,24 @@ func TestNormAIContextAndEvidenceValidation(t *testing.T) {
 	rules, _ := baselineNorms()
 	rules = rules[:1]
 	photo, audio := id(), id()
-	in := normAnalysisInput{Room: "Badkamer", Rules: rules, Elements: []roomElement{{ID: id(), Name: "Kraan", Rooms: []string{"Badkamer"}, AIGuidance: "VISIBLE_JOINT"}}, Transcripts: []audioTranscript{{MediaID: audio, Text: "INSPECTOR_TEST", Version: 2}}}
+	var elements []roomElement
+	if e := json.Unmarshal([]byte(`[{"name":"Kraan","description":"DESCRIPTIVE_ELEMENT","rooms":["Badkamer"],"aiGuidance":"LEGACY_ELEMENT_GUIDANCE"}]`), &elements); e != nil {
+		t.Fatal(e)
+	}
+	in := normAnalysisInput{Room: "Badkamer", Rules: rules, Elements: elements, Transcripts: []audioTranscript{{MediaID: audio, Text: "INSPECTOR_TEST", Version: 2}}}
 	var img bytes.Buffer
 	_ = jpeg.Encode(&img, image.NewRGBA(image.Rect(0, 0, 2, 2)), nil)
 	in.References = []referencePhoto{{RuleID: rules[0].ID, Caption: "REFERENCE_ONLY", Outcome: "unacceptable", Bytes: img.Bytes()}}
 	result := normAnalysisResult{Findings: []proposal{}, Checks: []normCheck{{RuleID: rules[0].ID, Outcome: "unacceptable", Reason: "Volgens de vastgelegde proef", PhotoIDs: []string{photo}, AudioIDs: []string{audio}}}}
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		raw, _ := io.ReadAll(r.Body)
-		for _, value := range []string{"VISIBLE_JOINT", "INSPECTOR_TEST", "REFERENCE_ONLY", rules[0].Acceptable, rules[0].Unacceptable, rules[0].Examples[0].Caption} {
+		for _, value := range []string{"DESCRIPTIVE_ELEMENT", "INSPECTOR_TEST", "REFERENCE_ONLY", rules[0].Acceptable, rules[0].Unacceptable, rules[0].AIGuidance, rules[0].Examples[0].Caption} {
 			if !bytes.Contains(raw, []byte(value)) {
 				t.Errorf("missing AI context: %s", value)
 			}
+		}
+		if bytes.Contains(raw, []byte("LEGACY_ELEMENT_GUIDANCE")) {
+			t.Error("historical element instructions reached the AI provider")
 		}
 		content, _ := json.Marshal(result)
 		send(w, 200, map[string]any{"choices": []any{map[string]any{"finish_reason": "stop", "message": map[string]string{"content": string(content)}}}})

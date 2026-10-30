@@ -526,6 +526,17 @@ func (a *app) finalise(w http.ResponseWriter, r *http.Request) error {
 		return e
 	}
 	defer tx.Rollback(r.Context())
+	var in struct {
+		Signatures []signatureInput `json:"signatures"`
+	}
+	if r.ContentLength != 0 {
+		if e = readJSON(w, r, &in); e != nil {
+			return e
+		}
+	}
+	if e = validateSignatures(in.Signatures); e != nil {
+		return e
+	}
 	org, inspection := r.PathValue("org"), r.PathValue("inspection")
 	var linked bool
 	if e = tx.QueryRow(r.Context(), `SELECT p.link_state='linked' AND i.property_snapshot->>'linkState'='linked' AND i.property_snapshot->>'sourceId'=p.source_id::text AND i.property_snapshot->>'sourceObjectId'=p.source_object_id FROM inspections i JOIN properties p ON p.id=i.property_id AND p.org_id=i.org_id WHERE i.id=$1 AND i.org_id=$2`, inspection, org).Scan(&linked); e != nil {
@@ -564,13 +575,20 @@ func (a *app) finalise(w http.ResponseWriter, r *http.Request) error {
 		return e
 	}
 	snapshot["finalisedBy"], _ = json.Marshal(map[string]string{"name": u.Name})
+	now := time.Now().UTC()
+	signatures := make([]reportSignature, 0, len(in.Signatures))
+	for _, signature := range in.Signatures {
+		signature.Name = strings.TrimSpace(signature.Name)
+		signatures = append(signatures, reportSignature{signatureInput: signature, SignedAt: now, CollectedBy: u.ID})
+	}
+	snapshot["signatures"], _ = json.Marshal(signatures)
 	var frozenInspection map[string]any
 	if e = json.Unmarshal(snapshot["inspection"], &frozenInspection); e != nil {
 		return e
 	}
 	frozenInspection["status"] = "final"
 	snapshot["inspection"], _ = json.Marshal(frozenInspection)
-	snapshot["createdAt"], _ = json.Marshal(time.Now().UTC())
+	snapshot["createdAt"], _ = json.Marshal(now)
 	reportID := id()
 	snapshot["id"], _ = json.Marshal(reportID)
 	raw, _ := json.Marshal(snapshot)

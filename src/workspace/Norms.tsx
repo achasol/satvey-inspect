@@ -44,7 +44,10 @@ export function NormsModule({
       <div className={s.pageHeading}>
         <div>
           <h1>Normen</h1>
-          <p className={s.muted}>Kwaliteit per ruimte en object, met criteria en voorbeelden.</p>
+          <p className={s.muted}>
+            Ruimtes en elementen beschrijven wat waar hoort. Normenkaders bepalen wanneer iets
+            acceptabel is.
+          </p>
         </div>
         {can(org, 'norms.manage') && !elements && (
           <Button icon={<Plus size={17} />} onClick={() => setCreate(true)}>
@@ -531,6 +534,7 @@ function NormEditor({
               <RuleText
                 title="Waar moet de AI op letten?"
                 value={rule.aiGuidance}
+                maxLength={6500}
                 editable={write}
                 onChange={(value) => patchRule({ aiGuidance: value })}
               />
@@ -667,11 +671,13 @@ function RuleText({
   value,
   editable,
   onChange,
+  maxLength = 3000,
 }: {
   title: string;
   value: string;
   editable: boolean;
   onChange: (v: string) => void;
+  maxLength?: number;
 }) {
   return editable ? (
     <label className={s.field}>
@@ -679,7 +685,7 @@ function RuleText({
       <textarea
         aria-label={title}
         rows={3}
-        maxLength={3000}
+        maxLength={maxLength}
         value={value}
         onChange={(e) => onChange(e.target.value)}
       />

@@ -13,12 +13,11 @@ type roomElement struct {
 	Description string   `json:"description"`
 	Rooms       []string `json:"rooms"`
 	Aliases     []string `json:"aliases"`
-	AIGuidance  string   `json:"aiGuidance"`
 	Archived    bool     `json:"archived"`
 	Version     int      `json:"version"`
 }
 
-const elementSelect = `SELECT id,name,description,rooms,aliases,ai_guidance AS "aiGuidance",archived,version FROM room_elements`
+const elementSelect = `SELECT id,name,description,rooms,aliases,archived,version FROM room_elements`
 
 func elementContext(ctx context.Context, q querier, org string) (json.RawMessage, error) {
 	return list(ctx, q, elementSelect+" WHERE org_id=$1 AND NOT archived ORDER BY name", org)
@@ -43,7 +42,7 @@ func (a *app) saveElement(w http.ResponseWriter, r *http.Request) error {
 		return e
 	}
 	in.Name = strings.TrimSpace(in.Name)
-	if in.Name == "" || len(in.Name) > 120 || len(in.Description) > 2000 || len(in.AIGuidance) > 3000 || len(in.Rooms) == 0 || len(in.Rooms) > 20 || len(in.Aliases) > 20 {
+	if in.Name == "" || len(in.Name) > 120 || len(in.Description) > 2000 || len(in.Rooms) == 0 || len(in.Rooms) > 20 || len(in.Aliases) > 20 {
 		return fail(400, "Vul een elementnaam en de bijbehorende ruimtes in")
 	}
 	for _, v := range append(append([]string{}, in.Rooms...), in.Aliases...) {
@@ -59,7 +58,7 @@ func (a *app) saveElement(w http.ResponseWriter, r *http.Request) error {
 		in.Archived = false
 		in.ID = id()
 		in.Version = 1
-		_, e := a.db.Exec(r.Context(), "INSERT INTO room_elements(id,org_id,name,description,rooms,aliases,ai_guidance) VALUES($1,$2,$3,$4,$5,$6,$7)", in.ID, org, in.Name, in.Description, in.Rooms, in.Aliases, in.AIGuidance)
+		_, e := a.db.Exec(r.Context(), "INSERT INTO room_elements(id,org_id,name,description,rooms,aliases) VALUES($1,$2,$3,$4,$5,$6)", in.ID, org, in.Name, in.Description, in.Rooms, in.Aliases)
 		if e != nil {
 			return roleConstraint(e)
 		}
@@ -69,7 +68,7 @@ func (a *app) saveElement(w http.ResponseWriter, r *http.Request) error {
 	if !validID(r.PathValue("element")) {
 		return fail(404, "Element niet gevonden")
 	}
-	tag, e := a.db.Exec(r.Context(), "UPDATE room_elements SET name=$1,description=$2,rooms=$3,aliases=$4,ai_guidance=$5,archived=$6,version=version+1 WHERE id=$7 AND org_id=$8 AND version=$9", in.Name, in.Description, in.Rooms, in.Aliases, in.AIGuidance, in.Archived, r.PathValue("element"), org, in.Version)
+	tag, e := a.db.Exec(r.Context(), "UPDATE room_elements SET name=$1,description=$2,rooms=$3,aliases=$4,archived=$5,version=version+1 WHERE id=$6 AND org_id=$7 AND version=$8", in.Name, in.Description, in.Rooms, in.Aliases, in.Archived, r.PathValue("element"), org, in.Version)
 	if e != nil {
 		return roleConstraint(e)
 	}

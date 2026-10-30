@@ -25,9 +25,12 @@ schemas = {
  "Member": obj({"id": UUID, "email": S, "name": S, "role": S, "roleId": UUID, "roleName": S}),
  "SSO": obj({"issuer": S, "clientId": S, "domains": array(S)}),
 }
+schemas["SignatureInput"]=obj({"name":{**S,"maxLength":120},"role":enum("inspector","resident","other"),"strokes":{"type":"array","minItems":1,"maxItems":100,"items":{"type":"array","minItems":2,"items":obj({"x":{"type":"number","minimum":0,"maximum":1},"y":{"type":"number","minimum":0,"maximum":1}})}}})
+schemas["ReportSignature"]=obj({**schemas["SignatureInput"]["properties"],"signedAt":{"type":"string","format":"date-time"},"collectedBy":UUID})
 schemas["Dossier"] = obj({"inspection": ref("Inspection"), "rooms": array(ref("Room")), "batches": array(ref("Batch")), "media": array(ref("Media")), "observations": array(ref("Observation")), "jobs": array(ref("Job"))})
 schemas["ReportObservation"] = obj({k: schemas["Observation"]["properties"][k] for k in ["id", "batchId", "title", "description", "label", "photoIds"]})
 schemas["Report"] = obj({**{k: v for k, v in schemas["Dossier"]["properties"].items() if k != "jobs"}, "observations": array(ref("ReportObservation")), "id": UUID, "createdAt": S})
+schemas["Report"]["properties"]["signatures"]={"type":"array","maxItems":10,"items":ref("ReportSignature")}
 
 spec = {"openapi": "3.1.0", "info": {"title": "Satvey Inspect API", "version": "1.0.0", "description": "Session-cookie authentication. Every mutating request requires X-Satvey-Request: 1; browser Origin must match APP_URL or an explicitly trusted origin. Organisation routes enforce membership and role permissions. Versioned edits return 409 on conflicts. Image analysis creates draft observations, never approvals."}, "servers": [{"url": "/api/v1"}], "security": [{"session": []}], "paths": {}, "components": {"schemas": schemas, "securitySchemes": {"session": {"type": "apiKey", "in": "cookie", "name": "satvey_session"}}}}
 
@@ -85,6 +88,7 @@ operation(root+"/inspections","post","Create inspection with pinned property fac
 inspection=root+"/inspections/{inspection}"
 operation(inspection+"/property-context","post","Explicitly adopt compared catalog facts and invalidate dependent reviews",obj({"contextVersion":INT}),obj({"contextVersion":INT,"propertyRevision":INT}),description="Requires inspections.write and a draft inspection. Preserves human corrections, revokes worker leases and queues reanalysis.")
 operation(inspection,"get","Read consistent inspection dossier",ref("Dossier"))
+operation(inspection,"delete","Permanently delete an inspection and its dossier",status=204,description="Requires inspections.write. Deletes draft or final inspections, report, reviews and media records. Stored files are queued for retryable cleanup; the property and shared policy remain available.")
 operation(inspection+"/rooms","post","Add room idempotently",ref("Room"),obj({"id":UUID,"name":S}),201)
 operation(inspection+"/batches","post","Declare room capture and expected media IDs idempotently",ref("ID"),obj({"id":UUID,"roomId":UUID,"mediaIds":{"type":"array","items":UUID,"minItems":1,"maxItems":30,"uniqueItems":True},"analysisProvider":enum("mock")},["id","roomId","mediaIds"]),201,description="analysisProvider=mock is only accepted when ALLOW_MOCK_ANALYSIS=true. Normally omit it to use the configured provider.")
 operation(inspection+"/batches/{batch}","put","Review, exclude or reopen a capture batch",ref("Version"),obj({"status":enum("pending","reviewed","excluded"),"version":INT}))
@@ -100,16 +104,16 @@ download["parameters"].append({"name":"Range","in":"header","schema":S})
 observationBody={"title":{"type":"string","maxLength":160},"description":{"type":"string","maxLength":10000},"label":{"type":"string","maxLength":100},"status":enum("draft","approved","rejected")}
 operation(inspection+"/batches/{batch}/observations","post","Add manual observation",ref("ID"),obj({"id":UUID,**observationBody},["id"]),201)
 operation(inspection+"/observations/{observation}","put","Edit/review an observation with expected version",ref("Version"),obj({**observationBody,"version":INT},["status","version"]))
-operation(inspection+"/report","post","Finalise immutable report and lock inspection",ref("Report"),obj({}),201,description="All batches must be reviewed or excluded; all expected included media must be uploaded; analysis must be finished or explicitly skipped. Only approved text and associated photos enter the snapshot. Audio remains internal.")
+operation(inspection+"/report","post","Finalise immutable report and lock inspection",ref("Report"),obj({"signatures":{"type":"array","maxItems":10,"items":ref("SignatureInput")}},[]),201,description="Optional signatures include signer name, role and normalized handwritten strokes; timestamps and collector identity are assigned by the server and frozen in the report. All batches must be reviewed or excluded; all expected included media must be uploaded; analysis must be finished or explicitly skipped. Only approved text and associated photos enter the snapshot. Audio remains internal.")
 operation(inspection+"/report","get","Read immutable report snapshot",ref("Report"))
 
 privilege = enum("inspections.read","inspections.write","norms.read","norms.manage","benchmarks.read","settings.manage")
 outcome = enum("acceptable","unacceptable","not_assessable","not_applicable")
 schemas["Role"] = obj({"id":UUID,"name":S,"description":S,"privileges":array(privilege),"systemKey":{"type":["string","null"]},"version":INT,"memberCount":INT,"invitationCount":INT})
 schemas["Privilege"] = obj({"key":privilege,"label":S,"description":S,"group":S})
-schemas["RoomElement"] = obj({"id":UUID,"name":S,"description":S,"rooms":array(S),"aliases":array(S),"aiGuidance":S,"archived":{"type":"boolean"},"version":INT})
+schemas["RoomElement"] = obj({"id":UUID,"name":S,"description":S,"rooms":array(S),"aliases":array(S),"archived":{"type":"boolean"},"version":INT})
 schemas["NormExample"] = obj({"id":UUID,"outcome":outcome,"caption":S,"transcript":S,"assetId":UUID},["id","outcome","caption"])
-schemas["NormRule"] = obj({"id":UUID,"code":S,"title":S,"rooms":array(S),"objectType":S,"elementId":UUID,"acceptable":S,"unacceptable":S,"aiGuidance":S,"modalities":array(enum("photo","audio")),"priority":enum("low","medium","high"),"sourceUrls":array(S),"examples":array(ref("NormExample"))},["id","code","title","rooms","objectType","acceptable","unacceptable","aiGuidance","modalities","priority","sourceUrls","examples"])
+schemas["NormRule"] = obj({"id":UUID,"code":S,"title":S,"rooms":array(S),"objectType":S,"elementId":UUID,"acceptable":S,"unacceptable":S,"aiGuidance":{"type":"string","maxLength":6500},"modalities":array(enum("photo","audio")),"priority":enum("low","medium","high"),"sourceUrls":array(S),"examples":array(ref("NormExample"))},["id","code","title","rooms","objectType","acceptable","unacceptable","aiGuidance","modalities","priority","sourceUrls","examples"])
 schemas["NormSource"] = obj({"title":S,"url":S,"checkedAt":S})
 summary={"id":UUID,"frameworkId":UUID,"number":INT,"name":S,"description":S,"status":enum("draft","published"),"revision":INT}
 schemas["NormSummary"] = obj({**summary,"ruleCount":INT,"publishedAt":{"type":["string","null"]}})

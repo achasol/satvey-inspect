@@ -214,6 +214,7 @@ func (a *app) routes() http.Handler {
 	m.HandleFunc("GET /api/v1/orgs/{org}/inspections", a.wrap(a.inspections))
 	m.HandleFunc("POST /api/v1/orgs/{org}/inspections", a.wrap(a.createInspection))
 	m.HandleFunc("GET /api/v1/orgs/{org}/inspections/{inspection}", a.wrap(a.inspection))
+	m.HandleFunc("DELETE /api/v1/orgs/{org}/inspections/{inspection}", a.wrap(a.deleteInspection))
 	m.HandleFunc("POST /api/v1/orgs/{org}/inspections/{inspection}/rooms", a.wrap(a.createRoom))
 	m.HandleFunc("POST /api/v1/orgs/{org}/inspections/{inspection}/batches", a.wrap(a.createBatch))
 	m.HandleFunc("PUT /api/v1/orgs/{org}/inspections/{inspection}/batches/{batch}", a.wrap(a.updateBatch))

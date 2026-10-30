@@ -66,6 +66,8 @@ figure img { display: block; width: 100%; height: 57mm; object-fit: contain; bac
 figcaption { margin-top: 2mm; font-size: 8pt; color: #616d57; overflow-wrap: anywhere; line-height: 1.4; }
 figcaption strong { color: #293128; margin-right: 1mm; }
 .endnote { margin-top: 8mm; padding-top: 4mm; border-top: 1px solid #cdd2c4; font-size: 8pt; color: #626c5b; }
+.signature { break-inside: avoid; margin: 5mm 0; padding: 4mm; border: 1px solid #cdd2c4; }
+.signature svg { display: block; width: 90mm; max-width: 100%; height: 27mm; }
 </style>
 </head>
 <body>
@@ -139,6 +141,10 @@ figcaption strong { color: #293128; margin-right: 1mm; }
   {{if .Photos}}<h4>Fotobewijs</h4><table class="photos" role="presentation"><tbody>{{range .PhotoRows}}<tr>{{range .}}<td><figure id="photo-{{.ID}}"><img src="{{.File}}" alt="{{.Number}} · {{.Name}}"><figcaption><strong>{{.Number}}</strong> {{.Name}}</figcaption></figure></td>{{end}}{{if eq (len .) 1}}<td></td>{{end}}</tr>{{end}}</tbody></table>{{end}}
 </section>
 {{end}}
+{{if .Signatures}}<section aria-label="Handtekeningen"><h2>3. Handtekeningen</h2>
+{{range .Signatures}}<div class="signature"><strong>{{.Name}}</strong><p>{{.RoleLabel}}</p>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 180" role="img" aria-label="Handtekening van {{.Name}}"><path d="{{.Path}}" fill="none" stroke="#293128" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" /></svg>
+<p class="muted">Vastgelegd op {{.DateLabel}}</p></div>{{end}}</section>{{end}}
 <p class="endnote">Rapportreferentie {{.Reference}} · {{.Organisation.Name}}. Dit rapport bevat vastgelegde waarnemingen en beoordelingen. Originele audio en interne transcripties zijn niet opgenomen.</p>
 </div>
 </body>

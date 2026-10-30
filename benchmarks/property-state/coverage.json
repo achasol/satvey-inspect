@@ -1,0 +1,91 @@
+{
+  "version": "0.1.0",
+  "cases": 51,
+  "unique_photos": 43,
+  "findings": 74,
+  "single_photo_findings": 60,
+  "negative_cases": 1,
+  "providers": 9,
+  "sources": {
+    "pbs": 5,
+    "bijn": 12,
+    "setelkeur": 3,
+    "steeds": 8,
+    "roof_zutphen": 7,
+    "mjop_large": 3,
+    "veh": 4,
+    "roof_deventer": 6,
+    "inspectiehuis": 2,
+    "nrbi": 1
+  },
+  "tracks": {
+    "single_photo": 43,
+    "multi_photo": 8
+  },
+  "splits": {
+    "evaluation": 40,
+    "development": 11
+  },
+  "fault_types_single_photo": {
+    "coating_deterioration": 11,
+    "cracking": 9,
+    "damaged_component": 3,
+    "corrosion": 4,
+    "standing_water": 2,
+    "contamination": 16,
+    "material_loss": 8,
+    "displaced_component": 4,
+    "joint_or_sealant_defect": 1,
+    "moisture_staining": 2
+  },
+  "modality": {
+    "handheld_rgb": 30,
+    "inspection_rgb": 8,
+    "drone_rgb": 13
+  },
+  "quality": {
+    "low_resolution": 15,
+    "standard_resolution": 36
+  },
+  "embedded_markup_cases": 1,
+  "extracted_unique_rasters": 521,
+  "extracted_placements": 948,
+  "pdf_pages": 379,
+  "source_status": {
+    "nrbi": "extracted",
+    "roof_zutphen": "extracted",
+    "roof_deventer": "extracted",
+    "bijn": "extracted",
+    "setelkeur": "extracted",
+    "veh": "extracted",
+    "mjop_large": "extracted",
+    "pbs": "extracted",
+    "inspectiehuis": "extracted",
+    "steeds": "extracted",
+    "mjop_small": "extracted",
+    "dutchdetect": "excerpt_review_required"
+  },
+  "excerpt_reviews": {
+    "dutchdetect": {
+      "image_sha256": "35727455b8a9816d9d04b31dc4d8333f55be8dcb84941ceb93d0576db994cd80",
+      "page_label": "P.08",
+      "modality": "RGB report screenshot; no thermal images on this excerpt",
+      "status": "visually_reviewed_held",
+      "reason": "Six small photographs embedded in a report-page screenshot; complete report and native photographs unavailable. Held outside native-photo starter; source causes, probe depths and moisture assertions are not gold."
+    }
+  },
+  "remaining_placements_by_status": {
+    "pending_visual_review": 552,
+    "excluded_graphic": 302,
+    "reviewed_excluded": 51
+  },
+  "limitations": [
+    "Small purposive starter; fault prevalence and room coverage are not representative.",
+    "Single and multi-photo tracks reuse evidence; do not count them as independent samples.",
+    "One reviewer (Codex); no inspector sign-off or inter-rater agreement.",
+    "Low-resolution and embedded-markup examples have explicit slices/flags.",
+    "Unmatched model findings require adjudication before final precision/F1.",
+    "No functionality, urgency, liability, dimensions, costs, active leakage or hidden material diagnoses are scored.",
+    "Public reports may be present in model pretraining. Rights remain unresolved."
+  ]
+}

@@ -1,0 +1,77 @@
+{
+  "reviewer": "Codex (visual review; not a certified property inspector)",
+  "reviewedOn": "2026-10-30",
+  "method": "Visual inspection of native RGB extracts via source/page-labeled contact sheets, selected full-resolution images and full-page renders; source text/layout reviewed for every admitted finding.",
+  "sources_reviewed": {
+    "nrbi": [
+      7,
+      10
+    ],
+    "roof_zutphen": [
+      7,
+      8,
+      13
+    ],
+    "roof_deventer": [
+      7,
+      8,
+      12
+    ],
+    "bijn": [
+      19,
+      21,
+      22
+    ],
+    "setelkeur": [
+      14,
+      29
+    ],
+    "veh": [
+      11,
+      16,
+      17
+    ],
+    "mjop_large": [
+      15,
+      16,
+      46
+    ],
+    "pbs": [
+      10,
+      15,
+      16
+    ],
+    "inspectiehuis": [
+      12,
+      14
+    ],
+    "steeds": [
+      49,
+      50
+    ],
+    "mjop_small": [
+      20,
+      23
+    ]
+  },
+  "excerpt_review": {
+    "dutchdetect": {
+      "image_sha256": "35727455b8a9816d9d04b31dc4d8333f55be8dcb84941ceb93d0576db994cd80",
+      "page_label": "P.08",
+      "modality": "RGB report screenshot; no thermal images on this excerpt",
+      "status": "visually_reviewed_held",
+      "reason": "Six small photographs embedded in a report-page screenshot; complete report and native photographs unavailable. Held outside native-photo starter; source causes, probe depths and moisture assertions are not gold."
+    }
+  },
+  "pairing_rules": {
+    "nrbi": "Photo belongs to the preceding table-row heading; rows without photos remain unmatched; top-of-page continuation requires prior page.",
+    "roofsignal": "Explicit finding IDs and source image names link the photographed evidence; repeated photo on another finding is not independent.",
+    "bijn": "Heading and illustrated group continue across pages. Page 22 photos 1-5 belong to timber finding on page 21; photos 6-9 to subsequent masonry-crack observation.",
+    "setelkeur": "Use specific activities/findings, not general advisory paragraphs. Measurement claims remain separate from visible stain labels.",
+    "veh": "Match photo cell to its row; neighboring findings often have no dedicated photograph. Embedded red circle is explicitly flagged.",
+    "other_reports": "Check local section/row association and detailed narrative; never inherit global no-defects summary or condition rating."
+  },
+  "expert_approved": false,
+  "inter_rater_agreement": null,
+  "negative_policy": "Only one narrow, visually checked metering view is admitted as no clear visible taxonomy fault. No negative derived from missing findings."
+}

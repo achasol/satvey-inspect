@@ -13,6 +13,7 @@ import (
 )
 
 func (a *app) worker(ctx context.Context) {
+	go a.inspectionDeletionWorker(ctx)
 	go a.audioWorker(ctx)
 	go a.scopeWorker(ctx)
 	go a.propertyWorker(ctx)
