@@ -2,6 +2,9 @@ name: satvey-inspect
 
 services:
   postgres:
+    cpus: 0.50
+    mem_limit: 512m
+    memswap_limit: 512m
     image: postgres:18-alpine
     environment:
       POSTGRES_DB: satvey
@@ -16,6 +19,9 @@ services:
       retries: 30
 
   rustfs:
+    cpus: 0.50
+    mem_limit: 512m
+    memswap_limit: 512m
     image: rustfs/rustfs:1.0.4
     ports:
       - '127.0.0.1:${RUSTFS_CONSOLE_PORT:-19001}:9001'
@@ -36,7 +42,10 @@ services:
       start_period: 15s
 
   migrate:
-    build: ./backend
+    cpus: 0.50
+    mem_limit: 512m
+    memswap_limit: 512m
+    build: ./apps/api
     command: migrate
     environment: &backend-env
       DATABASE_URL: postgres://satvey:${POSTGRES_PASSWORD:-satvey-local-db}@postgres:5432/satvey?sslmode=disable
@@ -46,6 +55,11 @@ services:
       S3_BUCKET: satvey-evidence
       S3_ACCESS_KEY: ${S3_ACCESS_KEY:-satvey-local}
       S3_SECRET_KEY: ${S3_SECRET_KEY:-satvey-local-secret-change-me}
+      APP_ENV: development
+      APP_ENCRYPTION_KEY: ${APP_ENCRYPTION_KEY:-}
+      SMTP_ADDR: ${SMTP_ADDR:-}
+      SMTP_FROM: ${SMTP_FROM:-inspect@satvey.local}
+      SMTP_TLS: ${SMTP_TLS:-none}
       ALLOW_HTTP_OIDC: ${ALLOW_HTTP_OIDC:-true}
       PROPERTY_ENCRYPTION_KEY: ${PROPERTY_ENCRYPTION_KEY:-}
       ALLOW_HTTP_PROPERTY_API: ${ALLOW_HTTP_PROPERTY_API:-false}
@@ -57,7 +71,10 @@ services:
         condition: service_healthy
 
   storage-init:
-    build: ./backend
+    cpus: 0.25
+    mem_limit: 512m
+    memswap_limit: 512m
+    build: ./apps/api
     command: storage-init
     environment: *backend-env
     depends_on:
@@ -65,6 +82,9 @@ services:
         condition: service_healthy
 
   pdf:
+    cpus: 0.75
+    mem_limit: 1024m
+    memswap_limit: 1024m
     image: gotenberg/gotenberg:8.39.0
     environment:
       TZ: Europe/Amsterdam
@@ -87,7 +107,10 @@ services:
       start_period: 15s
 
   api:
-    build: ./backend
+    cpus: 1.00
+    mem_limit: 1024m
+    memswap_limit: 1024m
+    build: ./apps/api
     environment:
       <<: *backend-env
       BASETEN_KEY: ${BASETEN_KEY:-}
@@ -111,6 +134,9 @@ services:
       retries: 30
 
   keycloak:
+    cpus: 0.50
+    mem_limit: 1024m
+    memswap_limit: 1024m
     image: quay.io/keycloak/keycloak:26.4.0
     profiles: [sso]
     command: ['start-dev', '--import-realm']
@@ -125,6 +151,9 @@ services:
       - ./infra/keycloak-realm.json:/opt/keycloak/data/import/satvey.json:ro
 
   app:
+    cpus: 0.50
+    mem_limit: 768m
+    memswap_limit: 768m
     image: node:22-alpine
     container_name: satvey-inspect-dev
     working_dir: /app
@@ -139,7 +168,7 @@ services:
       - .:/app
       - node_modules:/app/node_modules
       - npm_cache:/root/.npm
-    command: sh -c "npm ci --no-audit --no-fund && npm run dev -- --host 0.0.0.0"
+    command: sh -c "npm ci --no-audit --no-fund && npm run dev --workspace @satvey/web -- --host 0.0.0.0"
     healthcheck:
       test:
         [
@@ -152,33 +181,6 @@ services:
       timeout: 3s
       retries: 30
       start_period: 30s
-
-  tests:
-    image: mcr.microsoft.com/playwright:v1.60.0-noble
-    profiles: [test]
-    working_dir: /app
-    init: true
-    ipc: host
-    depends_on:
-      app:
-        condition: service_healthy
-    environment:
-      PLAYWRIGHT_BASE_URL: http://app:5173
-    volumes:
-      - .:/app
-      - node_modules:/app/node_modules:ro
-    command: node tests/run.cjs
-
-  backend-tests:
-    profiles: [test]
-    build:
-      context: ./backend
-      target: build
-    environment: *backend-env
-    depends_on:
-      api:
-        condition: service_healthy
-    command: ['go', 'test', '-v', './...']
 
   pdf-check:
     profiles: [test]
@@ -194,13 +196,16 @@ services:
 
   go:
     build:
-      context: ./backend
+      context: ./apps/api
       target: build
     profiles: [tools]
     working_dir: /src
-    environment: *backend-env
+    environment:
+      <<: *backend-env
+      DATABASE_URL: ""
+      PDF_RENDERER_URL: ""
     volumes:
-      - ./backend:/src
+      - ./apps/api:/src
       - ./tests/artifacts:/artifacts
       - go_modules:/go/pkg/mod
       - go_cache:/root/.cache/go-build

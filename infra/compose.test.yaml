@@ -1,0 +1,216 @@
+# Standalone, disposable services. Never combine with the development Compose file.
+x-api-env: &api-env
+  GOMAXPROCS: '1'
+  APP_ENV: test
+  APP_URL: http://localhost:5173
+  DATABASE_URL: postgres://satvey:test-database-password@browser-postgres:5432/satvey_test_browser?sslmode=disable
+  S3_ENDPOINT: http://rustfs:9000
+  S3_BUCKET: satvey-test-browser
+  S3_ACCESS_KEY: test-access
+  S3_SECRET_KEY: test-object-storage-password
+  APP_ENCRYPTION_KEY: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+  PROPERTY_ENCRYPTION_KEY: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+  ALLOW_MOCK_ANALYSIS: 'true'
+  ALLOW_HTTP_OIDC: 'true'
+  ALLOW_HTTP_PROPERTY_API: 'true'
+  IMAGE_ANALYSIS_PROVIDER: mock
+  TRANSCRIPTION_PROVIDER: disabled
+  BASETEN_KEY: ''
+  BASETEN_API_KEY: ''
+  PDF_RENDERER_URL: http://pdf:3000
+  SMTP_ADDR: mail:1025
+  SMTP_FROM: inspect@satvey.test
+  SMTP_TLS: none
+  TEST_RELAX_RATE_LIMITS: 'true'
+
+services:
+  postgres: &postgres
+    mem_limit: 256m
+    memswap_limit: 256m
+    cpus: 0.15
+    pids_limit: 256
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_DB: satvey_test_go
+      POSTGRES_USER: satvey
+      POSTGRES_PASSWORD: test-database-password
+    command: [postgres, -c, shared_buffers=32MB, -c, max_connections=40]
+    volumes: [test_go_database:/var/lib/postgresql]
+    healthcheck:
+      test: [CMD-SHELL, pg_isready -U satvey -d postgres]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+  browser-postgres:
+    <<: *postgres
+    volumes: [test_browser_database:/var/lib/postgresql]
+    environment:
+      POSTGRES_DB: satvey_test_browser
+      POSTGRES_USER: satvey
+      POSTGRES_PASSWORD: test-database-password
+  rustfs:
+    mem_limit: 512m
+    memswap_limit: 512m
+    cpus: 0.30
+    pids_limit: 256
+    image: rustfs/rustfs:1.0.4
+    environment:
+      RUSTFS_ACCESS_KEY: test-access
+      RUSTFS_SECRET_KEY: test-object-storage-password
+      RUSTFS_VOLUMES: /data
+      RUSTFS_CONSOLE_ENABLE: 'false'
+    tmpfs: ['/data:mode=1777,size=256m']
+    healthcheck:
+      test: [CMD, curl, -f, http://localhost:9000/health]
+      interval: 2s
+      timeout: 3s
+      retries: 60
+      start_period: 15s
+  pdf:
+    mem_limit: 1024m
+    memswap_limit: 1024m
+    cpus: 0.65
+    pids_limit: 256
+    image: gotenberg/gotenberg:8.39.0
+    environment:
+      CHROMIUM_ALLOW_LIST: '^file:///tmp/.*'
+      CHROMIUM_DENY_PRIVATE_IPS: 'true'
+      CHROMIUM_DENY_PUBLIC_IPS: 'true'
+      API_DISABLE_DOWNLOAD_FROM: 'true'
+      LIBREOFFICE_DISABLE_ROUTES: 'true'
+      CHROMIUM_MAX_CONCURRENCY: '1'
+      CHROMIUM_MAX_QUEUE_SIZE: '4'
+      API_TIMEOUT: 120s
+      API_BODY_LIMIT: 128MB
+    shm_size: 256mb
+    healthcheck:
+      test: [CMD, curl, -f, http://localhost:3000/health]
+      interval: 2s
+      timeout: 3s
+      retries: 60
+  mail:
+    mem_limit: 64m
+    memswap_limit: 64m
+    cpus: 0.05
+    pids_limit: 256
+    image: axllent/mailpit:v1.27
+  api:
+    mem_limit: 512m
+    memswap_limit: 512m
+    cpus: 0.50
+    pids_limit: 256
+    build: ./apps/api
+    environment: *api-env
+    depends_on:
+      browser-postgres: { condition: service_healthy }
+      rustfs: { condition: service_healthy }
+      pdf: { condition: service_healthy }
+    healthcheck:
+      test: [CMD, wget, -q, -O, /dev/null, http://localhost:8080/api/v1/health/ready]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+  go:
+    mem_limit: 2048m
+    memswap_limit: 2048m
+    cpus: 2.00
+    pids_limit: 256
+    build:
+      context: ./apps/api
+      target: build
+    working_dir: /src
+    environment:
+      <<: *api-env
+      DATABASE_URL: postgres://satvey:test-database-password@postgres:5432/satvey_test_go?sslmode=disable
+      S3_BUCKET: satvey-test-go
+      GOMAXPROCS: '2'
+      GOFLAGS: '-p=1'
+      REQUIRE_INTEGRATION: '1'
+      PDF_ARTIFACT_DIR: /artifacts
+      TEST_RELAX_RATE_LIMITS: 'false'
+    volumes:
+      - test_artifacts:/artifacts
+    depends_on:
+      postgres: { condition: service_healthy }
+      rustfs: { condition: service_healthy }
+      pdf: { condition: service_healthy }
+    command:
+      [go, test, -race, -count=1, -coverprofile=/artifacts/go.coverage, -coverpkg=./..., ./...]
+  app:
+    mem_limit: 512m
+    memswap_limit: 512m
+    cpus: 0.25
+    pids_limit: 256
+    build:
+      context: .
+      target: build
+    environment:
+      API_PROXY_TARGET: http://api:8080
+    command: [npm, run, dev, --workspace, '@satvey/web', --, --host, 0.0.0.0]
+    depends_on:
+      api: { condition: service_healthy }
+    healthcheck:
+      test:
+        [
+          CMD,
+          node,
+          -e,
+          "fetch('http://localhost:5173').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+  browsers:
+    mem_limit: 3072m
+    memswap_limit: 3072m
+    cpus: 1.90
+    pids_limit: 512
+    build:
+      context: .
+      dockerfile: infra/browser-tests.Dockerfile
+    working_dir: /app
+    init: true
+    ipc: host
+    environment:
+      CI: 'true'
+      E2E_ISOLATED: '1'
+      NODE_OPTIONS: --max-old-space-size=768
+      PLAYWRIGHT_BASE_URL: http://app:5173
+      E2E_EMAIL: admin@satvey.local
+      E2E_PASSWORD: local-inspection-2026
+      MAILPIT_URL: http://mail:8025
+    volumes:
+      - test_artifacts:/app/tests/artifacts
+      - test_results:/app/test-results
+      - test_report:/app/playwright-report
+    command: [node, tests/run.cjs]
+    depends_on:
+      app: { condition: service_healthy }
+  pdf-check:
+    mem_limit: 512m
+    memswap_limit: 512m
+    cpus: 0.40
+    pids_limit: 256
+    build:
+      context: .
+      dockerfile: infra/pdf-check.Dockerfile
+    volumes:
+      - test_artifacts:/artifacts
+    command: [/artifacts/report-short.pdf, /artifacts/report-long.pdf, /artifacts/report-draft.pdf]
+  artifacts:
+    mem_limit: 128m
+    memswap_limit: 128m
+    cpus: 0.10
+    pids_limit: 256
+    image: alpine:3.22
+    volumes:
+      - test_artifacts:/export/artifacts
+      - test_results:/export/test-results
+      - test_report:/export/playwright-report
+    command: [sleep, '300']
+volumes:
+  test_go_database:
+  test_browser_database:
+  test_artifacts:
+  test_results:
+  test_report:

@@ -9,3 +9,7 @@ demo/sleutels/demo-summary.json
 *.tsbuildinfo
 .env*
 !.env.example
+
+!infra/.env.production.example
+coverage/
+*.dump

@@ -1,0 +1,11 @@
+[Unit]
+Description=Encrypted paired Satvey backup
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/satvey-inspect
+EnvironmentFile=/etc/satvey/backup.env
+ExecStart=/usr/bin/bash /opt/satvey-inspect/scripts/backup.sh
+UMask=0077

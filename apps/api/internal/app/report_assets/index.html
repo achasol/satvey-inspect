@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<title>Inspectierapport · {{.Inspection.Address}} · {{.Reference}}</title>
+<style>
+@font-face { font-family: 'DM Sans'; src: url('dm-sans-regular.ttf') format('truetype'); font-weight: 400; font-style: normal; font-display: block; }
+@font-face { font-family: 'DM Sans'; src: url('dm-sans-semibold.ttf') format('truetype'); font-weight: 600; font-style: normal; font-display: block; }
+@font-face { font-family: 'DM Sans'; src: url('dm-sans-bold.ttf') format('truetype'); font-weight: 700; font-style: normal; font-display: block; }
+* { box-sizing: border-box; }
+html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+body { margin: 0; color: #293128; font: 10pt/1.55 'DM Sans', Arial, sans-serif; }
+h1,h2,h3,h4 { line-height: 1.25; break-before: auto; break-after: avoid; break-inside: avoid; font-weight: 600; }
+h1 { font-size: 15pt; margin: 0 0 8mm; color: #536044; }
+h2 { font-size: 17pt; margin: 10mm 0 5mm; padding-bottom: 3mm; border-bottom: 1px solid #cdd2c4; }
+.page-break { height: 0; break-after: page; }
+h3 { font-size: 14pt; margin: 7mm 0 4mm; }
+h4 { font-size: 11pt; margin: 0 0 2mm; }
+p { margin: 0 0 3mm; orphans: 3; widows: 3; overflow-wrap: anywhere; }
+a { color: #46553b; text-decoration: none; }
+.brand { display: flex; align-items: center; gap: 3mm; margin-bottom: 8mm; }
+.brand svg { width: 9mm; height: 9mm; }
+.wordmark { font-size: 24pt; font-weight: 700; letter-spacing: -1.2pt; }
+.brand .organisation { margin-left: auto; font-size: 10pt; color: #626c5b; max-width: 90mm; text-align: right; overflow-wrap: anywhere; }
+.hero { break-inside: avoid; }
+.address { font-size: 27pt; font-weight: 600; letter-spacing: -.7pt; line-height: 1.15; margin-bottom: 2mm; overflow-wrap: anywhere; }
+.location { font-size: 12pt; color: #626c5b; margin-bottom: 6mm; }
+.status { display: inline-block; padding: 1.4mm 3mm; font-size: 8.5pt; font-weight: 600; background: #edf0e7; border: 1px solid #ccd3c0; border-radius: 2mm; }
+.draft { background: #fff2d8; border-color: #dcc28d; color: #735018; }
+.draft-note { border-left: 3px solid #b18b43; background: #fff8ed; padding: 3mm 4mm; margin: 5mm 0; font-size: 9pt; }
+.metadata { width: 100%; border-collapse: collapse; margin: 7mm 0; table-layout: fixed; }
+.metadata td { width: 50%; padding: 2.5mm 4mm 2.5mm 0; vertical-align: top; overflow-wrap: anywhere; }
+.key { display: block; color: #66705f; font-size: 8pt; margin-bottom: .5mm; }
+.value { font-weight: 600; }
+.summary { width: 100%; border-collapse: collapse; background: #f1f3ed; margin: 4mm 0; table-layout: fixed; break-inside: avoid; }
+.summary td { padding: 4mm; border-right: 1px solid #d9dece; vertical-align: top; }
+.summary td:last-child { border: 0; }
+.summary strong { font-size: 20pt; line-height: 1.1; display: block; margin-bottom: 1.5mm; }
+.summary span { font-size: 8pt; color: #58634f; }
+.coverage { width: 100%; border-collapse: collapse; table-layout: fixed; margin: 5mm 0; font-size: 9pt; }
+.coverage th { background: #f1f3ed; font-weight: 600; text-align: left; }
+.coverage th,.coverage td { padding: 2.5mm 3mm; border-bottom: 1px solid #dce0d5; vertical-align: top; overflow-wrap: anywhere; }
+.coverage th:first-child { width: 38%; }
+.coverage thead { display: table-header-group; }
+.coverage tr { break-inside: avoid; }
+.muted { color: #626c5b; font-size: 9pt; }
+.scope { margin: 4mm 0; }
+.room { margin-top: 7mm; }
+.room-start { break-inside: avoid; }
+.overview-start { break-before: page; }
+.finding,.assessment { margin: 0 0 5mm; padding: 4mm 0; border-bottom: 1px solid #e2e5dc; }
+.finding .text,.assessment .text { white-space: pre-line; }
+.finding-head { break-inside: avoid; }
+.label { display: inline-block; font-size: 8pt; padding: 1mm 2mm; background: #edf0e7; border-radius: 1mm; margin: 0 0 2mm; }
+.outcome { font-weight: 600; font-size: 9pt; margin-bottom: 2mm; }
+.outcome.unacceptable { color: #8e352b; }
+.outcome.acceptable { color: #3e5c34; }
+.outcome.not_assessable,.outcome.not_applicable { color: #6b6353; }
+.references { font-size: 8pt; color: #65705b; break-inside: avoid; }
+.references a { font-weight: 600; margin-right: 2mm; }
+.photos { width: 100%; table-layout: fixed; border-collapse: collapse; margin: 4mm 0; }
+.photos td { width: 50%; padding: 0 2mm 4mm 0; vertical-align: top; }
+.photos td:last-child { padding-right: 0; padding-left: 2mm; }
+.photos tr { break-inside: avoid; }
+figure { margin: 0; padding: 2.5mm; border: 1px solid #d8ddcf; border-radius: 2mm; break-inside: avoid; }
+figure img { display: block; width: 100%; height: 57mm; object-fit: contain; background: #f8f9f5; }
+figcaption { margin-top: 2mm; font-size: 8pt; color: #616d57; overflow-wrap: anywhere; line-height: 1.4; }
+figcaption strong { color: #293128; margin-right: 1mm; }
+.endnote { margin-top: 8mm; padding-top: 4mm; border-top: 1px solid #cdd2c4; font-size: 8pt; color: #626c5b; }
+.signature { break-inside: avoid; margin: 5mm 0; padding: 4mm; border: 1px solid #cdd2c4; }
+.signature svg { display: block; width: 90mm; max-width: 100%; height: 27mm; }
+</style>
+</head>
+<body>
+<div class="hero">
+  <div class="brand">
+    <svg viewBox="0 0 36 36" aria-hidden="true"><rect width="36" height="36" rx="9" fill="#536044"/><path d="M9 27V14l9-7 9 7v13M13 27V16l5-4 5 4v11M16 27v-9l2-1.5 2 1.5v9" fill="none" stroke="#f7f8f0" stroke-width="1.7" stroke-linejoin="round"/></svg>
+    <span class="wordmark">satvey.</span><span class="organisation">{{.Organisation.Name}}</span>
+  </div>
+  <h1>Inspectierapport</h1>
+  <p class="address">{{.Inspection.Address}}</p>
+  <p class="location">{{.Inspection.Postcode}} {{.Inspection.City}}</p>
+  <span class="status {{if not .Final}}draft{{end}}">{{.Kind}} · {{.Status}}</span>
+  {{if not .Final}}<p class="draft-note"><strong>Concept — nog niet definitief.</strong> Dit document bevat alleen beoordeelde opnamen met goedgekeurde bevindingen en bevestigde normbeoordelingen. Openstaande en uitgesloten opnamen zijn niet opgenomen in de inhoud.</p>{{end}}
+  <table class="metadata" aria-label="Rapportgegevens"><tbody>
+    <tr><td><span class="key">Rapportreferentie</span><span class="value">{{.Reference}}</span></td><td><span class="key">{{if .Final}}Vastgelegd op{{else}}Concept gegenereerd op{{end}}</span><span class="value">{{.Date}}</span></td></tr>
+    <tr><td><span class="key">Afspraak</span><span class="value">{{.Appointment}}</span></td><td><span class="key">Aangemaakt door</span><span class="value">{{.CreatedBy.Name}}</span></td></tr>
+    {{if .Format}}<tr><td><span class="key">Inspectieformat</span><span class="value">{{.Format.Name}} &#183; versie {{.Format.Number}}</span></td><td><span class="key">Beoordeling</span><span class="value">Verplichte vragen en toegelichte uitzonderingen</span></td></tr>{{end}}
+  {{if .FinalisedBy.Name}}<tr><td><span class="key">Vastgelegd door</span><span class="value">{{.FinalisedBy.Name}}</span></td><td><span class="key">PDF gegenereerd op</span><span class="value">{{.GeneratedAt}}</span></td></tr>{{end}}
+  </tbody></table>
+  {{with .Inspection.PropertySnapshot}}
+  <h3>Vastgoedobject</h3>
+  {{if ne .LinkState "linked"}}<p class="draft-note">Voorlopige woning: de bronidentiteit is nog niet bevestigd.</p>{{end}}
+  <table class="metadata" aria-label="Vastgoedgegevens"><tbody>
+    <tr><td><span class="key">Objectnummer</span><span class="value">{{.ObjectNumber}}</span></td><td><span class="key">Bronobject-ID</span><span class="value">{{if .SourceObjectID}}{{.SourceObjectID}}{{end}}</span></td></tr>
+    <tr><td><span class="key">Bronadministratie</span><span class="value">{{if .SourceName}}{{.SourceName}}{{end}} {{if .Administration}}· {{.Administration}}{{end}}</span></td><td><span class="key">Type</span><span class="value">{{.ObjectType}}</span></td></tr>
+    <tr><td><span class="key">Bouwjaar</span><span class="value">{{if .BuildYear}}{{.BuildYear}}{{end}}</span></td><td><span class="key">Oppervlakte</span><span class="value">{{if .Area}}{{.Area}} {{.AreaUnit}} · {{.AreaType}}{{end}}</span></td></tr>
+    {{if or .ComplexID .ComplexName}}<tr><td colspan="2"><span class="key">Complex</span><span class="value">{{.ComplexName}} {{.ComplexID}}</span></td></tr>{{end}}
+    {{range .Clusters}}<tr><td colspan="2"><span class="key">Cluster · {{.Kind}}</span><span class="value">{{.Name}} · {{.Code}}</span></td></tr>{{end}}
+    {{range .Areas}}<tr><td colspan="2"><span class="key">Oppervlaktemeting · {{.Kind}}</span><span class="value">{{.Value}} {{.Unit}}{{if .StartDate}} · vanaf {{.StartDate}}{{end}}{{if .EndDate}} · tot {{.EndDate}}{{end}}</span></td></tr>{{end}}
+    <tr><td><span class="key">Status in bron</span><span class="value">{{.SourceStatus}}</span></td><td><span class="key">Gegevens opgehaald</span><span class="value">{{if .FetchedAt}}{{.FetchedAt.Format "02-01-2006 15:04 MST"}}{{end}}</span></td></tr>
+    {{if or .BagObjectID .BagAddressID}}<tr><td><span class="key">BAG-object</span><span class="value">{{.BagObjectID}}</span></td><td><span class="key">BAG-nummeraanduiding</span><span class="value">{{.BagAddressID}}</span></td></tr>{{end}}
+    {{if .BagBuildingIDs}}<tr><td colspan="2"><span class="key">BAG-panden</span><span class="value">{{range .BagBuildingIDs}}{{.}} {{end}}</span></td></tr>{{end}}
+  </tbody></table>
+  <p class="muted">Deze administratieve gegevens zijn bewaard bij de inspectie en vormen geen bewijs van de feitelijke toestand.</p>
+  {{end}}
+</div>
+<div class="room-start overview-start"><h2 id="overview" aria-label="1. Overzicht">1. Overzicht</h2>
+<table class="summary" aria-label="Samenvatting"><tbody><tr>
+  <td><strong>{{.Reviewed}}</strong><span>beoordeelde opnamen</span></td>
+  <td><strong>{{len .Observations}}</strong><span>goedgekeurde bevindingen</span></td>
+  <td><strong>{{len .Media}}</strong><span>bronfoto’s in dit rapport</span></td>
+</tr></tbody></table></div>
+<p class="muted">{{.Pending}} opnamen nog te beoordelen · {{.Excluded}} opnamen uitgesloten. Een niet opgenomen ruimte of een opname zonder bevinding is geen verklaring dat deze vrij is van gebreken.</p>
+{{if .Norms}}<p class="scope"><strong>Normenkader:</strong> {{.Norms.Name}} · versie {{.Norms.Number}}</p>
+<p class="muted">Bevestigde beoordelingen: {{.Acceptable}} acceptabel · {{.Unacceptable}} niet acceptabel · {{.Unknown}} niet te beoordelen · {{.Inapplicable}} niet van toepassing.</p>{{end}}
+<table class="coverage" aria-label="Overzicht per ruimte">
+  <thead><tr><th scope="col">Ruimte</th><th scope="col">Opnamen beoordeeld</th><th scope="col">Status</th></tr></thead>
+  <tbody>{{range .Rooms}}<tr><td>{{if .Reviewed}}<a href="#{{.Anchor}}">{{.Name}}</a>{{else}}{{.Name}}{{end}}</td><td>{{.Reviewed}}</td><td>{{.Coverage}}</td></tr>{{end}}</tbody>
+</table>
+<div class="page-break" aria-hidden="true"></div>
+<div class="room-sections">
+<h2 id="rooms">2. Bevindingen per ruimte</h2>
+{{if not .Sections}}<p>Er zijn nog geen beoordeelde opnamen opgenomen in dit rapport.</p>{{end}}
+{{range .Sections}}
+<section class="room" aria-labelledby="{{.Anchor}}">
+  <div class="room-start"><h3 id="{{.Anchor}}">{{.Number}} {{.Name}}</h3><p class="muted">{{.Reviewed}} beoordeelde opnamen · {{len .Observations}} goedgekeurde bevindingen · {{.NormCount}} bevestigde normbeoordelingen</p></div>
+  {{if .Answers}}<h4>Inspectieresultaten</h4>{{end}}
+  {{range .Answers}}<article class="assessment"><div class="finding-head"><h4>{{.Title}}</h4><p class="value">{{.Value}}</p>{{if and .Result (ne .Result .Value)}}<p class="outcome {{.Outcome}}">{{.Result}}</p>{{end}}</div>{{if .Reason}}<p class="text">{{.Reason}}</p>{{end}}{{if .Photos}}<p class="references">Bronfoto's: {{range .Photos}}<a href="#photo-{{.ID}}">{{.Number}}</a>{{end}}</p>{{end}}</article>{{end}}
+  {{if not .Observations}}<p>Geen goedgekeurde bevindingen vastgelegd voor deze ruimte.</p>{{end}}
+  {{range .Observations}}<article class="finding">
+    <div class="finding-head"><h4>{{.Title}}</h4>{{if .Label}}<span class="label">{{.Label}}</span>{{end}}</div>
+    <p class="text">{{.Description}}</p>
+    {{if .Photos}}<p class="references">Bronfoto’s: {{range .Photos}}<a href="#photo-{{.ID}}">{{.Number}}</a>{{end}}</p>{{end}}
+  </article>{{end}}
+  {{if .Assessments}}<h4>Normbeoordelingen</h4>{{end}}
+  {{range .Assessments}}<article class="assessment">
+    <div class="finding-head"><p><strong>{{if .Code}}{{.Code}} · {{end}}{{.Title}}</strong></p><p class="outcome {{.Outcome}}">{{.Result}}</p></div>
+    <p class="text">{{.Reason}}</p>
+    {{if .Photos}}<p class="references">Bronfoto’s: {{range .Photos}}<a href="#photo-{{.ID}}">{{.Number}}</a>{{end}}</p>{{end}}
+  </article>{{end}}
+  {{if .Photos}}<h4>Fotobewijs</h4><table class="photos" role="presentation"><tbody>{{range .PhotoRows}}<tr>{{range .}}<td><figure id="photo-{{.ID}}"><img src="{{.File}}" alt="{{.Number}} · {{.Name}}"><figcaption><strong>{{.Number}}</strong> {{.Name}}</figcaption></figure></td>{{end}}{{if eq (len .) 1}}<td></td>{{end}}</tr>{{end}}</tbody></table>{{end}}
+</section>
+{{end}}
+{{if .Signatures}}<section aria-label="Handtekeningen"><h2>3. Handtekeningen</h2>
+{{range .Signatures}}<div class="signature"><strong>{{.Name}}</strong><p>{{.RoleLabel}}</p>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 180" role="img" aria-label="Handtekening van {{.Name}}"><path d="{{.Path}}" fill="none" stroke="#293128" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" /></svg>
+<p class="muted">Vastgelegd op {{.DateLabel}}</p></div>{{end}}</section>{{end}}
+<p class="endnote">Rapportreferentie {{.Reference}} · {{.Organisation.Name}}. Dit rapport bevat vastgelegde waarnemingen en beoordelingen. Originele audio en interne transcripties zijn niet opgenomen.</p>
+</div>
+</body>
+</html>

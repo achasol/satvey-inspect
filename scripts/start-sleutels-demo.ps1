@@ -24,7 +24,9 @@ try {
         $previousProxy = $env:API_PROXY_TARGET
         try {
             $env:API_PROXY_TARGET = 'http://127.0.0.1:8088'
-            $demoProcess = Start-Process -FilePath $nodePath -ArgumentList @('node_modules/vite/bin/vite.js', '--host', '127.0.0.1', '--port', '5174', '--strictPort') -WorkingDirectory $workspacePath -WindowStyle Hidden -PassThru -RedirectStandardOutput (Join-Path $cachePath 'sleutels-vite.log') -RedirectStandardError (Join-Path $cachePath 'sleutels-vite-error.log')
+            $demoProcess = Start-Process -FilePath $nodePath -ArgumentList @('--max-old-space-size=512', 'node_modules/vite/bin/vite.js', 'apps/web', '--host', '127.0.0.1', '--port', '5174', '--strictPort') -WorkingDirectory $workspacePath -WindowStyle Hidden -PassThru -RedirectStandardOutput (Join-Path $cachePath 'sleutels-vite.log') -RedirectStandardError (Join-Path $cachePath 'sleutels-vite-error.log')
+            $demoProcess.ProcessorAffinity = [IntPtr]1
+            $demoProcess.PriorityClass = 'BelowNormal'
             Set-Content -LiteralPath (Join-Path $cachePath 'sleutels-vite.pid') -Value $demoProcess.Id
         } finally { $env:API_PROXY_TARGET = $previousProxy }
         for ($attempt = 0; $attempt -lt 30; $attempt++) {

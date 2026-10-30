@@ -1,0 +1,20 @@
+{
+  email {$ACME_EMAIL}
+  admin off
+  log default {
+    format filter {
+      wrap json
+      fields {
+        request delete
+        uri delete
+        headers delete
+      }
+    }
+  }
+}
+{$APP_DOMAIN} {
+  encode zstd gzip
+  header Strict-Transport-Security "max-age=31536000"
+  reverse_proxy web:8080
+  # Access logs intentionally omit request URIs: invitation URLs contain tokens.
+}

@@ -1,0 +1,896 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Satvey inspection and maintenance BI business case</title>
+    <style>
+      :root {
+        color-scheme: light;
+        font-family: system-ui, sans-serif;
+        color: #203137;
+        background: #f3f5f2;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+      }
+      main {
+        max-width: 1180px;
+        margin: 0 auto;
+        padding: 36px 24px 64px;
+      }
+      h1 {
+        font-size: clamp(1.7rem, 3vw, 2.6rem);
+        line-height: 1.15;
+        margin: 8px 0 16px;
+        max-width: 850px;
+      }
+      h2 {
+        font-size: 1.15rem;
+        margin: 0 0 18px;
+      }
+      h3 {
+        font-size: 1rem;
+      }
+      p {
+        line-height: 1.6;
+      }
+      a {
+        color: #155c48;
+      }
+      .eyebrow {
+        font-size: 0.78rem;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        color: #456157;
+        font-weight: 700;
+      }
+      .intro {
+        max-width: 820px;
+      }
+      .note {
+        color: #53645e;
+        font-size: 0.87rem;
+      }
+      .layout {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 24px;
+        align-items: start;
+        margin-top: 24px;
+      }
+      .card {
+        background: white;
+        border: 1px solid #d9e1da;
+        border-radius: 14px;
+        padding: 24px;
+        margin-bottom: 20px;
+      }
+      .fields {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 18px;
+      }
+      label {
+        display: block;
+        font-size: 0.87rem;
+        line-height: 1.45;
+      }
+      label span {
+        display: block;
+        min-height: 2.8em;
+      }
+      input[type='number'] {
+        width: 100%;
+        padding: 10px 11px;
+        border: 1px solid #aabbb0;
+        border-radius: 6px;
+        margin-top: 6px;
+        font: inherit;
+        background: #fff;
+        color: #203137;
+      }
+      input:focus-visible,
+      button:focus-visible,
+      a:focus-visible {
+        outline: 3px solid #b38c32;
+        outline-offset: 3px;
+      }
+      input:disabled {
+        background: #f2f4f1;
+        color: #64746c;
+      }
+      .toggle {
+        display: flex;
+        gap: 9px;
+        align-items: center;
+        margin-bottom: 18px;
+        font-weight: 650;
+      }
+      .toggle input {
+        width: 18px;
+        height: 18px;
+      }
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin: 20px 0;
+      }
+      button {
+        background: #fff;
+        border: 1px solid #6e8b7c;
+        border-radius: 7px;
+        padding: 10px 14px;
+        color: #214e3e;
+        font: inherit;
+        font-size: 0.87rem;
+        cursor: pointer;
+      }
+      button.primary {
+        background: #215e48;
+        color: white;
+        border-color: #215e48;
+      }
+      .metrics {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 18px;
+      }
+      .metric strong {
+        display: block;
+        font-size: 1.75rem;
+        margin-top: 7px;
+        font-variant-numeric: tabular-nums;
+      }
+      .metric small {
+        color: #566960;
+      }
+      .metric {
+        padding-bottom: 14px;
+      }
+      .metric.positive strong {
+        color: #205e46;
+      }
+      .metric.negative strong {
+        color: #9a3e33;
+      }
+      table {
+        border-collapse: collapse;
+        width: 100%;
+        font-size: 0.88rem;
+      }
+      caption {
+        text-align: left;
+        font-weight: 650;
+        margin: 18px 0 8px;
+      }
+      th,
+      td {
+        padding: 11px 0;
+        border-bottom: 1px solid #e1e7e1;
+        text-align: left;
+        vertical-align: top;
+      }
+      th {
+        font-weight: 500;
+        padding-right: 12px;
+      }
+      td {
+        text-align: right;
+        white-space: nowrap;
+        font-variant-numeric: tabular-nums;
+      }
+      .bar-row {
+        margin-top: 18px;
+        font-size: 0.87rem;
+      }
+      .bar-track {
+        height: 16px;
+        background: #edf1eb;
+        border-radius: 4px;
+        margin-top: 7px;
+      }
+      .bar {
+        height: 100%;
+        border-radius: 4px;
+        background: #37795d;
+        min-width: 0;
+      }
+      .bar.cost {
+        background: #ba9856;
+      }
+      .assumption {
+        background: #fff9e9;
+        border: 1px solid #e1ce97;
+        padding: 13px 16px;
+        border-radius: 8px;
+        font-size: 0.87rem;
+        line-height: 1.55;
+      }
+      #error {
+        color: #93372d;
+        background: #fff2ef;
+        padding: 12px;
+        border-radius: 6px;
+      }
+      [hidden] {
+        display: none !important;
+      }
+      details {
+        margin-top: 18px;
+      }
+      summary {
+        cursor: pointer;
+        font-weight: 650;
+      }
+      footer {
+        margin-top: 24px;
+      }
+      @media (max-width: 760px) {
+        .layout {
+          grid-template-columns: 1fr;
+        }
+        main {
+          padding: 24px 16px;
+        }
+        .card {
+          padding: 20px;
+        }
+      }
+      @media (max-width: 380px) {
+        .fields,
+        .metrics {
+          grid-template-columns: 1fr;
+        }
+        label span {
+          min-height: 0;
+        }
+      }
+      @media print {
+        body {
+          background: white;
+        }
+        main {
+          max-width: none;
+          padding: 0;
+        }
+        .actions,
+        button,
+        #error {
+          display: none;
+        }
+        .card {
+          break-inside: avoid;
+          padding: 16px;
+        }
+        .layout {
+          gap: 16px;
+        }
+        input[type='number'] {
+          padding: 3px;
+          border: 0;
+        }
+        h1 {
+          font-size: 1.8rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <div class="eyebrow">Satvey commercial planning · 30 October 2026</div>
+        <h1>Inspection and maintenance BI business case</h1>
+        <p class="intro">
+          Compare an inspection contract with a future maintenance BI module. Replace assumptions
+          with customer measurements and evaluate recurring costs separately from implementation.
+        </p>
+        <p class="assumption">
+          All amounts exclude VAT. BI is proposed future scope. Initial BI benefits are zero until
+          you enter evidence or load the explicitly illustrative example. Staff time is capacity
+          value; it becomes cash savings only when an actual expense falls.
+        </p>
+        <div class="actions">
+          <button type="button" data-preset="inspection">Inspection example</button>
+          <button type="button" data-preset="bi">Illustrative Inspect plus BI example</button>
+          <button type="button" data-preset="reset">Reset assumptions</button>
+        </div>
+        <p id="scenario" class="note">
+          Initial case: Inspect plus BI fees, with no assumed BI benefit.
+        </p>
+      </header>
+      <div class="layout">
+        <form id="inputs" novalidate>
+          <section class="card" aria-labelledby="inspection-heading">
+            <h2 id="inspection-heading">Inspection assumptions</h2>
+            <div class="fields">
+              <label
+                ><span>Homes in the agreed deployment</span
+                ><input
+                  id="homes"
+                  type="number"
+                  min="0"
+                  max="10000000"
+                  step="1"
+                  value="10000"
+                  required
+              /></label>
+              <label
+                ><span>Eligible inspections per year</span
+                ><input
+                  id="inspections"
+                  type="number"
+                  min="0"
+                  max="10000000"
+                  step="1"
+                  value="1400"
+                  required
+              /></label>
+              <label
+                ><span>Net minutes saved per inspection</span
+                ><input
+                  id="minutes"
+                  type="number"
+                  min="0"
+                  max="1440"
+                  step="any"
+                  value="25"
+                  required
+              /></label>
+              <label
+                ><span>Inspection staff cost in EUR per hour</span
+                ><input
+                  id="inspectionRate"
+                  type="number"
+                  min="0"
+                  max="100000"
+                  step="any"
+                  value="65"
+                  required
+              /></label>
+              <label
+                ><span>Annual Inspect fee in EUR</span
+                ><input
+                  id="inspectionFee"
+                  type="number"
+                  min="0"
+                  max="1000000000"
+                  step="any"
+                  value="12000"
+                  required
+              /></label>
+              <label
+                ><span>Inspect implementation in EUR</span
+                ><input
+                  id="inspectionSetup"
+                  type="number"
+                  min="0"
+                  max="1000000000"
+                  step="any"
+                  value="5000"
+                  required
+              /></label>
+            </div>
+            <p class="note">
+              The reference volume is 10,000 homes × 7% annual turnover × two inspections per move.
+              Enter the customer's actual eligible inspections. Changing homes does not
+              automatically change volume or quoted fees.
+            </p>
+          </section>
+          <section class="card" aria-labelledby="bi-heading">
+            <h2 id="bi-heading">Maintenance BI assumptions</h2>
+            <label class="toggle"
+              ><input id="includeBi" type="checkbox" checked /> Include the proposed BI
+              module</label
+            >
+            <div class="fields" id="bi-fields">
+              <label
+                ><span>Annual BI fee in EUR</span
+                ><input
+                  id="biFee"
+                  type="number"
+                  min="0"
+                  max="1000000000"
+                  step="any"
+                  value="15000"
+                  required
+              /></label>
+              <label
+                ><span>BI implementation in EUR</span
+                ><input
+                  id="biSetup"
+                  type="number"
+                  min="0"
+                  max="1000000000"
+                  step="any"
+                  value="10000"
+                  required
+              /></label>
+              <label
+                ><span>Distinct reporting hours saved per month</span
+                ><input
+                  id="reportingHours"
+                  type="number"
+                  min="0"
+                  max="1000000"
+                  step="any"
+                  value="0"
+                  required
+              /></label>
+              <label
+                ><span>Reporting staff cost in EUR per hour</span
+                ><input
+                  id="reportingRate"
+                  type="number"
+                  min="0"
+                  max="100000"
+                  step="any"
+                  value="65"
+                  required
+              /></label>
+              <label
+                ><span>Addressable maintenance expenditure in EUR per year</span
+                ><input
+                  id="spend"
+                  type="number"
+                  min="0"
+                  max="1000000000000"
+                  step="any"
+                  value="10000000"
+                  required
+              /></label>
+              <label
+                ><span>Net incremental maintenance saving attributable to BI in percent</span
+                ><input
+                  id="savingPercent"
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="any"
+                  value="0"
+                  required
+              /></label>
+            </div>
+            <p class="note">
+              Use savings after intervention costs and exclude outcomes counted for inspection,
+              planning or other products. A deferred essential repair is not a saving. The
+              illustrative preset assumes 0.5%; this is not a forecast or observed Satvey result.
+            </p>
+          </section>
+          <section class="card" aria-labelledby="cost-heading">
+            <h2 id="cost-heading">Other customer costs</h2>
+            <div class="fields">
+              <label
+                ><span>Annual vendor licences or capacity in EUR</span
+                ><input
+                  id="vendorCosts"
+                  type="number"
+                  min="0"
+                  max="1000000000"
+                  step="any"
+                  value="0"
+                  required
+              /></label>
+              <label
+                ><span>Annual internal administration effort in EUR</span
+                ><input
+                  id="internalRecurring"
+                  type="number"
+                  min="0"
+                  max="1000000000"
+                  step="any"
+                  value="0"
+                  required
+              /></label>
+              <label
+                ><span>One-time internal implementation effort in EUR</span
+                ><input
+                  id="internalSetup"
+                  type="number"
+                  min="0"
+                  max="1000000000"
+                  step="any"
+                  value="3000"
+                  required
+              /></label>
+            </div>
+            <p class="note">
+              Enter total remaining costs for the selected scope. A EUR 5,000 inspection pilot
+              satisfies the EUR 5,000 standard Inspect implementation on conversion; do not add it
+              again. Add any required Power BI licensing or embedded capacity unless already covered
+              by the quoted fee.
+            </p>
+          </section>
+        </form>
+        <div>
+          <p id="error" role="alert" hidden>
+            Enter a valid non-negative number in every enabled field. Counts must be whole numbers
+            and the saving rate must be between 0 and 100.
+          </p>
+          <section id="results" class="card" aria-labelledby="result-heading">
+            <h2 id="result-heading">Annual economics</h2>
+            <div class="metrics" aria-live="polite" aria-atomic="true">
+              <div class="metric">
+                <small>Satvey annual subscription</small><strong id="fee"></strong>
+              </div>
+              <div class="metric">
+                <small>Distinct annual customer benefit</small><strong id="benefit"></strong>
+              </div>
+              <div class="metric" id="net-metric">
+                <small>Annual net benefit after recurring costs</small><strong id="net"></strong>
+              </div>
+              <div class="metric">
+                <small>Annual benefit divided by recurring cost</small
+                ><strong id="multiple"></strong>
+              </div>
+            </div>
+            <div
+              role="img"
+              aria-label="Annual benefit and recurring cost comparison"
+              id="comparison"
+            >
+              <div class="bar-row">
+                Distinct benefit <span id="benefit-label"></span>
+                <div class="bar-track"><div class="bar" id="benefit-bar"></div></div>
+              </div>
+              <div class="bar-row">
+                Recurring customer cost <span id="cost-label"></span>
+                <div class="bar-track"><div class="bar cost" id="cost-bar"></div></div>
+              </div>
+            </div>
+            <table>
+              <caption>
+                Benefit and cost details
+              </caption>
+              <tbody>
+                <tr>
+                  <th scope="row">Inspection capacity value</th>
+                  <td id="inspectionValue"></td>
+                </tr>
+                <tr>
+                  <th scope="row">Distinct reporting capacity value</th>
+                  <td id="reportingValue"></td>
+                </tr>
+                <tr>
+                  <th scope="row">Net attributable maintenance saving</th>
+                  <td id="maintenanceValue"></td>
+                </tr>
+                <tr>
+                  <th scope="row">Annual vendor licences or capacity</th>
+                  <td id="vendorValue"></td>
+                </tr>
+                <tr>
+                  <th scope="row">Annual internal administration effort</th>
+                  <td id="internalValue"></td>
+                </tr>
+                <tr>
+                  <th scope="row">Total recurring customer cost</th>
+                  <td id="recurringCost"></td>
+                </tr>
+                <tr>
+                  <th scope="row">Annual net return on recurring cost</th>
+                  <td id="return"></td>
+                </tr>
+                <tr>
+                  <th scope="row">Satvey fee per home per month</th>
+                  <td id="perHome"></td>
+                </tr>
+              </tbody>
+            </table>
+            <table>
+              <caption>
+                First-year economics
+              </caption>
+              <tbody>
+                <tr>
+                  <th scope="row">Supplier implementation</th>
+                  <td id="supplierSetup"></td>
+                </tr>
+                <tr>
+                  <th scope="row">Customer implementation effort</th>
+                  <td id="customerSetup"></td>
+                </tr>
+                <tr>
+                  <th scope="row">Total first-year customer cost</th>
+                  <td id="firstYearCost"></td>
+                </tr>
+                <tr>
+                  <th scope="row">First-year benefit divided by cost</th>
+                  <td id="firstYearMultiple"></td>
+                </tr>
+                <tr>
+                  <th scope="row">First-year net benefit</th>
+                  <td id="firstYearNet"></td>
+                </tr>
+              </tbody>
+            </table>
+            <p class="note">
+              First-year figures assume a full year of the entered benefits. If implementation
+              delays adoption, reduce the benefit inputs to reflect the actual delivery period.
+            </p>
+            <div class="assumption" id="bi-target"></div>
+            <div class="actions">
+              <button type="button" class="primary" id="export">Export this case as CSV</button
+              ><button type="button" id="print">Print business case</button>
+            </div>
+            <p class="note">
+              Inputs stay in this browser tab and reset on reload. Export a copy to retain the
+              assumptions.
+            </p>
+          </section>
+          <section class="card">
+            <h2>Commercial price anchors</h2>
+            <table>
+              <tbody>
+                <tr>
+                  <th scope="row">Inspect reference annual offer</th>
+                  <td>EUR 12,000</td>
+                </tr>
+                <tr>
+                  <th scope="row">Integrated maintenance BI annual add-on</th>
+                  <td>EUR 12,000–20,000</td>
+                </tr>
+                <tr>
+                  <th scope="row">Inspect plus BI opening annual offer</th>
+                  <td>EUR 27,000</td>
+                </tr>
+                <tr>
+                  <th scope="row">Proven future suite including BI per year</th>
+                  <td>EUR 45,000–75,000</td>
+                </tr>
+              </tbody>
+            </table>
+            <p class="note">
+              Reference deployment: 10,000 homes. These are proposed prices, conditional on scope,
+              evidence and delivery capability. Suite totals are alternative bundles; do not add
+              them to the module fees.
+            </p>
+            <details>
+              <summary>Formulas and evidence</summary>
+              <p class="note">
+                Inspection value = annual inspections × minutes saved ÷ 60 × staff hourly cost.
+                Reporting value = monthly reporting hours saved × 12 × reporting hourly cost.
+                Maintenance value = addressable annual expenditure × net attributable saving
+                percentage ÷ 100. All three benefits must be distinct.
+              </p>
+              <p class="note">
+                Recurring cost = selected module fees + annual vendor costs + annual internal
+                effort. First-year cost adds supplier implementation and one-time customer effort.
+                Benefit-to-cost = annual benefit ÷ cost. Net return = (annual benefit − cost) ÷
+                cost. Zero denominators show “Not defined”.
+              </p>
+              <p class="note">
+                Microsoft lists
+                <a href="https://www.microsoft.com/nl-nl/power-platform/products/power-bi/pricing"
+                  >Power BI Pro at EUR 12.10 per user per month</a
+                >, billed annually excluding VAT; the visualization licence alone excludes source
+                integration and managed maintenance analytics.
+                <a href="https://www.zig.eu/nl/zig365/insights/dashboards/">Zig Insights</a> already
+                describes maintenance dashboards and drill-through.
+              </p>
+              <p class="note">
+                Read the <a href="pricing-strategy.md">pricing strategy</a> and
+                <a href="pilot-measurement.md">measurement protocol</a> for scope, competitive
+                sources and benefit attribution.
+              </p>
+            </details>
+          </section>
+        </div>
+      </div>
+      <footer class="note">
+        Local commercial planning tool. Forecast savings require customer validation; this
+        calculator does not constitute an offer or a performance guarantee.
+      </footer>
+      <noscript
+        ><p>
+          This calculator requires JavaScript. The reference opening offer is EUR 12,000 a year for
+          Inspect, EUR 15,000 extra for future Maintenance BI, and separately scoped implementation.
+        </p></noscript
+      >
+    </main>
+    <script>
+      'use strict';
+      const defaults = {
+        homes: 10000,
+        inspections: 1400,
+        minutes: 25,
+        inspectionRate: 65,
+        inspectionFee: 12000,
+        inspectionSetup: 5000,
+        biFee: 15000,
+        biSetup: 10000,
+        reportingHours: 0,
+        reportingRate: 65,
+        spend: 10000000,
+        savingPercent: 0,
+        vendorCosts: 0,
+        internalRecurring: 0,
+        internalSetup: 3000,
+      };
+      const byId = (id) => document.getElementById(id);
+      const form = byId('inputs');
+      const biInputs = [...byId('bi-fields').querySelectorAll('input')];
+      const euro = new Intl.NumberFormat('en-IE', {
+        style: 'currency',
+        currency: 'EUR',
+        maximumFractionDigits: 0,
+      });
+      const euroDetail = new Intl.NumberFormat('en-IE', {
+        style: 'currency',
+        currency: 'EUR',
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      });
+      const percent = new Intl.NumberFormat('en-IE', {
+        style: 'percent',
+        maximumFractionDigits: 1,
+      });
+      let lastCase = null;
+      const write = (id, value) => {
+        byId(id).textContent = value;
+      };
+      const multiple = (benefit, cost) =>
+        cost > 0 ? (benefit / cost).toFixed(2) + '×' : 'Not defined';
+      function update() {
+        const includeBi = byId('includeBi').checked;
+        biInputs.forEach((input) => {
+          input.disabled = !includeBi;
+        });
+        const values = Object.fromEntries(
+          Object.keys(defaults).map((id) => [id, byId(id).disabled ? 0 : Number(byId(id).value)]),
+        );
+        const valid = form.checkValidity() && Object.values(values).every(Number.isFinite);
+        byId('error').hidden = valid;
+        byId('results').hidden = !valid;
+        if (!valid) {
+          lastCase = null;
+          return;
+        }
+        const inspectionValue =
+          ((values.inspections * values.minutes) / 60) * values.inspectionRate;
+        const reportingValue = includeBi ? values.reportingHours * 12 * values.reportingRate : 0;
+        const maintenanceValue = includeBi ? (values.spend * values.savingPercent) / 100 : 0;
+        const fee = values.inspectionFee + (includeBi ? values.biFee : 0);
+        const benefit = inspectionValue + reportingValue + maintenanceValue;
+        const recurringCost = fee + values.vendorCosts + values.internalRecurring;
+        const supplierSetup = values.inspectionSetup + (includeBi ? values.biSetup : 0);
+        const firstYearCost = recurringCost + supplierSetup + values.internalSetup;
+        const net = benefit - recurringCost;
+        const outputs = {
+          inspectionValue,
+          reportingValue,
+          maintenanceValue,
+          fee,
+          benefit,
+          recurringCost,
+          supplierSetup,
+          firstYearCost,
+          net,
+          firstYearNet: benefit - firstYearCost,
+          vendorValue: values.vendorCosts,
+          internalValue: values.internalRecurring,
+          customerSetup: values.internalSetup,
+        };
+        Object.entries(outputs).forEach(([id, value]) => {
+          write(id, euro.format(value));
+          byId(id).dataset.value = String(value);
+        });
+        write('multiple', multiple(benefit, recurringCost));
+        write('firstYearMultiple', multiple(benefit, firstYearCost));
+        write('return', recurringCost > 0 ? percent.format(net / recurringCost) : 'Not defined');
+        write(
+          'perHome',
+          values.homes > 0 ? euroDetail.format(fee / values.homes / 12) : 'Not defined',
+        );
+        byId('net-metric').className = 'metric ' + (net >= 0 ? 'positive' : 'negative');
+        const scale = Math.max(benefit, recurringCost, 1);
+        byId('benefit-bar').style.width = (benefit / scale) * 100 + '%';
+        byId('cost-bar').style.width = (recurringCost / scale) * 100 + '%';
+        write('benefit-label', euro.format(benefit));
+        write('cost-label', euro.format(recurringCost));
+        byId('comparison').setAttribute(
+          'aria-label',
+          'Annual benefit ' +
+            euro.format(benefit) +
+            '; recurring customer cost ' +
+            euro.format(recurringCost),
+        );
+        byId('bi-target').hidden = !includeBi;
+        if (includeBi) {
+          const required = Math.max(0, 3 * values.biFee - reportingValue);
+          const rate =
+            values.spend > 0
+              ? percent.format(required / values.spend)
+              : 'not defined with zero addressable expenditure';
+          write(
+            'bi-target',
+            'For BI benefit to reach three times its annual module fee, maintenance decisions must add ' +
+              euro.format(required) +
+              ' beyond the entered reporting benefit (' +
+              rate +
+              ' of addressable expenditure). This fee-only target excludes implementation, other customer costs and benefits attributed elsewhere.',
+          );
+        }
+        lastCase = { values, includeBi, outputs };
+      }
+      form.addEventListener('input', () => {
+        write(
+          'scenario',
+          'Custom case: entered values are assumptions until validated with customer evidence.',
+        );
+        update();
+      });
+      form.addEventListener('submit', (event) => event.preventDefault());
+      document.querySelectorAll('[data-preset]').forEach((button) =>
+        button.addEventListener('click', () => {
+          const preset = button.dataset.preset;
+          Object.entries(defaults).forEach(([id, value]) => {
+            byId(id).value = String(value);
+          });
+          byId('includeBi').checked = preset !== 'inspection';
+          if (preset === 'bi') {
+            byId('reportingHours').value = '10';
+            byId('savingPercent').value = '0.5';
+          }
+          write(
+            'scenario',
+            preset === 'bi'
+              ? 'Illustrative scenario only: ten reporting hours saved monthly and 0.5% net attributable saving on EUR 10 million. Neither benefit is an observed Satvey result.'
+              : preset === 'inspection'
+                ? 'Inspection example: 1,400 annual inspections and 25 minutes net saving, both subject to customer validation.'
+                : 'Initial case: Inspect plus BI fees, with no assumed BI benefit.',
+          );
+          update();
+        }),
+      );
+      byId('print').addEventListener('click', () => window.print());
+      byId('export').addEventListener('click', () => {
+        if (!lastCase) return;
+        const rows = [
+          ['Satvey business case', 'Assumptions require customer validation'],
+          ['Research date', '2026-10-30'],
+          ['Currency', 'EUR excluding VAT'],
+          ['Scope', lastCase.includeBi ? 'Inspect plus proposed BI' : 'Inspect'],
+          ['Scenario', byId('scenario').textContent],
+          ['Input or result', 'Value'],
+        ];
+        Object.entries(lastCase.values).forEach(([id, value]) =>
+          rows.push([byId(id).closest('label').querySelector('span').textContent, value]),
+        );
+        Object.entries(lastCase.outputs).forEach(([id, value]) =>
+          rows.push([
+            byId(id).closest('.metric')?.querySelector('small')?.textContent ||
+              byId(id).closest('tr')?.querySelector('th')?.textContent ||
+              id,
+            value,
+          ]),
+        );
+        rows.push(
+          ['Annual benefit divided by recurring cost', byId('multiple').textContent],
+          ['First-year benefit divided by cost', byId('firstYearMultiple').textContent],
+          ['Annual net return on recurring cost', byId('return').textContent],
+        );
+        const csv = rows
+          .map((row) =>
+            row.map((value) => '"' + String(value).replaceAll('"', '""') + '"').join(','),
+          )
+          .join('\r\n');
+        const url = URL.createObjectURL(
+          new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8' }),
+        );
+        const anchor = document.createElement('a');
+        anchor.href = url;
+        anchor.download = 'satvey-business-case.csv';
+        document.body.append(anchor);
+        anchor.click();
+        anchor.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+      });
+      update();
+    </script>
+  </body>
+</html>

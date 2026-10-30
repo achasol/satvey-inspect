@@ -18,8 +18,286 @@
   "paths": {
     "/health": {
       "get": {
-        "summary": "Database readiness",
+        "summary": "Database, object storage and PDF readiness",
         "operationId": "get__health",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "status"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict or finalised inspection",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "File too large",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Unsupported media type",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Review incomplete",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Storage or processing unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      }
+    },
+    "/health/live": {
+      "get": {
+        "summary": "Process liveness",
+        "operationId": "get__health_live",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "status"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict or finalised inspection",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "File too large",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Unsupported media type",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Review incomplete",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Storage or processing unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      }
+    },
+    "/health/ready": {
+      "get": {
+        "summary": "Database, object storage and PDF readiness",
+        "operationId": "get__health_ready",
         "parameters": [],
         "responses": {
           "200": {
@@ -794,6 +1072,333 @@
                 },
                 "required": [
                   "current",
+                  "password"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/password/forgot": {
+      "post": {
+        "summary": "Request password recovery without disclosing account existence",
+        "operationId": "post__auth_password_forgot",
+        "parameters": [
+          {
+            "name": "X-Satvey-Request",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "const": "1"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OK"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict or finalised inspection",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "File too large",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Unsupported media type",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Review incomplete",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Storage or processing unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [],
+        "description": "Rate limited. Sends a one-hour single-use link for existing password accounts; SSO-only accounts recover with their provider.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "email"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/password/reset": {
+      "post": {
+        "summary": "Consume recovery token, change password and revoke all sessions",
+        "operationId": "post__auth_password_reset",
+        "parameters": [
+          {
+            "name": "X-Satvey-Request",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "const": "1"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OK"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict or finalised inspection",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "File too large",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Unsupported media type",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Review incomplete",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Storage or processing unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "token": {
+                    "type": "string",
+                    "minLength": 64,
+                    "maxLength": 64
+                  },
+                  "password": {
+                    "type": "string",
+                    "minLength": 12,
+                    "maxLength": 256
+                  }
+                },
+                "required": [
+                  "token",
                   "password"
                 ],
                 "additionalProperties": false
@@ -1851,6 +2456,16 @@
               "type": "string",
               "format": "uuid"
             }
+          },
+          {
+            "name": "X-Satvey-User",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Browser account binding: reject a scoped request with 401 if the current cookie belongs to another user."
           }
         ],
         "responses": {
@@ -2011,6 +2626,16 @@
               "type": "string",
               "const": "1"
             }
+          },
+          {
+            "name": "X-Satvey-User",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Browser account binding: reject a scoped request with 401 if the current cookie belongs to another user."
           }
         ],
         "responses": {
@@ -2187,6 +2812,16 @@
               "type": "string",
               "const": "1"
             }
+          },
+          {
+            "name": "X-Satvey-User",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Browser account binding: reject a scoped request with 401 if the current cookie belongs to another user."
           }
         ],
         "responses": {
@@ -2197,12 +2832,25 @@
                 "schema": {
                   "type": "object",
                   "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
                     "url": {
                       "type": "string"
+                    },
+                    "delivery": {
+                      "type": "string",
+                      "enum": [
+                        "manual",
+                        "pending"
+                      ]
                     }
                   },
                   "required": [
-                    "url"
+                    "id",
+                    "url",
+                    "delivery"
                   ],
                   "additionalProperties": false
                 }
@@ -2346,6 +2994,385 @@
             }
           }
         }
+      },
+      "get": {
+        "summary": "List pending invitations and email delivery status (settings.manage)",
+        "operationId": "get__orgs_org_invitations",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-Satvey-User",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Browser account binding: reject a scoped request with 401 if the current cookie belongs to another user."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "email": {
+                        "type": "string"
+                      },
+                      "roleId": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "expiresAt": {
+                        "type": "string"
+                      },
+                      "delivery": {
+                        "type": "string",
+                        "enum": [
+                          "manual",
+                          "pending",
+                          "processing",
+                          "done",
+                          "failed",
+                          "cancelled"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "email",
+                      "roleId",
+                      "expiresAt",
+                      "delivery"
+                    ],
+                    "additionalProperties": false
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict or finalised inspection",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "File too large",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Unsupported media type",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Review incomplete",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Storage or processing unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/orgs/{org}/invitations/{invitation}/resend": {
+      "post": {
+        "summary": "Rotate invitation token and requeue delivery (settings.manage)",
+        "operationId": "post__orgs_org_invitations_invitation_resend",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-Satvey-Request",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "const": "1"
+            }
+          },
+          {
+            "name": "X-Satvey-User",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Browser account binding: reject a scoped request with 401 if the current cookie belongs to another user."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "url": {
+                      "type": "string"
+                    },
+                    "delivery": {
+                      "type": "string",
+                      "enum": [
+                        "manual",
+                        "pending"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "url",
+                    "delivery"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict or finalised inspection",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "File too large",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Unsupported media type",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Review incomplete",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Storage or processing unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "description": "Revokes the previous link. Invitation expires seven days after resend.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {},
+                "required": [],
+                "additionalProperties": false
+              }
+            }
+          }
+        }
       }
     },
     "/orgs/{org}/sso": {
@@ -2361,6 +3388,16 @@
               "type": "string",
               "format": "uuid"
             }
+          },
+          {
+            "name": "X-Satvey-User",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Browser account binding: reject a scoped request with 401 if the current cookie belongs to another user."
           }
         ],
         "responses": {
@@ -2507,6 +3544,16 @@
               "type": "string",
               "const": "1"
             }
+          },
+          {
+            "name": "X-Satvey-User",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Browser account binding: reject a scoped request with 401 if the current cookie belongs to another user."
           }
         ],
         "responses": {
@@ -2709,6 +3756,16 @@
                 "provisional"
               ]
             }
+          },
+          {
+            "name": "X-Satvey-User",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Browser account binding: reject a scoped request with 401 if the current cookie belongs to another user."
           }
         ],
         "responses": {
@@ -2855,6 +3912,16 @@
               "type": "string",
               "const": "1"
             }
+          },
+          {
+            "name": "X-Satvey-User",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Browser account binding: reject a scoped request with 401 if the current cookie belongs to another user."
           }
         ],
         "responses": {
@@ -3034,6 +4101,16 @@
               "type": "string",
               "format": "uuid"
             }
+          },
+          {
+            "name": "X-Satvey-User",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Browser account binding: reject a scoped request with 401 if the current cookie belongs to another user."
           }
         ],
         "responses": {
@@ -3191,6 +4268,16 @@
               "type": "string",
               "const": "1"
             }
+          },
+          {
+            "name": "X-Satvey-User",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Browser account binding: reject a scoped request with 401 if the current cookie belongs to another user."
           }
         ],
         "responses": {
@@ -3371,6 +4458,16 @@
               "type": "string",
               "const": "1"
             }
+          },
+          {
+            "name": "X-Satvey-User",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Browser account binding: reject a scoped request with 401 if the current cookie belongs to another user."
           }
         ],
         "responses": {
@@ -3553,6 +4650,16 @@
               "type": "string",
               "format": "uuid"
             }
+          },
+          {
+            "name": "X-Satvey-User",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Browser account binding: reject a scoped request with 401 if the current cookie belongs to another user."
           }
         ],
         "responses": {
@@ -3700,6 +4807,16 @@
               "type": "string",
               "const": "1"
             }
+          },
+          {
+            "name": "X-Satvey-User",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Browser account binding: reject a scoped request with 401 if the current cookie belongs to another user."
           }
         ],
         "responses": {
@@ -3867,6 +4984,16 @@
               "type": "string",
               "const": "1"
             }
+          },
+          {
+            "name": "X-Satvey-User",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Browser account binding: reject a scoped request with 401 if the current cookie belongs to another user."
           }
         ],
         "responses": {
@@ -4034,6 +5161,16 @@
               "type": "string",
               "const": "1"
             }
+          },
+          {
+            "name": "X-Satvey-User",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Browser account binding: reject a scoped request with 401 if the current cookie belongs to another user."
           }
         ],
         "responses": {
@@ -4217,6 +5354,16 @@
               "type": "string",
               "const": "1"
             }
+          },
+          {
+            "name": "X-Satvey-User",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Browser account binding: reject a scoped request with 401 if the current cookie belongs to another user."
           }
         ],
         "responses": {
@@ -4379,6 +5526,16 @@
               "type": "string",
               "format": "uuid"
             }
+          },
+          {
+            "name": "X-Satvey-User",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Browser account binding: reject a scoped request with 401 if the current cookie belongs to another user."
           }
         ],
         "responses": {
@@ -4536,6 +5693,16 @@
               "type": "string",
               "const": "1"
             }
+          },
+          {
+            "name": "X-Satvey-User",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Browser account binding: reject a scoped request with 401 if the current cookie belongs to another user."
           }
         ],
         "responses": {
@@ -4722,6 +5889,16 @@
               "type": "string",
               "const": "1"
             }
+          },
+          {
+            "name": "X-Satvey-User",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Browser account binding: reject a scoped request with 401 if the current cookie belongs to another user."
           }
         ],
         "responses": {
@@ -4864,7 +6041,7 @@
     },
     "/orgs/{org}/inspections": {
       "get": {
-        "summary": "List inspections",
+        "summary": "List inspections with bounded paging and address/city search",
         "operationId": "get__orgs_org_inspections",
         "parameters": [
           {
@@ -4875,6 +6052,44 @@
               "type": "string",
               "format": "uuid"
             }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 1000000,
+              "default": 0
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 200
+            }
+          },
+          {
+            "name": "X-Satvey-User",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Browser account binding: reject a scoped request with 401 if the current cookie belongs to another user."
           }
         ],
         "responses": {
@@ -5024,6 +6239,16 @@
               "type": "string",
               "const": "1"
             }
+          },
+          {
+            "name": "X-Satvey-User",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Browser account binding: reject a scoped request with 401 if the current cookie belongs to another user."
           }
         ],
         "responses": {
@@ -5233,6 +6458,16 @@
               "type": "string",
               "const": "1"
             }
+          },
+          {
+            "name": "X-Satvey-User",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Browser account binding: reject a scoped request with 401 if the current cookie belongs to another user."
           }
         ],
         "responses": {
@@ -5414,6 +6649,16 @@
               "type": "string",
               "format": "uuid"
             }
+          },
+          {
+            "name": "X-Satvey-User",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Browser account binding: reject a scoped request with 401 if the current cookie belongs to another user."
           }
         ],
         "responses": {
@@ -5569,6 +6814,16 @@
               "type": "string",
               "const": "1"
             }
+          },
+          {
+            "name": "X-Satvey-User",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Browser account binding: reject a scoped request with 401 if the current cookie belongs to another user."
           }
         ],
         "responses": {
@@ -5720,6 +6975,16 @@
               "type": "string",
               "const": "1"
             }
+          },
+          {
+            "name": "X-Satvey-User",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Browser account binding: reject a scoped request with 401 if the current cookie belongs to another user."
           }
         ],
         "responses": {
@@ -5901,6 +7166,16 @@
               "type": "string",
               "const": "1"
             }
+          },
+          {
+            "name": "X-Satvey-User",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Browser account binding: reject a scoped request with 401 if the current cookie belongs to another user."
           }
         ],
         "responses": {
@@ -6110,6 +7385,16 @@
               "type": "string",
               "const": "1"
             }
+          },
+          {
+            "name": "X-Satvey-User",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Browser account binding: reject a scoped request with 401 if the current cookie belongs to another user."
           }
         ],
         "responses": {
@@ -6304,6 +7589,16 @@
               "type": "string",
               "const": "1"
             }
+          },
+          {
+            "name": "X-Satvey-User",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Browser account binding: reject a scoped request with 401 if the current cookie belongs to another user."
           }
         ],
         "responses": {
@@ -6516,6 +7811,16 @@
             "schema": {
               "type": "number"
             }
+          },
+          {
+            "name": "X-Satvey-User",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Browser account binding: reject a scoped request with 401 if the current cookie belongs to another user."
           }
         ],
         "responses": {
@@ -6735,6 +8040,16 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "X-Satvey-User",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Browser account binding: reject a scoped request with 401 if the current cookie belongs to another user."
           }
         ],
         "responses": {
@@ -6905,6 +8220,16 @@
               "type": "string",
               "const": "1"
             }
+          },
+          {
+            "name": "X-Satvey-User",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Browser account binding: reject a scoped request with 401 if the current cookie belongs to another user."
           }
         ],
         "responses": {
@@ -7111,6 +8436,16 @@
               "type": "string",
               "const": "1"
             }
+          },
+          {
+            "name": "X-Satvey-User",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Browser account binding: reject a scoped request with 401 if the current cookie belongs to another user."
           }
         ],
         "responses": {
@@ -7308,6 +8643,16 @@
               "type": "string",
               "const": "1"
             }
+          },
+          {
+            "name": "X-Satvey-User",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Browser account binding: reject a scoped request with 401 if the current cookie belongs to another user."
           }
         ],
         "responses": {
@@ -7476,6 +8821,16 @@
               "type": "string",
               "format": "uuid"
             }
+          },
+          {
+            "name": "X-Satvey-User",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Browser account binding: reject a scoped request with 401 if the current cookie belongs to another user."
           }
         ],
         "responses": {
@@ -7633,6 +8988,16 @@
               "type": "string",
               "format": "uuid"
             }
+          },
+          {
+            "name": "X-Satvey-User",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Browser account binding: reject a scoped request with 401 if the current cookie belongs to another user."
           }
         ],
         "responses": {
@@ -7815,6 +9180,16 @@
               "type": "string",
               "const": "1"
             }
+          },
+          {
+            "name": "X-Satvey-User",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Browser account binding: reject a scoped request with 401 if the current cookie belongs to another user."
           }
         ],
         "responses": {
@@ -7982,6 +9357,16 @@
               "type": "string",
               "format": "uuid"
             }
+          },
+          {
+            "name": "X-Satvey-User",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Browser account binding: reject a scoped request with 401 if the current cookie belongs to another user."
           }
         ],
         "responses": {
@@ -8147,6 +9532,16 @@
               "type": "string",
               "const": "1"
             }
+          },
+          {
+            "name": "X-Satvey-User",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Browser account binding: reject a scoped request with 401 if the current cookie belongs to another user."
           }
         ],
         "responses": {
@@ -8344,6 +9739,16 @@
               "type": "string",
               "const": "1"
             }
+          },
+          {
+            "name": "X-Satvey-User",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Browser account binding: reject a scoped request with 401 if the current cookie belongs to another user."
           }
         ],
         "responses": {
@@ -8539,6 +9944,16 @@
               "type": "string",
               "const": "1"
             }
+          },
+          {
+            "name": "X-Satvey-User",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Browser account binding: reject a scoped request with 401 if the current cookie belongs to another user."
           }
         ],
         "responses": {
@@ -8678,6 +10093,16 @@
               "type": "string",
               "format": "uuid"
             }
+          },
+          {
+            "name": "X-Satvey-User",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Browser account binding: reject a scoped request with 401 if the current cookie belongs to another user."
           }
         ],
         "responses": {
@@ -8827,6 +10252,16 @@
               "type": "string",
               "const": "1"
             }
+          },
+          {
+            "name": "X-Satvey-User",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Browser account binding: reject a scoped request with 401 if the current cookie belongs to another user."
           }
         ],
         "responses": {
@@ -9025,6 +10460,16 @@
               "type": "string",
               "const": "1"
             }
+          },
+          {
+            "name": "X-Satvey-User",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Browser account binding: reject a scoped request with 401 if the current cookie belongs to another user."
           }
         ],
         "responses": {
@@ -9206,6 +10651,16 @@
               "type": "string",
               "format": "uuid"
             }
+          },
+          {
+            "name": "X-Satvey-User",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Browser account binding: reject a scoped request with 401 if the current cookie belongs to another user."
           }
         ],
         "responses": {
@@ -9355,6 +10810,16 @@
               "type": "string",
               "const": "1"
             }
+          },
+          {
+            "name": "X-Satvey-User",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Browser account binding: reject a scoped request with 401 if the current cookie belongs to another user."
           }
         ],
         "responses": {
@@ -9525,6 +10990,16 @@
               "type": "string",
               "format": "uuid"
             }
+          },
+          {
+            "name": "X-Satvey-User",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Browser account binding: reject a scoped request with 401 if the current cookie belongs to another user."
           }
         ],
         "responses": {
@@ -9680,6 +11155,16 @@
               "type": "string",
               "const": "1"
             }
+          },
+          {
+            "name": "X-Satvey-User",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Browser account binding: reject a scoped request with 401 if the current cookie belongs to another user."
           }
         ],
         "responses": {
@@ -9879,6 +11364,16 @@
               "type": "string",
               "const": "1"
             }
+          },
+          {
+            "name": "X-Satvey-User",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Browser account binding: reject a scoped request with 401 if the current cookie belongs to another user."
           }
         ],
         "responses": {
@@ -10055,6 +11550,16 @@
               "type": "string",
               "const": "1"
             }
+          },
+          {
+            "name": "X-Satvey-User",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Browser account binding: reject a scoped request with 401 if the current cookie belongs to another user."
           }
         ],
         "responses": {
@@ -10216,6 +11721,16 @@
               "type": "string",
               "format": "uuid"
             }
+          },
+          {
+            "name": "X-Satvey-User",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Browser account binding: reject a scoped request with 401 if the current cookie belongs to another user."
           }
         ],
         "responses": {
@@ -10431,6 +11946,16 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "X-Satvey-User",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Browser account binding: reject a scoped request with 401 if the current cookie belongs to another user."
           }
         ],
         "responses": {
@@ -10637,6 +12162,16 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "X-Satvey-User",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Browser account binding: reject a scoped request with 401 if the current cookie belongs to another user."
           }
         ],
         "responses": {
@@ -10807,6 +12342,16 @@
               "type": "string",
               "const": "1"
             }
+          },
+          {
+            "name": "X-Satvey-User",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Browser account binding: reject a scoped request with 401 if the current cookie belongs to another user."
           }
         ],
         "responses": {
@@ -10998,6 +12543,16 @@
               "type": "string",
               "const": "1"
             }
+          },
+          {
+            "name": "X-Satvey-User",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Browser account binding: reject a scoped request with 401 if the current cookie belongs to another user."
           }
         ],
         "responses": {
@@ -11190,6 +12745,16 @@
               "type": "string",
               "const": "1"
             }
+          },
+          {
+            "name": "X-Satvey-User",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Browser account binding: reject a scoped request with 401 if the current cookie belongs to another user."
           }
         ],
         "responses": {

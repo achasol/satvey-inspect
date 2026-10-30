@@ -48,11 +48,15 @@ def operation(path, method, summary, response=None, body=None, status=200, publi
  spec["paths"].setdefault(path,{})[method]=value
  return value
 
-operation("/health","get","Database readiness",obj({"status":S}),public=True)
+operation("/health","get","Database, object storage and PDF readiness",obj({"status":S}),public=True)
+operation("/health/live","get","Process liveness",obj({"status":S}),public=True)
+operation("/health/ready","get","Database, object storage and PDF readiness",obj({"status":S}),public=True)
 operation("/auth/discover","post","Choose login method from exact configured email domain",obj({"method":enum("password","sso"),"url":S},["method"]),obj({"email":S}),public=True)
 operation("/auth/login","post","Email/password login",ref("OK"),obj({"email":S,"password":S}),public=True)
 operation("/auth/logout","post","Revoke the current session",ref("OK"),obj({}),public=True)
 operation("/auth/password","post","Set/change own password and revoke existing sessions",body=obj({"current":S,"password":{"type":"string","minLength":12,"maxLength":256}}))
+operation("/auth/password/forgot","post","Request password recovery without disclosing account existence",ref("OK"),obj({"email":S}),202,public=True,description="Rate limited. Sends a one-hour single-use link for existing password accounts; SSO-only accounts recover with their provider.")
+operation("/auth/password/reset","post","Consume recovery token, change password and revoke all sessions",ref("OK"),obj({"token":{"type":"string","minLength":64,"maxLength":64},"password":{"type":"string","minLength":12,"maxLength":256}}),public=True)
 operation("/me","get","Current account and organisation memberships",ref("Account"))
 start=operation("/auth/oidc/start","get","Start browser OIDC flow",status=302,public=True)
 start["parameters"] += [{"name":"org","in":"query","required":True,"schema":S},{"name":"email","in":"query","schema":S},{"name":"link","in":"query","schema":enum("true")}]
@@ -65,7 +69,9 @@ operation("/invitations/accept","post","Accept invitation as signed-in user or c
 root="/orgs/{org}"
 operation(root+"/members","get","List members (settings.manage)",array(ref("Member")))
 operation(root+"/members/{user}","put","Assign organisation role or remove member; retain a member with settings.manage",ref("OK"),obj({"roleId":UUID,"role":enum("admin","inspector","viewer","quality_manager","remove")},[]))
-operation(root+"/invitations","post","Create invitation link (settings.manage)",obj({"url":S}),obj({"email":S,"roleId":UUID,"role":S},["email"]),201)
+operation(root+"/invitations","post","Create invitation link (settings.manage)",obj({"id":UUID,"url":S,"delivery":enum("manual","pending")}),obj({"email":S,"roleId":UUID,"role":S},["email"]),201)
+operation(root+"/invitations","get","List pending invitations and email delivery status (settings.manage)",array(obj({"id":UUID,"email":S,"roleId":UUID,"expiresAt":S,"delivery":enum("manual","pending","processing","done","failed","cancelled")})))
+operation(root+"/invitations/{invitation}/resend","post","Rotate invitation token and requeue delivery (settings.manage)",obj({"id":UUID,"url":S,"delivery":enum("manual","pending")}),obj({}),description="Revokes the previous link. Invitation expires seven days after resend.")
 operation(root+"/sso","get","Read SSO settings without secrets (settings.manage)",ref("SSO"))
 operation(root+"/sso","put","Configure SSO and canonical domains (settings.manage)",ref("OK"),obj({"issuer":S,"clientId":S,"clientSecret":S,"domains":array(S)},["issuer","clientId","domains"]),description="Blank clientSecret preserves an existing secret. Exact domains are globally unique across organisations. Empty issuer disables SSO.")
 catalog=operation(root+"/properties","get","Search the tenant property catalog",ref("PropertyPage"))
@@ -83,7 +89,8 @@ template=operation(root+"/property-import-template","get","Download the UTF-8 CS
 template["responses"]["200"]={"description":"CSV header row","content":{"text/csv":{"schema":S}}}
 operation(root+"/property-sources/{source}/imports","post","Validate and preview a CSV import",ref("PropertyImport"),obj({"csv":S}),description="Requires settings.manage and an enabled CSV source. Returns row errors without an import ID when invalid. Valid previews expire after one hour and show up to 100 changed rows. Maximum 10,000 rows; JSON request limit is 1 MiB. Missing properties are never deleted.")
 operation(root+"/property-sources/{source}/imports/{import}/confirm","post","Confirm a validated CSV import atomically and idempotently",ref("OK"),obj({}),description="Rejects expired previews or source/catalog changes since validation with 409.")
-operation(root+"/inspections","get","List inspections",array(ref("Inspection")))
+inspection_list=operation(root+"/inspections","get","List inspections with bounded paging and address/city search",array(ref("Inspection")))
+inspection_list["parameters"] += [{"name":"limit","in":"query","schema":{"type":"integer","minimum":1,"maximum":100,"default":50}},{"name":"offset","in":"query","schema":{"type":"integer","minimum":0,"maximum":1000000,"default":0}},{"name":"q","in":"query","schema":{"type":"string","maxLength":200}}]
 operation(root+"/inspections","post","Create inspection with pinned property facts and published format idempotently",ref("ID"),obj({"id":UUID,"propertyId":UUID,"formatVersionId":UUID,"normVersionId":{"type":["string","null"],"format":"uuid"},"kind":enum("pre","final"),"scheduledAt":{"type":["string","null"],"format":"date-time"}},["id","propertyId","kind","formatVersionId"]),201)
 inspection=root+"/inspections/{inspection}"
 operation(inspection+"/property-context","post","Explicitly adopt compared catalog facts and invalidate dependent reviews",obj({"contextVersion":INT}),obj({"contextVersion":INT,"propertyRevision":INT}),description="Requires inspections.write and a draft inspection. Preserves human corrections, revokes worker leases and queues reanalysis.")
@@ -180,7 +187,12 @@ schemas["PropertySourceData"]=obj({"sources":array(ref("PropertySource")),"jobs"
 catalog_row=obj({"sourceObjectId":S,"objectNumber":S,"address":S,"postcode":S,"city":S,**property_optional},["sourceObjectId","objectNumber","address","postcode","city"])
 schemas["PropertyImport"]=obj({"id":UUID,"errors":array(S),"rows":INT,"created":INT,"updated":INT,"unchanged":INT,"changes":array(obj({"before":{"anyOf":[catalog_row,{"type":"null"}]},"after":catalog_row})),"changesTruncated":{"type":"boolean"}},["errors","rows"])
 
+for route,methods in spec["paths"].items():
+ if route.startswith("/orgs/"):
+  for op in methods.values():
+   op.setdefault("parameters",[]).append({"name":"X-Satvey-User","in":"header","required":False,"schema":UUID,"description":"Browser account binding: reject a scoped request with 401 if the current cookie belongs to another user."})
+
 destination=Path(__file__).resolve().parents[1]/"docs"/"openapi.json"
 destination.parent.mkdir(exist_ok=True)
-destination.write_text(json.dumps(spec,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
+destination.write_text(json.dumps(spec,ensure_ascii=False,indent=2)+"\n",encoding="utf-8",newline="\n")
 print(f"Wrote {len(spec['paths'])} API paths")

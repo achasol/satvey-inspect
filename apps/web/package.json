@@ -1,0 +1,49 @@
+{
+  "name": "@satvey/web",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "build": "node --max-old-space-size=768 ../../node_modules/typescript/bin/tsc -b && node --max-old-space-size=768 ../../node_modules/vite/bin/vite.js build",
+    "preview": "vite preview --host 127.0.0.1",
+    "typecheck": "tsc -b",
+    "test": "playwright test",
+    "test:ui": "playwright test --ui",
+    "test:unit": "node --max-old-space-size=512 ../../node_modules/vitest/vitest.mjs run",
+    "test:coverage": "node --max-old-space-size=512 ../../node_modules/vitest/vitest.mjs run --coverage",
+    "lint": "eslint src --max-warnings 0"
+  },
+  "dependencies": {
+    "@fontsource-variable/dm-sans": "5.3.0",
+    "@fontsource-variable/newsreader": "5.3.0",
+    "lucide-react": "1.23.0",
+    "radix-ui": "1.8.1",
+    "react": "19.2.7",
+    "react-dom": "19.2.7",
+    "react-router-dom": "7.18.5"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "4.14.0",
+    "@eslint/js": "10.0.1",
+    "@playwright/test": "1.60.0",
+    "@testing-library/jest-dom": "7.0.1",
+    "@testing-library/react": "16.3.3",
+    "@types/node": "22.19.19",
+    "@types/react": "19.2.17",
+    "@types/react-dom": "19.2.3",
+    "@vitejs/plugin-react": "6.0.3",
+    "@vitest/coverage-v8": "5.0.5",
+    "eslint": "10.14.0",
+    "eslint-plugin-react-hooks": "7.1.1",
+    "eslint-plugin-react-refresh": "0.5.7",
+    "fake-indexeddb": "6.2.7",
+    "jsdom": "29.1.1",
+    "playwright-core": "1.60.0",
+    "prettier": "3.9.10",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.72.1",
+    "vite": "8.3.5",
+    "vitest": "5.0.5"
+  }
+}

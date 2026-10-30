@@ -9,3 +9,11 @@ tests/artifacts
 *.tsbuildinfo
 .env*
 !.env.example
+**/node_modules
+**/dist
+**/coverage
+**/test-results
+**/playwright-report
+benchmarks/**/.local
+demo
+docs/benchmark-sources

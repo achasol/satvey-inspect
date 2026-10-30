@@ -1,0 +1,14 @@
+# Smaller workers for hosted CI runners with 7 GiB total RAM.
+services:
+  go:
+    mem_limit: 1536m
+    memswap_limit: 1536m
+  browsers:
+    mem_limit: 2048m
+    memswap_limit: 2048m
+  pdf:
+    mem_limit: 768m
+    memswap_limit: 768m
+  app:
+    mem_limit: 512m
+    memswap_limit: 512m

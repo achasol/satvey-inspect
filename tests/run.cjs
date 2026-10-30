@@ -19,7 +19,7 @@ const server = http.createServer((req, res) => {
 server.listen(5173, '127.0.0.1', () => {
   const child = spawn(
     process.execPath,
-    ['node_modules/@playwright/test/cli.js', 'test', ...process.argv.slice(2)],
+    ['node_modules/@playwright/test/cli.js', 'test', '--config', 'apps/web/playwright.config.ts', ...process.argv.slice(2)],
     { stdio: 'inherit', env: { ...process.env, PLAYWRIGHT_BASE_URL: 'http://localhost:5173' } },
   );
   for (const signal of ['SIGTERM', 'SIGINT']) process.on(signal, () => child.kill(signal));

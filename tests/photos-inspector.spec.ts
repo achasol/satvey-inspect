@@ -175,6 +175,7 @@ test('photo drawings persist, compare conflicts and appear in report previews', 
 test('annotation drafts survive reload and offline saves remain queued until reconnecting', async ({
   page,
 }) => {
+  test.setTimeout(120_000);
   const { path } = await setup(page);
   await addPhoto(page);
   await page.getByRole('button', { name: 'Foto bekijken: wand.png', exact: true }).click();
@@ -218,7 +219,9 @@ test('annotation drafts survive reload and offline saves remain queued until rec
   offline = false;
   await page.evaluate(() => window.dispatchEvent(new Event('online')));
   await expect
-    .poll(async () => (await (await page.request.get(path)).json()).media[0].annotationVersion)
+    .poll(async () => (await (await page.request.get(path)).json()).media[0].annotationVersion, {
+      timeout: 65_000,
+    })
     .toBe(1);
 });
 

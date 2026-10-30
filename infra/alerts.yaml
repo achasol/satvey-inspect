@@ -1,0 +1,19 @@
+groups:
+  - name: satvey
+    rules:
+      - alert: SatveyUnavailable
+        expr: up{job="satvey"} == 0
+        for: 2m
+        annotations: { summary: 'Satvey API metrics unavailable; check liveness and readiness' }
+      - alert: SatveyAPIErrorRate
+        expr: rate(satvey_http_failures_total[5m]) / clamp_min(rate(satvey_http_requests_total[5m]), 0.01) > 0.05
+        for: 5m
+        annotations: { summary: 'More than 5 percent of API requests fail' }
+      - alert: SatveyQueueStalled
+        expr: satvey_job_oldest_seconds{status="pending"} > 900
+        for: 5m
+        annotations: { summary: 'A Satvey queue has been waiting more than 15 minutes' }
+      - alert: SatveyJobFailed
+        expr: satvey_jobs{status="failed"} > 0
+        for: 5m
+        annotations: { summary: 'Satvey jobs require investigation or manual continuation' }

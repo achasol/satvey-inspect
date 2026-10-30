@@ -107,6 +107,7 @@ test('inspectors see account settings without organisation-management forms', as
   await expect(page.getByRole('heading', { name: 'Je account', exact: true })).toBeVisible();
   await expect(page.getByLabel(/^Client-ID/)).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Rol toevoegen', exact: true })).toHaveCount(0);
+  await page.unrouteAll({ behavior: 'wait' });
 });
 
 test('custom roles expose privileges and appear in invitation choices', async ({ page }, info) => {

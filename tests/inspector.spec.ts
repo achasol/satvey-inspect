@@ -72,7 +72,7 @@ test('inspection columns stay aligned when statuses change across screen sizes',
     scheduledAt: null,
     createdAt: '2026-10-30T10:00:00Z',
   }));
-  await page.route('**/api/v1/orgs/*/inspections', async (route) =>
+  await page.route(/\/api\/v1\/orgs\/[^/]+\/inspections(?:\?.*)?$/, async (route) =>
     route.request().method() === 'GET' ? route.fulfill({ json: rows }) : route.continue(),
   );
   await page.reload();
@@ -115,6 +115,47 @@ test('inspection columns stay aligned when statuses change across screen sizes',
     path: `tests/artifacts/inspection-list-${info.project.name}.png`,
     fullPage: true,
   });
+});
+
+test('inspection pagination resets for postcode searches and shows server results', async ({
+  page,
+}) => {
+  await login(page);
+  const rows = Array.from({ length: 51 }, (_, index) => ({
+    id: `00000000-0000-4000-8000-${String(index + 1).padStart(12, '0')}`,
+    propertyId: `00000000-0000-4000-8000-${String(index + 1).padStart(12, '0')}`,
+    address: `Paginastraat ${index + 1}`,
+    postcode: index === 50 ? '9876 ZX' : '1234 AB',
+    city: 'Utrecht',
+    kind: 'pre',
+    status: 'draft',
+    scheduledAt: null,
+    createdAt: '2026-10-30T10:00:00Z',
+  }));
+  await page.route(/\/api\/v1\/orgs\/[^/]+\/inspections(?:\?.*)?$/, async (route) => {
+    if (route.request().method() !== 'GET') return route.continue();
+    const params = new URL(route.request().url()).searchParams;
+    const offset = Number(params.get('offset') || 0);
+    const query = params.get('q') || '';
+    await route.fulfill({
+      json: query ? rows.filter((row) => row.postcode === query) : rows.slice(offset, offset + 50),
+    });
+  });
+  await page.reload();
+  const items = page.locator('[class*="inspectionList"] a');
+  await expect(items).toHaveCount(50);
+  await page.getByRole('button', { name: 'Volgende pagina', exact: true }).click();
+  await expect(items).toHaveCount(1);
+  await expect(page.getByRole('navigation', { name: "Inspectiepagina's" })).toContainText(
+    'Pagina 2',
+  );
+  await page.getByRole('textbox', { name: 'Inspecties zoeken' }).fill('9876 ZX');
+  await expect(items).toHaveCount(1);
+  await expect(items.first()).toContainText('9876 ZX');
+  await expect(page.getByRole('navigation', { name: "Inspectiepagina's" })).toContainText(
+    'Pagina 1',
+  );
+  await expect(page.getByRole('button', { name: 'Volgende pagina', exact: true })).toBeDisabled();
 });
 
 test('formats supply inspection type, room names and written evidence without repeated fields', async ({
@@ -240,6 +281,9 @@ test('canonical email domain goes directly to SSO without showing a password', a
 });
 
 test('photos become reviewed observations and a signed immutable report', async ({ page }) => {
+  // Capture, review, two signatures, accessibility, PDF export and deletion
+  // constitute a full visit; budget for slower WebKit runs on capped CPUs.
+  test.setTimeout(180_000);
   await login(page);
   await inspection(page);
   await capture(page);
@@ -475,6 +519,7 @@ test('offline capture survives reload and uploads once after reconnecting', asyn
   page,
   context,
 }) => {
+  test.setTimeout(90_000);
   await login(page);
   await inspection(page);
   let rejectUploads = true;
@@ -489,7 +534,9 @@ test('offline capture survives reload and uploads once after reconnecting', asyn
   rejectUploads = false;
   await page.evaluate(() => window.dispatchEvent(new Event('online')));
   await expect(page.getByText('Voorbeeldvoorstel', { exact: true })).toBeVisible({
-    timeout: 15000,
+    // An abrupt reload can leave the old tab's 45-second lease behind.
+    // Recovery must wait for expiry rather than steal another live tab's lease.
+    timeout: 65_000,
   });
   await expect(page.getByRole('article')).toHaveCount(1);
   const state = await context.storageState(),

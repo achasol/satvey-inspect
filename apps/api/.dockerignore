@@ -1,0 +1,4 @@
+*.cover
+coverage*
+.env*
+!.env.example

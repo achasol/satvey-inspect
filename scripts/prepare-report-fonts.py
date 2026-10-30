@@ -7,7 +7,7 @@ from pathlib import Path
 from fontTools.ttLib import TTFont
 from fontTools.varLib.instancer import instantiateVariableFont
 
-assets = Path("/workspace/backend/report_assets")
+assets = Path("/workspace/apps/api/internal/app/report_assets")
 for name, weight in [("regular", 400), ("semibold", 600), ("bold", 700)]:
     font = TTFont(assets / "dm-sans.woff2")
     axes = {axis.axisTag: axis.defaultValue for axis in font["fvar"].axes}
