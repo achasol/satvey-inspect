@@ -1,0 +1,75 @@
+DUTCH RESIDENTIAL INSPECTION SOURCE CATALOGUE
+Checked: 30 October 2026 (UTC)
+
+This is a source-discovery collection, not a labeled benchmark or training set.
+It contains 20 records: 12 candidate sources, 4 acquisition leads, 2 unavailable
+reports, 1 demonstration held for provenance review, and 1 fictional exclusion.
+The 12 candidates comprise 10 directly accessible PDFs, 1 PDF readable through
+the web research tool despite a direct HTTP 403, and 1 HTML excerpt collection.
+No source is marked benchmark-ready or cleared for AI reuse.
+
+FILES
+source-catalogue.csv: spreadsheet-friendly ranked register, one row per source.
+source-details.json: finding summaries and page locators, evidence/provenance,
+  access checks, original-byte hashes, rights observations and limitations.
+
+The CSV uses UTF-8 with a BOM for Excel and standard comma-separated quoting.
+Physical PDF page positions are 1-based. Printed page labels may differ.
+Dates refer to report/inspection dates where stated; lead publication dates
+are distinguished in the JSON. Access status reflects this check, not a promise
+of future availability. No accounts, payments or third-party messages were used.
+
+WHERE TO START
+Ranks 1-3: new-build handover photographs and two roof/envelope reports with
+explicit finding-to-image links. Ranks 4-6 add whole-dwelling component coverage.
+The remaining candidates offer low-resolution photos, comparison conditions,
+mixed report excerpts, access limitations or conflicting report summaries.
+Two reports from one provider are not two independent provider sources.
+Coverage is strongest for roofs, facades, timber and finishing. Mould evidence
+is limited to partial excerpts and a VvE report with conflicting summaries;
+this collection does not establish balanced defect or room coverage.
+
+CORPORATION COVERAGE
+No accessible corporation-owned report corpus was confirmed. The indexed
+Woonstad report and resident-produced Rochdale complaint inventory both return
+404. The Ressort Wonen customer case is a concrete acquisition lead. The Dutch
+NHL Stenden/AeroScan research and the commercial defect library are also leads,
+not downloaded image datasets. Other residential reports are clearly marked.
+
+READING THE CATEGORIES
+candidate_report: photos and findings checked on selected pages; later
+  provenance, rights and expert review are still needed.
+candidate_report_web_access_only: text accessible through the web research tool;
+  normal retrieval and image pairing remain unresolved.
+candidate_report_excerpt: partial published report images; no full PDF verified.
+candidate_comparison_report: potential sound-condition examples, not negatives.
+template_hold: demonstration whose real-inspection provenance is unconfirmed.
+excluded_fictional: findings explicitly fictional; exclude as real ground truth.
+unavailable_report: original inaccessible, even if search engines index its text.
+acquisition_lead: data holder/library identified; no usable public corpus verified.
+
+REUSE AND EVIDENCE LIMITS
+Public access was checked separately from permission to reuse. Some reports
+explicitly reserve rights or restrict copying. A missing license statement does
+not establish permission. No report was treated as legally cleared.
+
+Report findings are source statements, not labels created in this task. Some
+reports have inconsistent summaries, component scores or location headings.
+General boilerplate does not prove a defect exists. A photo cannot establish
+every cause, material diagnosis, measurement, functional test or responsibility.
+Do not equate suspected asbestos with a confirmed material classification.
+Do not equate no finding with a defect-free photo. Report photos can illustrate
+only part of a paragraph's claims. RGB and thermal evidence must stay distinct.
+
+FUTURE PREPARATION (NOT PERFORMED)
+Establish rights/provenance, obtain adequate source resolution, match each photo
+to its actual observation, and have an inspector review the intended labels.
+Exclude covers, signatures, stock images and unrelated diagrams; account for
+personal details before distributing derivatives. Deduplicate and group by
+property/source before making train/test splits. Public samples may already
+have been seen by a model, so a future private holdout is needed for stronger
+generalization claims.
+
+Only catalogue metadata is delivered. Original PDFs/images were read in memory;
+no raw reports, image crops, annotations, model evaluations or app changes are
+included. The shortlist is deliberately not represented as a valid benchmark.

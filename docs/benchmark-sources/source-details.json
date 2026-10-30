@@ -1,0 +1,1129 @@
+{
+  "schema_version": 1,
+  "title": "Dutch residential inspection source catalogue",
+  "created_at_utc": "2026-10-30T11:34:58.469524+00:00",
+  "artifact_type": "source_catalogue_not_an_annotated_dataset",
+  "scope": "Dutch residential RGB-photo inspection evidence; corporation properties prioritized; other Dutch dwellings and VvEs included.",
+  "page_convention": "All pdf_page_1_based values are physical PDF positions, not printed page labels.",
+  "summary": {
+    "records": 20,
+    "candidate_sources": 12,
+    "candidate_reports_direct_http_200": 10,
+    "benchmark_ready_records": 0,
+    "categories": {
+      "candidate_report": 9,
+      "candidate_report_web_access_only": 1,
+      "candidate_comparison_report": 1,
+      "candidate_report_excerpt": 1,
+      "template_hold": 1,
+      "excluded_fictional": 1,
+      "unavailable_report": 2,
+      "acquisition_lead": 4
+    }
+  },
+  "methodology": [
+    "Web discovery followed by direct HTTP checks and in-memory PDF inspection on 2026-10-30.",
+    "Selected pages visually checked for PBS, VEH, NRBI, Setelkeur, BIJN, Het Inspectiehuis, RoofSignal and both MJOP Beheer reports; not every image/claim checked.",
+    "Steeds read through web-tool PDF text because direct HTTP returns 403. DutchDetect image references and context checked; full-resolution contents not verified.",
+    "Ranks reflect photo/observation alignment and likely preparation value, not validated accuracy, reuse permission or housing-corporation representativeness.",
+    "PDF hashes identify the bytes inspected; no remote PDF or image files retained in deliverables. HTML hashes are only retrieval snapshots."
+  ],
+  "limitations": [
+    "No accessible corporation-owned inspection corpus or explicitly open AI-reuse license was confirmed.",
+    "Provider claims about real inspections, expertise and anonymization are not independently audited.",
+    "No image-level labels, crops, model calls, train/test assignments or application changes were produced.",
+    "Public examples may have appeared in model pretraining; this is not a contamination-free holdout.",
+    "Photos of one dwelling, repeated photos, derivatives and provider templates must be grouped during later split preparation.",
+    "Condition scores, causes, dimensions, functionality, asbestos suspicions, liability and costs are not visual ground truth.",
+    "An absent finding is not a negative label. Even explicit no-defect summaries need review where detailed observations disagree."
+  ],
+  "sources": [
+    {
+      "id": "nrbi",
+      "title": "New-build handover inspection example",
+      "publisher_or_host": "NRBI",
+      "inspection_author": "Unnamed inspector in demonstration report",
+      "category": "candidate_report",
+      "candidate_rank": 1,
+      "country": "NL",
+      "language": "nl",
+      "property_type": "Terraced dwelling; new build",
+      "capture_modality": [
+        "handheld_rgb"
+      ],
+      "report_date": "2019-05-16",
+      "date_basis": "Inspection date on PDF page 1",
+      "source_url": "https://www.nrbi.nl/voor-opleveringskeuring-nieuwbouw.pdf",
+      "landing_page_url": null,
+      "provenance": "Public example with demonstration identities; field provenance unconfirmed.",
+      "housing_corporation_connection": "unconfirmed",
+      "corporation_connection_evidence": null,
+      "reported_topics": [
+        "sealant defects",
+        "unfinished paintwork",
+        "glazing damage",
+        "tile/grout defects",
+        "missing fixtures"
+      ],
+      "useful_pages": [
+        {
+          "pdf_page_1_based": 7,
+          "reported_finding_summary": "Bathroom sealant, uneven socket and tile/grout finishing observations."
+        },
+        {
+          "pdf_page_1_based": 10,
+          "reported_finding_summary": "Ceiling joint, scratched glass and unfinished paintwork."
+        }
+      ],
+      "quality_and_preparation_notes": [
+        "Photos inspected; page 7 image objects are 800x600 or 800x300 pixels.",
+        "Watermark overlays some images. Some finding rows have no photograph; do not assume a row-to-image match."
+      ],
+      "reuse_status": "not_established",
+      "explicit_open_reuse_license_found": false,
+      "rights_notes": "No explicit open reuse license found in inspected PDF. Permission for AI reuse remains unverified.",
+      "rights_pdf_pages_1_based": [],
+      "benchmark_ready": false,
+      "access_check": {
+        "checked_at_utc": "2026-10-30T11:28:47.932262+00:00",
+        "http_status": 200,
+        "resolved_url": "https://www.nrbi.nl/voor-opleveringskeuring-nieuwbouw.pdf",
+        "content_type": "application/pdf",
+        "page_count": 11,
+        "byte_length": 2875613,
+        "sha256": "28ec0d031b39f78aa5a92c932cdb7c7960e922cf38e4449c9573557fec39a896"
+      },
+      "supporting_urls": []
+    },
+    {
+      "id": "roof_zutphen",
+      "title": "Zutphen apartment-block roof inspection",
+      "publisher_or_host": "RoofSignal",
+      "inspection_author": "RoofSignal",
+      "category": "candidate_report",
+      "candidate_rank": 2,
+      "country": "NL",
+      "language": "nl",
+      "property_type": "VvE with five apartments",
+      "capture_modality": [
+        "drone_rgb"
+      ],
+      "report_date": "2026-09-03",
+      "date_basis": "Inspection date on PDF page 1",
+      "source_url": "https://www.roofsignal.nl/downloads/RoofSignal-praktijkrapport-zutphen-geanonimiseerd.pdf",
+      "landing_page_url": "https://www.roofsignal.nl/projecten",
+      "provenance": "Publisher describes this as an anonymized delivered inspection.",
+      "housing_corporation_connection": "unconfirmed",
+      "corporation_connection_evidence": null,
+      "reported_topics": [
+        "roof ponding",
+        "gutter contamination",
+        "weathered mortar",
+        "paint deterioration",
+        "loose roof material"
+      ],
+      "useful_pages": [
+        {
+          "pdf_page_1_based": 7,
+          "reported_finding_summary": "Loose material around a roof penetration."
+        },
+        {
+          "pdf_page_1_based": 8,
+          "reported_finding_summary": "Standing water on flat roofing."
+        },
+        {
+          "pdf_page_1_based": 13,
+          "reported_finding_summary": "Deteriorated coating on timber components."
+        }
+      ],
+      "quality_and_preparation_notes": [
+        "Explicit finding IDs and original image filenames; clear photo/observation layout.",
+        "Report separates observation from risk; causes, urgency and condition indications require later validation."
+      ],
+      "reuse_status": "not_established",
+      "explicit_open_reuse_license_found": false,
+      "rights_notes": "Public example publication observed; no explicit AI-training, benchmarking or redistribution license found.",
+      "rights_pdf_pages_1_based": [],
+      "benchmark_ready": false,
+      "access_check": {
+        "checked_at_utc": "2026-10-30T11:28:47.934256+00:00",
+        "http_status": 200,
+        "resolved_url": "https://www.roofsignal.nl/downloads/RoofSignal-praktijkrapport-zutphen-geanonimiseerd.pdf",
+        "content_type": "application/pdf",
+        "page_count": 23,
+        "byte_length": 4471997,
+        "sha256": "f3e270127e28679e20d6b0919c143022bf2af56c28e5b5ed4f5b2559794d0c9f"
+      },
+      "supporting_urls": []
+    },
+    {
+      "id": "roof_deventer",
+      "title": "Deventer dwelling envelope inspection",
+      "publisher_or_host": "RoofSignal",
+      "inspection_author": "RoofSignal",
+      "category": "candidate_report",
+      "candidate_rank": 3,
+      "country": "NL",
+      "language": "nl",
+      "property_type": "Individual dwelling",
+      "capture_modality": [
+        "drone_rgb",
+        "handheld_rgb"
+      ],
+      "report_date": "2026-08-03",
+      "date_basis": "Inspection date on PDF page 1",
+      "source_url": "https://www.roofsignal.nl/downloads/RoofSignal-praktijkrapport-deventer-geanonimiseerd.pdf",
+      "landing_page_url": "https://www.roofsignal.nl/projecten",
+      "provenance": "Publisher describes this as an anonymized delivered inspection.",
+      "housing_corporation_connection": "unconfirmed",
+      "corporation_connection_evidence": null,
+      "reported_topics": [
+        "displaced roof tiles",
+        "open flashing",
+        "roof junction defects",
+        "gutter contamination"
+      ],
+      "useful_pages": [
+        {
+          "pdf_page_1_based": 7,
+          "reported_finding_summary": "Roof tiles provide incomplete coverage."
+        },
+        {
+          "pdf_page_1_based": 8,
+          "reported_finding_summary": "Loose/open flashing at a roof extension."
+        },
+        {
+          "pdf_page_1_based": 12,
+          "reported_finding_summary": "Contamination around gutter connections."
+        }
+      ],
+      "quality_and_preparation_notes": [
+        "Explicit finding IDs and image filenames; photographs inspected.",
+        "Risk narrative sometimes goes beyond directly visible evidence. Shares a provider with Zutphen; not an independent provider sample."
+      ],
+      "reuse_status": "not_established",
+      "explicit_open_reuse_license_found": false,
+      "rights_notes": "No explicit open license or permission for AI reuse found in inspected report/landing page.",
+      "rights_pdf_pages_1_based": [],
+      "benchmark_ready": false,
+      "access_check": {
+        "checked_at_utc": "2026-10-30T11:28:48.523542+00:00",
+        "http_status": 200,
+        "resolved_url": "https://www.roofsignal.nl/downloads/RoofSignal-praktijkrapport-deventer-geanonimiseerd.pdf",
+        "content_type": "application/pdf",
+        "page_count": 21,
+        "byte_length": 5288065,
+        "sha256": "d622689373efe95cfc408d12d38cdbe8c2a5d1fa55fa336ee6e248cf8d6248db"
+      },
+      "supporting_urls": []
+    },
+    {
+      "id": "bijn",
+      "title": "Residential condition inspection example",
+      "publisher_or_host": "Bouwkeuringvergelijk",
+      "inspection_author": "BIJN.nl / BIJN Inspections and Advice",
+      "category": "candidate_report",
+      "candidate_rank": 4,
+      "country": "NL",
+      "language": "nl",
+      "property_type": "Single-family dwelling, built 1971",
+      "capture_modality": [
+        "handheld_rgb"
+      ],
+      "report_date": "2019-07-07",
+      "date_basis": "Report issued date; inspection listed as 2019-07-01",
+      "source_url": "https://www.bouwkeuringvergelijk.nl/voorbeeld-bouwkundig-rapport.pdf",
+      "landing_page_url": null,
+      "provenance": "Public sample with placeholder address; field provenance unconfirmed.",
+      "housing_corporation_connection": "unconfirmed",
+      "corporation_connection_evidence": null,
+      "reported_topics": [
+        "masonry cracks",
+        "damaged flashing",
+        "eroded pointing",
+        "decayed timber",
+        "suspect materials"
+      ],
+      "useful_pages": [
+        {
+          "pdf_page_1_based": 19,
+          "reported_finding_summary": "Damaged lead flashing; separate suspect roofing-material observation."
+        },
+        {
+          "pdf_page_1_based": 21,
+          "reported_finding_summary": "Eroded pointing and deteriorated timber."
+        },
+        {
+          "pdf_page_1_based": 22,
+          "reported_finding_summary": "Visible masonry cracks prompting foundation investigation."
+        }
+      ],
+      "quality_and_preparation_notes": [
+        "Photographs inspected alongside specific findings.",
+        "Page 22 begins with photos continuing from the preceding page. Suspect asbestos and foundation causes are not confirmed image labels."
+      ],
+      "reuse_status": "not_established",
+      "explicit_open_reuse_license_found": false,
+      "rights_notes": "PDF page 37 reserves intellectual-property rights to the inspecting company; AI reuse not established.",
+      "rights_pdf_pages_1_based": [
+        37
+      ],
+      "benchmark_ready": false,
+      "access_check": {
+        "checked_at_utc": "2026-10-30T11:28:47.932683+00:00",
+        "http_status": 200,
+        "resolved_url": "https://www.bouwkeuringvergelijk.nl/voorbeeld-bouwkundig-rapport.pdf",
+        "content_type": "application/pdf",
+        "page_count": 39,
+        "byte_length": 5049812,
+        "sha256": "69b53f0b652e5295d514dbf763b0ca0c57ed624f6ea950438e09b02ec8198a8b"
+      },
+      "supporting_urls": []
+    },
+    {
+      "id": "setelkeur",
+      "title": "Whole-dwelling survey example",
+      "publisher_or_host": "Setelkeur",
+      "inspection_author": "Uw Woningkeurder",
+      "category": "candidate_report",
+      "candidate_rank": 5,
+      "country": "NL",
+      "language": "nl",
+      "property_type": "Single-family terraced dwelling",
+      "capture_modality": [
+        "handheld_rgb"
+      ],
+      "report_date": "2015-01-05",
+      "date_basis": "Inspection date on PDF page 1",
+      "source_url": "https://setelkeur.nl/wp-content/uploads/2015/03/Voorbeeld-rapport.pdf",
+      "landing_page_url": null,
+      "provenance": "Public sample with placeholder identities; field provenance unconfirmed.",
+      "housing_corporation_connection": "unconfirmed",
+      "corporation_connection_evidence": null,
+      "reported_topics": [
+        "window-sill joint defects",
+        "damaged flashing",
+        "historic moisture stains",
+        "component condition"
+      ],
+      "useful_pages": [
+        {
+          "pdf_page_1_based": 14,
+          "reported_finding_summary": "Window-sill joints and damaged flashing with photos."
+        },
+        {
+          "pdf_page_1_based": 29,
+          "reported_finding_summary": "Historic leakage marks; measurement narrative is separate evidence."
+        }
+      ],
+      "quality_and_preparation_notes": [
+        "Photographs inspected; broad component coverage.",
+        "Much text is general advice. Use specific findings, not generic explanations, in later preparation."
+      ],
+      "reuse_status": "not_established",
+      "explicit_open_reuse_license_found": false,
+      "rights_notes": "PDF page 51 reserves report intellectual-property rights to Uw Woningkeurder; AI reuse not established.",
+      "rights_pdf_pages_1_based": [
+        51
+      ],
+      "benchmark_ready": false,
+      "access_check": {
+        "checked_at_utc": "2026-10-30T11:28:47.932500+00:00",
+        "http_status": 200,
+        "resolved_url": "https://setelkeur.nl/wp-content/uploads/2015/03/Voorbeeld-rapport.pdf",
+        "content_type": "application/pdf",
+        "page_count": 53,
+        "byte_length": 3074755,
+        "sha256": "bc95bd5a408f3257b937eba64531fed7b4ed30b9cad00dc09af3b2eba50973f6"
+      },
+      "supporting_urls": []
+    },
+    {
+      "id": "veh",
+      "title": "Vereniging Eigen Huis dwelling-survey example",
+      "publisher_or_host": "Vereniging Eigen Huis",
+      "inspection_author": "Eigen Huis Bouwkundig Advies",
+      "category": "candidate_report",
+      "candidate_rank": 6,
+      "country": "NL",
+      "language": "nl",
+      "property_type": "Demonstration dwelling",
+      "capture_modality": [
+        "handheld_rgb"
+      ],
+      "report_date": "2021-11-25",
+      "date_basis": "Report date on PDF page 1",
+      "source_url": "https://www.eigenhuis.nl/kontent-assets/0a476483-b2ac-0128-c5e1-a80361083e05/4d18fb78-bc2b-4c0b-9512-955866a92b8b/voorbeeld-rapport-btk-juni-2021%20(1).pdf",
+      "landing_page_url": "https://www.eigenhuis.nl/diensten/kopen-diensten/bouwtechnische-keuring/bouwkundig-rapport",
+      "provenance": "Public sample using a demonstration address; field provenance unconfirmed.",
+      "housing_corporation_connection": "unconfirmed",
+      "corporation_connection_evidence": null,
+      "reported_topics": [
+        "cracked shower tray",
+        "roof defects",
+        "paint deterioration",
+        "timber decay",
+        "electrical observations"
+      ],
+      "useful_pages": [
+        {
+          "pdf_page_1_based": 11,
+          "reported_finding_summary": "Cracked shower tray explicitly linked to a photograph."
+        },
+        {
+          "pdf_page_1_based": 16,
+          "reported_finding_summary": "Roof, pointing and timber-condition findings."
+        },
+        {
+          "pdf_page_1_based": 17,
+          "reported_finding_summary": "Roof membrane and flashing deterioration."
+        }
+      ],
+      "quality_and_preparation_notes": [
+        "Cracked-shower photo inspected. Many findings have no dedicated photo.",
+        "Functional and electrical claims need evidence beyond a photograph."
+      ],
+      "reuse_status": "not_established",
+      "explicit_open_reuse_license_found": false,
+      "rights_notes": "PDF page 21 explicitly restricts copying without written permission; no AI-reuse grant observed.",
+      "rights_pdf_pages_1_based": [
+        21
+      ],
+      "benchmark_ready": false,
+      "access_check": {
+        "checked_at_utc": "2026-10-30T11:28:47.932042+00:00",
+        "http_status": 200,
+        "resolved_url": "https://www.eigenhuis.nl/kontent-assets/0a476483-b2ac-0128-c5e1-a80361083e05/4d18fb78-bc2b-4c0b-9512-955866a92b8b/voorbeeld-rapport-btk-juni-2021%20(1).pdf",
+        "content_type": "application/pdf",
+        "page_count": 21,
+        "byte_length": 821972,
+        "sha256": "3ab44cc0f79907fbcef638899f0adc56a39155e6e5f89603a375f93e29b8ca70"
+      },
+      "supporting_urls": []
+    },
+    {
+      "id": "mjop_large",
+      "title": "Postwar apartment-block maintenance example",
+      "publisher_or_host": "MJOP Beheer",
+      "inspection_author": "MJOP Beheer",
+      "category": "candidate_report",
+      "candidate_rank": 7,
+      "country": "NL",
+      "language": "nl",
+      "property_type": "VvE with 16 apartments, built 1963",
+      "capture_modality": [
+        "handheld_rgb",
+        "drone_rgb"
+      ],
+      "report_date": "2026-08-09",
+      "date_basis": "Report date on PDF page 1; inspection listed as April 2026",
+      "source_url": "https://www.mjopbeheer.nl/voorbeelden/voorbeeld-groot-naoorlogs.pdf",
+      "landing_page_url": "https://www.mjopbeheer.nl/voorbeelden",
+      "provenance": "Publisher says anonymized real inspection; similarly named portal demo is fictional. Confirm provenance.",
+      "housing_corporation_connection": "unconfirmed",
+      "corporation_connection_evidence": null,
+      "reported_topics": [
+        "corrosion",
+        "paint deterioration",
+        "concrete cracks",
+        "mould on storage doors"
+      ],
+      "useful_pages": [
+        {
+          "pdf_page_1_based": 15,
+          "reported_finding_summary": "Railing corrosion and paint deterioration."
+        },
+        {
+          "pdf_page_1_based": 16,
+          "reported_finding_summary": "Cracking in a concrete facade band."
+        },
+        {
+          "pdf_page_1_based": 46,
+          "reported_finding_summary": "Storage-door mould narrative conflicts with a no-defects summary."
+        }
+      ],
+      "quality_and_preparation_notes": [
+        "Photos inspected. Contradictory summaries and condition ratings prevent automatic label reuse.",
+        "Page 11 gives a favorable score despite an intercom malfunction. Review specific photos independently."
+      ],
+      "reuse_status": "not_established",
+      "explicit_open_reuse_license_found": false,
+      "rights_notes": "No explicit open reuse license found in inspected PDF/landing page.",
+      "rights_pdf_pages_1_based": [],
+      "benchmark_ready": false,
+      "access_check": {
+        "checked_at_utc": "2026-10-30T11:28:49.091661+00:00",
+        "http_status": 200,
+        "resolved_url": "https://www.mjopbeheer.nl/voorbeelden/voorbeeld-groot-naoorlogs.pdf",
+        "content_type": "application/pdf",
+        "page_count": 63,
+        "byte_length": 6862869,
+        "sha256": "efa239011e09c3cb61e504f0fa3a14a39f9ba447cc0eac5d633d965298460c80"
+      },
+      "supporting_urls": []
+    },
+    {
+      "id": "pbs",
+      "title": "Terraced-house condition assessment example",
+      "publisher_or_host": "PBS Vastgoed",
+      "inspection_author": "PBS Vastgoed",
+      "category": "candidate_report",
+      "candidate_rank": 8,
+      "country": "NL",
+      "language": "nl",
+      "property_type": "Terraced dwelling",
+      "capture_modality": [
+        "handheld_rgb"
+      ],
+      "report_date": "2018-01-12",
+      "date_basis": "Footer date on findings pages",
+      "source_url": "https://pbsvastgoed.nl/assets/uploads/Voorbeeld-Conditiemeting-NEN-2767.pdf",
+      "landing_page_url": "https://www.pbsvastgoed.nl/diensten/conditiemeting-NEN-2767/",
+      "provenance": "Public sample with placeholder address and differing internal object codes; field provenance unconfirmed.",
+      "housing_corporation_connection": "unconfirmed",
+      "corporation_connection_evidence": null,
+      "reported_topics": [
+        "paint deterioration",
+        "masonry cracks",
+        "interior cracks",
+        "timber decay"
+      ],
+      "useful_pages": [
+        {
+          "pdf_page_1_based": 10,
+          "reported_finding_summary": "Deteriorated paint and a masonry crack."
+        },
+        {
+          "pdf_page_1_based": 15,
+          "reported_finding_summary": "Interior wall cracking."
+        },
+        {
+          "pdf_page_1_based": 16,
+          "reported_finding_summary": "Window-frame findings including localized timber decay."
+        }
+      ],
+      "quality_and_preparation_notes": [
+        "Photos inspected. Page 10 photos are only 193x144 and 144x193 pixels.",
+        "Physical PDF page 10 is printed page 4. Some administrative text extracts poorly; historical maintenance dates are inconsistent."
+      ],
+      "reuse_status": "not_established",
+      "explicit_open_reuse_license_found": false,
+      "rights_notes": "No explicit open reuse license found in inspected PDF.",
+      "rights_pdf_pages_1_based": [],
+      "benchmark_ready": false,
+      "access_check": {
+        "checked_at_utc": "2026-10-30T11:28:47.931738+00:00",
+        "http_status": 200,
+        "resolved_url": "https://pbsvastgoed.nl/assets/uploads/Voorbeeld-Conditiemeting-NEN-2767.pdf",
+        "content_type": "application/pdf",
+        "page_count": 19,
+        "byte_length": 1849791,
+        "sha256": "1a79f210d9f7ff527d2ae0915d079c588e9f8c659235ed30475ebc00632851ef"
+      },
+      "supporting_urls": []
+    },
+    {
+      "id": "inspectiehuis",
+      "title": "Property-specific Wassenaar dwelling survey",
+      "publisher_or_host": "VLNN document host",
+      "inspection_author": "Het Inspectiehuis",
+      "category": "candidate_report",
+      "candidate_rank": 9,
+      "country": "NL",
+      "language": "nl",
+      "property_type": "Existing dwelling",
+      "capture_modality": [
+        "handheld_rgb"
+      ],
+      "report_date": "2019-03-07",
+      "date_basis": "Inspection date on PDF page 3",
+      "source_url": "https://vlnn.nl/app/uploads/2020/11/6.-Inspectierapport.pdf",
+      "landing_page_url": null,
+      "provenance": "Property-specific report commissioned by Staatsbosbeheer.",
+      "housing_corporation_connection": "other_public_owner_confirmed",
+      "corporation_connection_evidence": "PDF page 3 identifies Staatsbosbeheer as client; it is not a woningcorporatie.",
+      "reported_topics": [
+        "moisture damage",
+        "leakage traces",
+        "paint deterioration",
+        "corroded drainage components",
+        "sanitary sealant"
+      ],
+      "useful_pages": [
+        {
+          "pdf_page_1_based": 12,
+          "reported_finding_summary": "Deteriorated exterior coatings."
+        },
+        {
+          "pdf_page_1_based": 14,
+          "reported_finding_summary": "Moisture-damaged wall and attic leakage images."
+        }
+      ],
+      "quality_and_preparation_notes": [
+        "Photos inspected; page 14 mixes several findings.",
+        "Most page 14 photo objects are 193x144 pixels. Some headings conflict with detailed narratives; avoid automatic labels."
+      ],
+      "reuse_status": "not_established",
+      "explicit_open_reuse_license_found": false,
+      "rights_notes": "PDF page 2 restricts copying/forwarding without client permission; AI reuse not established.",
+      "rights_pdf_pages_1_based": [
+        2
+      ],
+      "benchmark_ready": false,
+      "access_check": {
+        "checked_at_utc": "2026-10-30T11:28:47.934097+00:00",
+        "http_status": 200,
+        "resolved_url": "https://vlnn.nl/app/uploads/2020/11/6.-Inspectierapport.pdf",
+        "content_type": "application/pdf",
+        "page_count": 21,
+        "byte_length": 1453843,
+        "sha256": "cc5762baf6a86f68bdceb1716cf0a4a844bfa0da982dd6593ba698620f720638"
+      },
+      "supporting_urls": []
+    },
+    {
+      "id": "steeds",
+      "title": "The Hague residential maintenance and sustainability example",
+      "publisher_or_host": "Steeds advies",
+      "inspection_author": "Steeds advies",
+      "category": "candidate_report_web_access_only",
+      "candidate_rank": 10,
+      "country": "NL",
+      "language": "nl",
+      "property_type": "VvE with three dwellings",
+      "capture_modality": [
+        "inspection_rgb"
+      ],
+      "report_date": "2021-08-02",
+      "date_basis": "Report date on PDF page 2",
+      "source_url": "https://steeds.nl/wp-content/uploads/2021/09/Voorbeeldrapport-MDOP-Maastrichtsestraat.pdf",
+      "landing_page_url": null,
+      "provenance": "Public residential example; describes an on-site inspection in April 2021.",
+      "housing_corporation_connection": "unconfirmed",
+      "corporation_connection_evidence": null,
+      "reported_topics": [
+        "paint deterioration",
+        "corroded brackets",
+        "contaminated roof surfaces",
+        "roof-edge maintenance"
+      ],
+      "useful_pages": [
+        {
+          "pdf_page_1_based": 49,
+          "reported_finding_summary": "Deteriorated timber coatings."
+        },
+        {
+          "pdf_page_1_based": 50,
+          "reported_finding_summary": "Contaminated zinc roof surfaces and corroded drainage brackets."
+        }
+      ],
+      "quality_and_preparation_notes": [
+        "65-page PDF readable through web research tool; direct HTTP fetch returns 403.",
+        "Photo-and-finding appendix is described on PDF page 41. Photo pixels not independently inspected in this pass; confirm retrieval and visual pairing before extraction."
+      ],
+      "reuse_status": "not_established",
+      "explicit_open_reuse_license_found": false,
+      "rights_notes": "Copyright notice on PDF page 2; no explicit open reuse grant found.",
+      "rights_pdf_pages_1_based": [
+        2
+      ],
+      "benchmark_ready": false,
+      "access_check": {
+        "checked_at_utc": "2026-10-30T11:28:47.932856+00:00",
+        "http_status": 403,
+        "resolved_url": "https://steeds.nl/wp-content/uploads/2021/09/Voorbeeldrapport-MDOP-Maastrichtsestraat.pdf",
+        "content_type": "text/html",
+        "byte_length": 146,
+        "web_tool_pdf_readable": true,
+        "web_tool_page_count": 65,
+        "access_status": "web_tool_readable_direct_http_403"
+      },
+      "supporting_urls": []
+    },
+    {
+      "id": "mjop_small",
+      "title": "Prewar mixed residential VvE maintenance example",
+      "publisher_or_host": "MJOP Beheer",
+      "inspection_author": "MJOP Beheer",
+      "category": "candidate_comparison_report",
+      "candidate_rank": 11,
+      "country": "NL",
+      "language": "nl",
+      "property_type": "Four dwellings plus a shop, built 1933",
+      "capture_modality": [
+        "handheld_rgb"
+      ],
+      "report_date": "2026-05-07",
+      "date_basis": "Report date on PDF page 1; inspection listed as April 2026",
+      "source_url": "https://www.mjopbeheer.nl/voorbeelden/voorbeeld-klein-vooroorlogs.pdf",
+      "landing_page_url": "https://www.mjopbeheer.nl/voorbeelden",
+      "provenance": "Publisher says anonymized real inspection; cover photo is explicitly illustrative.",
+      "housing_corporation_connection": "unconfirmed",
+      "corporation_connection_evidence": null,
+      "reported_topics": [
+        "weathered but reportedly sound timber",
+        "roof context",
+        "visible maintenance condition"
+      ],
+      "useful_pages": [
+        {
+          "pdf_page_1_based": 20,
+          "reported_finding_summary": "Weathered timber described as structurally sound, with no visible decay."
+        },
+        {
+          "pdf_page_1_based": 23,
+          "reported_finding_summary": "Roof narrative flags a loose gas cylinder despite a no-defects summary."
+        }
+      ],
+      "quality_and_preparation_notes": [
+        "Timber photo inspected; useful potential comparison material only after expert review.",
+        "Exclude stock cover image. Summary/detail inconsistencies rule out automatic negative labels."
+      ],
+      "reuse_status": "not_established",
+      "explicit_open_reuse_license_found": false,
+      "rights_notes": "No explicit AI-reuse grant found. Cover image has separate Pexels attribution; this does not license the report photos.",
+      "rights_pdf_pages_1_based": [],
+      "benchmark_ready": false,
+      "access_check": {
+        "checked_at_utc": "2026-10-30T11:28:48.996568+00:00",
+        "http_status": 200,
+        "resolved_url": "https://www.mjopbeheer.nl/voorbeelden/voorbeeld-klein-vooroorlogs.pdf",
+        "content_type": "application/pdf",
+        "page_count": 43,
+        "byte_length": 2302057,
+        "sha256": "82b030f0fa09503a87b2db313b993eedc76750ee62e9660f0618c166d609125d"
+      },
+      "supporting_urls": []
+    },
+    {
+      "id": "dutchdetect",
+      "title": "Rental-dwelling moisture investigation excerpts",
+      "publisher_or_host": "DutchDetect",
+      "inspection_author": "DutchDetect",
+      "category": "candidate_report_excerpt",
+      "candidate_rank": 12,
+      "country": "NL",
+      "language": "nl",
+      "property_type": "Rental dwelling and separate residential examples",
+      "capture_modality": [
+        "rgb_report_screenshots",
+        "thermal_report_screenshots"
+      ],
+      "report_date": null,
+      "date_basis": "No single reliable report date for the excerpts",
+      "source_url": "https://www.dutchdetect.nl/rapportage/voorbeeldrapport",
+      "landing_page_url": null,
+      "provenance": "Publisher identifies some excerpts as an anonymized rental-dwelling case.",
+      "housing_corporation_connection": "unconfirmed",
+      "corporation_connection_evidence": null,
+      "reported_topics": [
+        "moisture traces",
+        "mould context",
+        "affected timber",
+        "thermal and measurement evidence"
+      ],
+      "useful_pages": [],
+      "quality_and_preparation_notes": [
+        "HTML images, not a verified complete downloadable PDF. Locate the rental-moisture section and image named dutchdetect-fotorapportage-pagina-8.webp.",
+        "Image labels and context verified; full-resolution image contents require later review. Separate RGB from thermal images and different cases."
+      ],
+      "reuse_status": "not_established",
+      "explicit_open_reuse_license_found": false,
+      "rights_notes": "No explicit open reuse grant found on inspected page.",
+      "rights_pdf_pages_1_based": [],
+      "benchmark_ready": false,
+      "access_check": {
+        "checked_at_utc": "2026-10-30T11:28:49.408968+00:00",
+        "http_status": 200,
+        "resolved_url": "https://www.dutchdetect.nl/rapportage/voorbeeldrapport",
+        "content_type": "text/html; charset=UTF-8",
+        "byte_length": 1287012,
+        "sha256": "6af2837cfa2654b52aa5a3878bc8b1922f6b8b573349be54441d0e19d33a6c56"
+      },
+      "supporting_urls": [
+        "https://static.wixstatic.com/media/438638_590f58bacb98444a873410e0fb448207~mv2.webp"
+      ],
+      "section_locator": "Rental-dwelling moisture/mould section; image filename dutchdetect-fotorapportage-pagina-8.webp"
+    },
+    {
+      "id": "kamerinspectie",
+      "title": "Rental check-in report demonstration",
+      "publisher_or_host": "Kamerinspectie",
+      "inspection_author": "Software-generated demonstration",
+      "category": "template_hold",
+      "candidate_rank": null,
+      "country": "NL",
+      "language": "nl",
+      "property_type": "Demonstration rental dwelling",
+      "capture_modality": [
+        "rgb_demo_photos"
+      ],
+      "report_date": "2026-04-08",
+      "date_basis": "Date displayed in demonstration",
+      "source_url": "https://kamerinspectie.nl/examples/voorbeeld-inspectierapport-nederlands.pdf",
+      "landing_page_url": "https://kamerinspectie.nl/voorbeeld-inspectierapport",
+      "provenance": "Demonstration identities and example claims; inspection provenance unconfirmed.",
+      "housing_corporation_connection": "unconfirmed",
+      "corporation_connection_evidence": null,
+      "reported_topics": [
+        "floor crack example",
+        "worktop-edge damage example",
+        "room-condition questions"
+      ],
+      "useful_pages": [
+        {
+          "pdf_page_1_based": 5,
+          "reported_finding_summary": "Bathroom/kitchen questions and room images."
+        },
+        {
+          "pdf_page_1_based": 7,
+          "reported_finding_summary": "Floor-crack and worktop-damage examples beside images."
+        }
+      ],
+      "quality_and_preparation_notes": [
+        "Photos inspected in discovery. Useful report-format reference, held outside candidate benchmark pool until provenance is established.",
+        "Do not treat demo responsibility assignments, dimensions or clean-room claims as gold labels."
+      ],
+      "reuse_status": "not_established",
+      "explicit_open_reuse_license_found": false,
+      "rights_notes": "No explicit AI-reuse license found in inspected PDF.",
+      "rights_pdf_pages_1_based": [],
+      "benchmark_ready": false,
+      "access_check": {
+        "checked_at_utc": "2026-10-30T11:28:49.730779+00:00",
+        "http_status": 200,
+        "resolved_url": "https://kamerinspectie.nl/examples/voorbeeld-inspectierapport-nederlands.pdf",
+        "content_type": "application/pdf",
+        "page_count": 11,
+        "byte_length": 2644628,
+        "sha256": "c038314232c2954be28d3342b41373ef78dc380f6e68eba68f937163ea4a930a"
+      },
+      "supporting_urls": []
+    },
+    {
+      "id": "ac_fictional",
+      "title": "Fictional residential purchase-survey example",
+      "publisher_or_host": "AC Vastgoed Advies",
+      "inspection_author": "AC Vastgoed Advies",
+      "category": "excluded_fictional",
+      "candidate_rank": null,
+      "country": "NL",
+      "language": "nl",
+      "property_type": "Fictional terraced dwelling",
+      "capture_modality": [
+        "illustrative_rgb"
+      ],
+      "report_date": "2026-06-15",
+      "date_basis": "Date in explicitly fictional example",
+      "source_url": "https://www.acvastgoedadvies.nl/voorbeeld-aankoopkeuring-ac-vastgoed-advies.pdf",
+      "landing_page_url": null,
+      "provenance": "PDF explicitly states that object, findings and amounts are fictional.",
+      "housing_corporation_connection": "unconfirmed",
+      "corporation_connection_evidence": null,
+      "reported_topics": [
+        "illustrative cracks",
+        "illustrative timber decay"
+      ],
+      "useful_pages": [
+        {
+          "pdf_page_1_based": 13,
+          "reported_finding_summary": "Explicit disclosure that the findings are fictional."
+        }
+      ],
+      "quality_and_preparation_notes": [
+        "Excluded from real-inspection benchmark candidates. Layout reference only; photographs do not establish real matching findings."
+      ],
+      "reuse_status": "not_established",
+      "explicit_open_reuse_license_found": false,
+      "rights_notes": "PDF page 22 reserves photo ownership to the provider; no AI-reuse grant observed.",
+      "rights_pdf_pages_1_based": [
+        22
+      ],
+      "benchmark_ready": false,
+      "access_check": {
+        "checked_at_utc": "2026-10-30T11:28:50.495127+00:00",
+        "http_status": 200,
+        "resolved_url": "https://www.acvastgoedadvies.nl/voorbeeld-aankoopkeuring-ac-vastgoed-advies.pdf",
+        "content_type": "application/pdf",
+        "page_count": 22,
+        "byte_length": 893890,
+        "sha256": "f7dc9d92c519131e8a0df83a14f7b362f2f08511056188e82b0d6f65483183c2"
+      },
+      "supporting_urls": []
+    },
+    {
+      "id": "woonstad_unavailable",
+      "title": "Woonstad-commissioned Rotterdam apartment survey",
+      "publisher_or_host": "Woonstad Rotterdam",
+      "inspection_author": "Perfectkeur (search-index evidence)",
+      "category": "unavailable_report",
+      "candidate_rank": null,
+      "country": "NL",
+      "language": "nl",
+      "property_type": "Apartment",
+      "capture_modality": [
+        "unverified_report_photos"
+      ],
+      "report_date": "2023-11-23",
+      "date_basis": "Search-index report text; original unavailable",
+      "source_url": "https://www.woonstadrotterdam.nl/media/f94607d0-b4eb-4860-a68a-b799598be3b6/jmwNNA/Downloads/Beleggingsprojecten/Exercitiestraat%2015AB/Technischekeuring.pdf",
+      "landing_page_url": null,
+      "provenance": "Search index identifies Woonstad as commissioning organization; original returns 404.",
+      "housing_corporation_connection": "confirmed_by_index_only",
+      "corporation_connection_evidence": "Search-index text identifies Woonstad Rotterdam as client; current response is 404.",
+      "reported_topics": [
+        "whole-dwelling survey"
+      ],
+      "useful_pages": [],
+      "quality_and_preparation_notes": [
+        "Not a verified accessible source. Photos could not be inspected. Obtain a current public link or authorized copy later."
+      ],
+      "reuse_status": "not_established",
+      "explicit_open_reuse_license_found": false,
+      "rights_notes": "Indexed text includes a Perfectkeur restriction on copying/storage; original terms not independently re-read.",
+      "rights_pdf_pages_1_based": [],
+      "benchmark_ready": false,
+      "access_check": {
+        "checked_at_utc": "2026-10-30T11:28:51.326054+00:00",
+        "http_status": 404,
+        "resolved_url": "https://www.woonstadrotterdam.nl/media/f94607d0-b4eb-4860-a68a-b799598be3b6/jmwNNA/Downloads/Beleggingsprojecten/Exercitiestraat%2015AB/Technischekeuring.pdf",
+        "content_type": "text/html; charset=utf-8",
+        "byte_length": 169348
+      },
+      "supporting_urls": []
+    },
+    {
+      "id": "rochdale_sp_unavailable",
+      "title": "Dobbebuurt housing-maintenance complaint inventory",
+      "publisher_or_host": "SP Amsterdam",
+      "inspection_author": "Resident complaint inventory, not confirmed professional inspection",
+      "category": "unavailable_report",
+      "candidate_rank": null,
+      "country": "NL",
+      "language": "nl",
+      "property_type": "Housing-corporation rental dwellings",
+      "capture_modality": [
+        "unverified_resident_photos"
+      ],
+      "report_date": "2015-12",
+      "date_basis": "Month shown in search-index text; original unavailable",
+      "source_url": "https://amsterdam.sp.nl/sites/amsterdam.sp.nl/files/attachments/20151215_rapport_onderhoudsproblemen_dobbestraat.pdf",
+      "landing_page_url": null,
+      "provenance": "Indexed resident survey about Rochdale homes; original returns 404.",
+      "housing_corporation_connection": "confirmed_by_index_only",
+      "corporation_connection_evidence": "Indexed text discusses Rochdale as landlord; report was produced by SP, not Rochdale.",
+      "reported_topics": [
+        "mould complaints",
+        "moisture complaints",
+        "timber-decay complaints"
+      ],
+      "useful_pages": [],
+      "quality_and_preparation_notes": [
+        "Not an accessible report or expert ground truth. Counts in an aggregate complaint survey do not equal photographed examples."
+      ],
+      "reuse_status": "not_established",
+      "explicit_open_reuse_license_found": false,
+      "rights_notes": "Rights not established; original PDF unavailable.",
+      "rights_pdf_pages_1_based": [],
+      "benchmark_ready": false,
+      "access_check": {
+        "checked_at_utc": "2026-10-30T11:28:51.533895+00:00",
+        "http_status": 404,
+        "resolved_url": "https://amsterdam.sp.nl/sites/amsterdam.sp.nl/files/attachments/20151215_rapport_onderhoudsproblemen_dobbestraat.pdf",
+        "content_type": "text/html; charset=utf-8",
+        "byte_length": 38979
+      },
+      "supporting_urls": []
+    },
+    {
+      "id": "nhl_aeroscan",
+      "title": "Dutch drone-image defect research dataset lead",
+      "publisher_or_host": "NHL Stenden CVDS",
+      "inspection_author": "NHL Stenden / AeroScan collaboration",
+      "category": "acquisition_lead",
+      "candidate_rank": null,
+      "country": "NL",
+      "language": "en",
+      "property_type": "Dutch buildings; residential subset not separately confirmed",
+      "capture_modality": [
+        "drone_rgb"
+      ],
+      "report_date": "2023-08-04",
+      "date_basis": "Project publication date, not image collection date",
+      "source_url": "https://www.cvds-nhlstenden.com/2023/08/anomaly-detection-for-the-identification-of-building-components-defects/",
+      "landing_page_url": null,
+      "provenance": "Project/poster describes Dutch imagery and component/defect annotations supplied by AeroScan.",
+      "housing_corporation_connection": "unconfirmed",
+      "corporation_connection_evidence": null,
+      "reported_topics": [
+        "roof anomalies",
+        "window-casing anomalies",
+        "component masks"
+      ],
+      "useful_pages": [],
+      "quality_and_preparation_notes": [
+        "Landing page and poster verified. No dataset download or reuse license confirmed.",
+        "Research preview figures are not the underlying dataset."
+      ],
+      "reuse_status": "not_established",
+      "explicit_open_reuse_license_found": false,
+      "rights_notes": "Data access and permitted AI use would need to be established with the data holder.",
+      "rights_pdf_pages_1_based": [],
+      "benchmark_ready": false,
+      "access_check": {
+        "checked_at_utc": "2026-10-30T11:28:52.196439+00:00",
+        "http_status": 200,
+        "resolved_url": "https://www.cvds-nhlstenden.com/2023/08/anomaly-detection-for-the-identification-of-building-components-defects/",
+        "content_type": "text/html; charset=UTF-8",
+        "byte_length": 49262,
+        "sha256": "3dace8fbea410bcf04e01b299131c1a9837df59dcc53ed83070da5de52c02b28"
+      },
+      "supporting_urls": [
+        "https://www.cvds-nhlstenden.com/wp-content/uploads/Ps23-4-Anomaly-Detection-for-the-Identification-of-Building-Components-Defects-Poster.pdf",
+        "https://www.cvds-nhlstenden.com/wp-content/uploads/Ps23-4-Anomaly-Detection-for-the-Identification-of-Building-Components-Defects-Paper.pdf"
+      ]
+    },
+    {
+      "id": "koeter",
+      "title": "Dutch building-defect reference library lead",
+      "publisher_or_host": "Koeter Vastgoed Adviseurs / myREV",
+      "inspection_author": null,
+      "category": "acquisition_lead",
+      "candidate_rank": null,
+      "country": "NL",
+      "language": "nl",
+      "property_type": "Buildings and installations; mixed property types",
+      "capture_modality": [
+        "reference_photos",
+        "drawings"
+      ],
+      "report_date": null,
+      "date_basis": "No edition date verified",
+      "source_url": "https://koetervastgoedadviseurs.nl/vastgoed-adviseurs-online/bouwgebreken/",
+      "landing_page_url": null,
+      "provenance": "Provider describes a reference library of over 170 defects with images or drawings.",
+      "housing_corporation_connection": "unconfirmed",
+      "corporation_connection_evidence": null,
+      "reported_topics": [
+        "building-component defects",
+        "installation defects"
+      ],
+      "useful_pages": [],
+      "quality_and_preparation_notes": [
+        "Landing page verified; library entries and bulk access not inspected.",
+        "Drawings and generic examples require separation from real inspection photographs."
+      ],
+      "reuse_status": "not_established",
+      "explicit_open_reuse_license_found": false,
+      "rights_notes": "Commercial book/software access advertised; no open dataset or AI-reuse license confirmed.",
+      "rights_pdf_pages_1_based": [],
+      "benchmark_ready": false,
+      "access_check": {
+        "checked_at_utc": "2026-10-30T11:28:52.441097+00:00",
+        "http_status": 200,
+        "resolved_url": "https://koetervastgoedadviseurs.nl/vastgoed-adviseurs-online/bouwgebreken/",
+        "content_type": "text/html; charset=UTF-8",
+        "byte_length": 151877,
+        "sha256": "a76035e362d36cbba9f1ddf6df29d58ba53abddb3e45e94fbf9b73f1162a7dec"
+      },
+      "supporting_urls": [
+        "https://myrev.nl/"
+      ]
+    },
+    {
+      "id": "ressort_suprmen",
+      "title": "Ressort Wonen hybrid-inspection acquisition lead",
+      "publisher_or_host": "supRmen",
+      "inspection_author": "supRmen / Raderadvies",
+      "category": "acquisition_lead",
+      "candidate_rank": null,
+      "country": "NL",
+      "language": "nl",
+      "property_type": "Housing-corporation apartment complexes",
+      "capture_modality": [
+        "drone_rgb",
+        "ground_rgb",
+        "photogrammetry"
+      ],
+      "report_date": null,
+      "date_basis": "Case publication date not verified",
+      "source_url": "https://www.suprmen.com/cases/ressort-wonen---hybride-nen2767-inspectie",
+      "landing_page_url": null,
+      "provenance": "Public customer case names Ressort Wonen and an inspection of complexes in Rozenburg.",
+      "housing_corporation_connection": "named_corporation_case",
+      "corporation_connection_evidence": "Customer case explicitly names Ressort Wonen as client.",
+      "reported_topics": [
+        "roof condition",
+        "facade condition",
+        "hard-to-reach components"
+      ],
+      "useful_pages": [],
+      "quality_and_preparation_notes": [
+        "Case describes roughly 3,000 captured images; these are not 3,000 labeled benchmark examples.",
+        "No public inspection-report or dataset export identified."
+      ],
+      "reuse_status": "not_established",
+      "explicit_open_reuse_license_found": false,
+      "rights_notes": "No data-access or AI-reuse grant confirmed.",
+      "rights_pdf_pages_1_based": [],
+      "benchmark_ready": false,
+      "access_check": {
+        "checked_at_utc": "2026-10-30T11:28:52.443783+00:00",
+        "http_status": 200,
+        "resolved_url": "https://www.suprmen.com/cases/ressort-wonen---hybride-nen2767-inspectie",
+        "content_type": "text/html; charset=utf-8",
+        "byte_length": 54777,
+        "sha256": "f8f02b44d53f133c3a59801e15f064ec5541f710a9477bf99215969415a23fc5"
+      },
+      "supporting_urls": []
+    },
+    {
+      "id": "vion_visual_solutions",
+      "title": "Housing-corporation inspection-platform acquisition lead",
+      "publisher_or_host": "Visual Solutions",
+      "inspection_author": "Visual Solutions / ViOn",
+      "category": "acquisition_lead",
+      "candidate_rank": null,
+      "country": "NL",
+      "language": "nl",
+      "property_type": "Housing-corporation property portfolios; specific client unconfirmed",
+      "capture_modality": [
+        "drone_rgb",
+        "orthophoto",
+        "report_screenshot"
+      ],
+      "report_date": "2025-03-04",
+      "date_basis": "Article date, not inspection date",
+      "source_url": "https://visual-solutions.nl/2025/03/04/visual-solutions-controleert-vastgoed-met-drones-en-vion/",
+      "landing_page_url": null,
+      "provenance": "Provider describes corporation inspections and shows a report-interface illustration.",
+      "housing_corporation_connection": "sector_connection_only",
+      "corporation_connection_evidence": "Article discusses woningcorporatie clients generally; no named client verified.",
+      "reported_topics": [
+        "localized roof/facade defects",
+        "condition assessment"
+      ],
+      "useful_pages": [],
+      "quality_and_preparation_notes": [
+        "Public article and report screenshot link verified; no complete report/database export identified.",
+        "Screenshot is a lead to underlying records, not a standalone labeled dataset."
+      ],
+      "reuse_status": "not_established",
+      "explicit_open_reuse_license_found": false,
+      "rights_notes": "No open dataset or AI-reuse grant confirmed.",
+      "rights_pdf_pages_1_based": [],
+      "benchmark_ready": false,
+      "access_check": {
+        "checked_at_utc": "2026-10-30T11:28:52.834525+00:00",
+        "http_status": 200,
+        "resolved_url": "https://visual-solutions.nl/2025/03/04/visual-solutions-controleert-vastgoed-met-drones-en-vion/",
+        "content_type": "text/html; charset=UTF-8",
+        "byte_length": 222720,
+        "sha256": "9af3e981e18fe29bcfde2a92fee87b89bb961ae3a2fc9055103799d93a6a94c3"
+      },
+      "supporting_urls": [
+        "https://visual-solutions.nl/wp-content/uploads/2025/02/Schermafbeelding-2025-02-26-150101.png"
+      ]
+    }
+  ]
+}

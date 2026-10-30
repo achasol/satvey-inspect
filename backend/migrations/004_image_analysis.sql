@@ -1,0 +1,11 @@
+ALTER TABLE observations DROP CONSTRAINT observations_source_check;
+ALTER TABLE observations ADD CONSTRAINT observations_source_check CHECK(source IN ('manual','mock','ai'));
+ALTER TABLE observations ADD COLUMN photo_ids uuid[] NOT NULL DEFAULT '{}';
+ALTER TABLE batches ADD COLUMN analysis_provider text NOT NULL DEFAULT 'mock' CHECK(analysis_provider IN ('mock','baseten'));
+ALTER TABLE processing_jobs DROP CONSTRAINT processing_jobs_status_check;
+ALTER TABLE processing_jobs ADD CONSTRAINT processing_jobs_status_check CHECK(status IN ('pending','processing','failed','done'));
+ALTER TABLE processing_jobs ADD COLUMN provider text NOT NULL DEFAULT 'mock' CHECK(provider IN ('mock','baseten'));
+ALTER TABLE processing_jobs ADD COLUMN lease_until timestamptz;
+ALTER TABLE processing_jobs ADD COLUMN run_token uuid;
+ALTER TABLE processing_jobs ADD COLUMN next_attempt_at timestamptz NOT NULL DEFAULT now();
+ALTER TABLE processing_jobs ADD COLUMN last_error text NOT NULL DEFAULT '';

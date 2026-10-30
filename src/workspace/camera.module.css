@@ -1,0 +1,187 @@
+.camera {
+  display: grid;
+  gap: 12px;
+}
+.view {
+  position: relative;
+  height: min(64dvh, 650px);
+  min-height: 280px;
+  overflow: hidden;
+  border-radius: 12px;
+  background: #111611;
+  color: white;
+}
+.view video {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+.topbar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px;
+  gap: 10px;
+  background: linear-gradient(#0009, transparent);
+}
+.roomButton {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+  max-width: 75%;
+  border: 1px solid #ffffff80;
+  border-radius: 9px;
+  padding: 10px 14px;
+  background: #1a211ee6;
+  color: white;
+  font: inherit;
+  cursor: pointer;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+.counter {
+  background: #1a211ee6;
+  border-radius: 8px;
+  padding: 10px;
+  font-size: 13px;
+  white-space: nowrap;
+}
+.roomPicker {
+  position: absolute;
+  z-index: 3;
+  inset: 76px 14px 112px;
+  max-height: 350px;
+  overflow: auto;
+  border-radius: 10px;
+  background: #fff;
+  padding: 8px;
+  box-shadow: 0 8px 30px #0006;
+}
+.roomPicker button {
+  display: block;
+  width: 100%;
+  min-height: 52px;
+  text-align: left;
+  padding: 12px;
+  border: 0;
+  border-radius: 6px;
+  background: white;
+  color: #293128;
+  font: inherit;
+  cursor: pointer;
+}
+.roomPicker button[aria-pressed='true'] {
+  background: #e8efdf;
+  font-weight: 600;
+}
+.bottomBar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 18px;
+  background: linear-gradient(transparent, #000c);
+}
+.shutter {
+  width: 76px;
+  height: 76px;
+  flex-shrink: 0;
+  border: 4px solid #d5dfce;
+  border-radius: 50%;
+  background: #fff;
+  color: #263322;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  box-shadow: 0 0 0 3px #ffffff55;
+}
+.shutter:active {
+  transform: scale(0.95);
+}
+.shutter:disabled {
+  opacity: 0.5;
+}
+.thumbnail,
+.nextRoom {
+  width: 80px;
+  flex-shrink: 0;
+}
+.thumbnail img {
+  width: 64px;
+  height: 64px;
+  object-fit: cover;
+  border: 2px solid white;
+  border-radius: 7px;
+}
+.nextRoom {
+  display: grid;
+  justify-items: center;
+  gap: 5px;
+  min-height: 56px;
+  padding: 7px;
+  border: 0;
+  border-radius: 7px;
+  background: #151c17cc;
+  color: white;
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+}
+.paused {
+  position: absolute;
+  inset: 85px 20px 114px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  gap: 10px;
+}
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.footer button {
+  min-height: 48px;
+}
+.notice {
+  color: #4b5d3c;
+  font-size: 13px;
+  margin: 0;
+}
+.error {
+  color: #a13b27;
+  margin: 0;
+}
+@media (max-width: 600px) {
+  .topbar {
+    padding: 10px;
+  }
+  .bottomBar {
+    padding: 14px 10px;
+  }
+  .view {
+    height: 58dvh;
+  }
+  .thumbnail,
+  .nextRoom {
+    width: 65px;
+  }
+  .counter {
+    font-size: 12px;
+    padding: 8px;
+  }
+}
