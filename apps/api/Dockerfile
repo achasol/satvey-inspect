@@ -6,7 +6,7 @@ RUN go mod download
 COPY . .
 RUN CGO_ENABLED=0 go build -p 1 -trimpath -o /server ./cmd/server
 
-FROM alpine:3.22
+FROM alpine:3.24
 RUN apk add --no-cache ca-certificates wget ffmpeg && adduser -D -u 10001 satvey
 COPY --from=build /server /server
 USER satvey
