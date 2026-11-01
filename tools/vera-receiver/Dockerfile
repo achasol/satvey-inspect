@@ -6,7 +6,7 @@ RUN go mod download
 COPY . .
 RUN CGO_ENABLED=0 go build -p 1 -trimpath -o /vera-receiver .
 
-FROM alpine:3.22
+FROM alpine:3.24
 RUN adduser -D -u 10001 receiver
 COPY --from=build /vera-receiver /vera-receiver
 USER receiver
