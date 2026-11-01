@@ -37,7 +37,7 @@ jobs:
       - run: '"$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-36" "build-tools;36.0.0"'
       - run: bash ./gradlew assembleDebug bundleRelease --no-daemon
         working-directory: apps/web/android
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: android-unsigned-verification
           path: |
@@ -54,7 +54,7 @@ jobs:
       - run: node scripts/build-mobile.mjs
       - run: xcodebuild -project App.xcodeproj -scheme App -configuration Debug -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -derivedDataPath build CODE_SIGNING_ALLOWED=NO build
         working-directory: apps/web/ios/App
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: ios-simulator-verification
           path: apps/web/ios/App/build/Build/Products/Debug-iphonesimulator/App.app

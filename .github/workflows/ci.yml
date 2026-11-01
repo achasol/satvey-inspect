@@ -51,7 +51,7 @@ jobs:
       - run: pip install -r benchmarks/property-state/requirements.txt
       - run: python -m unittest -v test_benchmark
         working-directory: benchmarks/property-state
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         if: always()
         with: { name: frontend-coverage, path: apps/web/coverage, retention-days: 14 }
   integration:
@@ -68,7 +68,7 @@ jobs:
         if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
         run: echo 'TEST_BROWSER_ARGS=--workers=1' >> "$GITHUB_ENV"
       - run: node scripts/test-stack.mjs
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         if: always()
         with:
           name: integration-artifacts
@@ -106,5 +106,5 @@ jobs:
         with: { image-ref: 'satvey-api:verify', format: cyclonedx, output: api.sbom.json }
       - uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25
         with: { image-ref: 'satvey-web:verify', format: cyclonedx, output: web.sbom.json }
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with: { name: image-sboms, path: '*.sbom.json', retention-days: 30 }
