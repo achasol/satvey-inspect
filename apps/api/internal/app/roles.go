@@ -16,13 +16,17 @@ type privilegeInfo struct {
 }
 
 var privilegeCatalog = []privilegeInfo{
-	{"formats.read", "Inspectieformats bekijken", "Gepubliceerde formats en vereisten openen", "Inspectieformats"},
-	{"formats.manage", "Inspectieformats beheren", "Vragen, bewijseisen en spreekhulp maken en publiceren", "Inspectieformats"},
+	{"formats.read", "Inspectiesjablonen bekijken", "Gepubliceerde formats en vereisten openen", "Inspectiesjablonen"},
+	{"formats.manage", "Inspectiesjablonen beheren", "Vragen, bewijseisen en spreekhulp maken en publiceren", "Inspectiesjablonen"},
 	{"inspections.read", "Inspecties bekijken", "Dossiers, foto's, audio en rapporten openen", "Inspecties"},
 	{"inspections.write", "Inspecties bewerken", "Opnemen, transcripties wijzigen, beoordelen en rapporten vastleggen", "Inspecties"},
-	{"norms.read", "Normen bekijken", "Gepubliceerde kaders en voorbeelden openen", "Normen"},
-	{"norms.manage", "Normen beheren", "Kaders, ruimte-elementen en voorbeelden maken, wijzigen en publiceren", "Normen"},
-	{"benchmarks.read", "Benchmark bekijken", "Bevestigde normbeoordelingen vergelijken", "Normen"},
+	{"inspections.archive", "Definitieve dossiers archiveren", "Definitieve dossiers archiveren en dossiers herstellen", "Inspecties"},
+	{"inspections.purge", "Dossiers definitief verwijderen", "Gearchiveerde dossiers met reden permanent verwijderen", "Inspecties"},
+	{"inspections.plan", "Inspecties plannen", "Inspecteurs toewijzen en afspraken beheren", "Inspecties"},
+	{"inspections.review", "Kwaliteitscontrole uitvoeren", "Zelfstandig dossiers controleren en aandachtspunten vastleggen", "Inspecties"},
+	{"norms.read", "Kwaliteitskaders bekijken", "Gepubliceerde kaders en voorbeelden openen", "Kwaliteitskaders"},
+	{"norms.manage", "Kwaliteitskaders beheren", "Kaders, ruimte-elementen en voorbeelden maken, wijzigen en publiceren", "Kwaliteitskaders"},
+	{"benchmarks.read", "Beoordelingsoverzicht bekijken", "Bevestigde kwaliteitsbeoordelingen vergelijken", "Kwaliteitskaders"},
 	{"settings.manage", "Organisatie beheren", "Leden, uitnodigingen, SSO, rollen en privileges beheren", "Instellingen"},
 }
 
@@ -85,9 +89,9 @@ func validateRole(in roleInput) error {
 		set[p] = true
 	}
 	if set["formats.manage"] && !set["norms.read"] {
-		return fail(422, "Formats beheren vereist ook Normen bekijken")
+		return fail(422, "Formats beheren vereist ook Kwaliteitskaders bekijken")
 	}
-	for p, dep := range map[string]string{"inspections.write": "inspections.read", "norms.manage": "norms.read", "formats.manage": "formats.read", "benchmarks.read": "norms.read"} {
+	for p, dep := range map[string]string{"inspections.write": "inspections.read", "inspections.archive": "inspections.read", "inspections.purge": "inspections.archive", "inspections.plan": "inspections.read", "inspections.review": "inspections.read", "norms.manage": "norms.read", "formats.manage": "formats.read", "benchmarks.read": "norms.read"} {
 		if set[p] && !set[dep] {
 			return fail(422, "Bewerk- en benchmarkprivileges vereisen ook het bijbehorende leesprivilege")
 		}

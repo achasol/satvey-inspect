@@ -8,7 +8,7 @@ import pymupdf
 path = Path(sys.argv[1])
 doc = pymupdf.open(path)
 text = "\n".join(page.get_text() for page in doc)
-assert "Inspectieformat" in text and "Wandkwaliteit" in text
+assert "Inspectiesjabloon" in text and "Wandkwaliteit" in text
 assert "Acceptabel" in text and "Formatstraat 42" in text
 assert "F01" in text and "Bronfoto" in text
 assert "file:///" not in text and "meta-models" not in text
@@ -17,6 +17,10 @@ assert outline[0][1] == "Inspectierapport"
 assert any(level == 3 and "Keuken" in title for level, title, _ in outline)
 assert doc.xref_get_key(doc.pdf_catalog(), "StructTreeRoot")[0] != "null"
 assert any(page.get_images() for page in doc)
+assert "\u00c2\u00b7" not in text and "\u00c3\u00a9" not in text, "UTF-8 text was decoded incorrectly"
+result_page = next(page for page in doc if "Wandkwaliteit" in page.get_text())
+assert result_page.get_images(), "Result and supporting photo must share a page"
+assert sum(len(page.get_image_info()) for page in doc) == 1, "The single linked photo must not be duplicated in an appendix"
 assert any(page.get_links() for page in doc)
 for level, title, page in outline:
     assert title in doc[page - 1].get_text().replace("\n", " ")

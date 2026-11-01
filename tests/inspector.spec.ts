@@ -1,5 +1,7 @@
-import { test, expect } from '@playwright/test';
+import { captureFiles } from './helpers/capture';
+import { test, expect, request } from '@playwright/test';
 import type { Page } from '@playwright/test';
+import { randomUUID } from 'node:crypto';
 import AxeBuilder from '@axe-core/playwright';
 import { createTestFormat, createTestProperty, headers } from './helpers/formats';
 
@@ -44,14 +46,13 @@ async function inspection(page: Page) {
     .getByRole('button')
     .filter({ hasText: address })
     .click();
-  await page.getByLabel('Inspectieformat', { exact: true }).selectOption(format.id);
-  await page.getByRole('button', { name: 'Aanmaken en opnemen' }).click();
+  await page.getByLabel('Inspectiesjabloon', { exact: true }).selectOption(format.id);
+  await page.getByRole('button', { name: 'Aanmaken' }).click();
   await expect(page.getByRole('heading', { name: address, exact: true })).toBeVisible();
   return address;
 }
 async function capture(page: Page) {
-  await page.getByLabel("Foto's toevoegen", { exact: true }).setInputFiles(photo);
-  await page.getByRole('button', { name: 'Opname bewaren', exact: true }).click();
+  await captureFiles(page, photo);
   await expect(page.getByText('Voorbeeldvoorstel', { exact: true })).toBeVisible({
     timeout: 15000,
   });
@@ -72,8 +73,16 @@ test('inspection columns stay aligned when statuses change across screen sizes',
     scheduledAt: null,
     createdAt: '2026-10-30T10:00:00Z',
   }));
-  await page.route(/\/api\/v1\/orgs\/[^/]+\/inspections(?:\?.*)?$/, async (route) =>
-    route.request().method() === 'GET' ? route.fulfill({ json: rows }) : route.continue(),
+  await page.route(/\/api\/v1\/orgs\/[^/]+\/inspection-page(?:\?.*)?$/, async (route) =>
+    route.request().method() === 'GET'
+      ? route.fulfill({
+          json: {
+            items: rows,
+            total: rows.length,
+            open: rows.filter((r) => r.status === 'draft').length,
+          },
+        })
+      : route.continue(),
   );
   await page.reload();
   const list = page.locator('[class*="inspectionList"]'),
@@ -132,13 +141,19 @@ test('inspection pagination resets for postcode searches and shows server result
     scheduledAt: null,
     createdAt: '2026-10-30T10:00:00Z',
   }));
-  await page.route(/\/api\/v1\/orgs\/[^/]+\/inspections(?:\?.*)?$/, async (route) => {
+  await page.route(/\/api\/v1\/orgs\/[^/]+\/inspection-page(?:\?.*)?$/, async (route) => {
     if (route.request().method() !== 'GET') return route.continue();
     const params = new URL(route.request().url()).searchParams;
     const offset = Number(params.get('offset') || 0);
     const query = params.get('q') || '';
     await route.fulfill({
-      json: query ? rows.filter((row) => row.postcode === query) : rows.slice(offset, offset + 50),
+      json: {
+        items: query
+          ? rows.filter((row) => row.postcode === query)
+          : rows.slice(offset, offset + 50),
+        total: query ? rows.filter((row) => row.postcode === query).length : rows.length,
+        open: rows.length,
+      },
     });
   });
   await page.reload();
@@ -170,6 +185,7 @@ test('formats supply inspection type, room names and written evidence without re
     ).json();
   const format = await (await page.request.get(`${base}/formats/${revision.id}`)).json();
   format.kind = 'final';
+  format.signingPolicy = 'legacy';
   format.scopes[1].questions[0] = {
     ...format.scopes[1].questions[0],
     title: 'Beschrijf de badkamer',
@@ -200,15 +216,19 @@ test('formats supply inspection type, room names and written evidence without re
     .getByRole('button')
     .filter({ hasText: address })
     .click();
-  await dialog.getByLabel('Inspectieformat', { exact: true }).selectOption(format.id);
-  await dialog.getByRole('button', { name: 'Aanmaken en opnemen', exact: true }).click();
+  await dialog.getByLabel('Inspectiesjabloon', { exact: true }).selectOption(format.id);
+  await dialog.getByRole('button', { name: 'Aanmaken', exact: true }).click();
   await expect(page.getByRole('heading', { name: address, exact: true })).toBeVisible();
   const iid = page.url().match(/inspections\/([^/]+)/)![1],
     path = `${base}/inspections/${iid}`;
   expect((await (await page.request.get(path)).json()).inspection.kind).toBe('final');
   await page.getByRole('button', { name: 'Ruimte toevoegen', exact: true }).click();
-  await expect(page.getByLabel('Ruimtenaam', { exact: true })).toBeHidden();
-  await page.getByRole('button', { name: 'Badkamer 2 toevoegen', exact: true }).click();
+  const addRoom = page.getByRole('dialog', { name: 'Ruimte toevoegen', exact: true });
+  await expect(addRoom.getByLabel('Ruimtetype', { exact: true })).toHaveValue(format.scopes[1].id);
+  await expect(addRoom.getByRole('textbox', { name: 'Ruimtenaam', exact: true })).toHaveValue(
+    'Badkamer 2',
+  );
+  await addRoom.getByRole('button', { name: 'Toevoegen', exact: true }).click();
   await page
     .getByRole('navigation', { name: 'Ruimtes', exact: true })
     .getByRole('button', { name: 'Badkamer 2 Open', exact: true })
@@ -227,13 +247,17 @@ test('formats supply inspection type, room names and written evidence without re
   await expect(
     page
       .getByRole('region', { name: 'Badkamer 2', exact: true })
-      .getByRole('button', { name: 'Ruimte goedkeuren', exact: true }),
+      .getByRole('button', { name: 'Beoordeling bevestigen', exact: true }),
   ).toBeEnabled({
     timeout: 15000,
   });
   await page
     .getByRole('region', { name: 'Badkamer 2', exact: true })
-    .getByRole('button', { name: 'Ruimte goedkeuren', exact: true })
+    .getByRole('button', { name: 'Beoordeling bevestigen', exact: true })
+    .click();
+  await page
+    .getByRole('navigation', { name: 'Ruimtes', exact: true })
+    .getByRole('button', { name: /^Badkamer 2/ })
     .click();
   await expect(
     page
@@ -283,9 +307,9 @@ test('canonical email domain goes directly to SSO without showing a password', a
 test('photos become reviewed observations and a signed immutable report', async ({ page }) => {
   // Capture, review, two signatures, accessibility, PDF export and deletion
   // constitute a full visit; budget for slower WebKit runs on capped CPUs.
-  test.setTimeout(180_000);
+  test.setTimeout(240_000);
   await login(page);
-  await inspection(page);
+  const address = await inspection(page);
   await capture(page);
   await page.getByRole('link', { name: 'Beoordelen', exact: true }).click();
   await page.getByLabel('Titel bevinding', { exact: true }).fill('Beschadiging naast douche');
@@ -307,23 +331,19 @@ test('photos become reviewed observations and a signed immutable report', async 
   await page.getByRole('button', { name: 'Antwoord bewaren', exact: true }).click();
   const reviewed = page
     .getByRole('region', { name: 'Badkamer', exact: true })
-    .getByRole('button', { name: 'Ruimte goedkeuren', exact: true });
+    .getByRole('button', { name: 'Beoordeling bevestigen', exact: true });
   await expect(reviewed).toBeEnabled({ timeout: 15000 });
   await reviewed.click();
+  await page
+    .getByRole('navigation', { name: 'Ruimtes', exact: true })
+    .getByRole('button', { name: /^Badkamer/ })
+    .click();
   await expect(page.getByText('Beoordeeld', { exact: true })).toBeVisible({ timeout: 15000 });
   await page.getByRole('link', { name: 'Rapport', exact: true }).click();
-  await expect(page.getByRole('article')).toContainText('Beschadiging naast douche');
-  await page.getByRole('link', { name: 'Opnemen', exact: true }).click();
-  await page.getByLabel("Foto's toevoegen", { exact: true }).setInputFiles(photo);
-  await page.getByRole('link', { name: 'Rapport', exact: true }).click();
-  await expect(
-    page.getByRole('button', { name: 'Rapport vastleggen', exact: true }),
-  ).toBeDisabled();
-  await expect(page.getByText(/concepten op dit apparaat/)).toBeVisible();
-  await page.getByRole('link', { name: 'Opnemen', exact: true }).click();
-  await page.getByRole('button', { name: 'badkamer.png verwijderen', exact: true }).click();
-  await page.getByRole('link', { name: 'Rapport', exact: true }).click();
-  await expect(page.getByRole('button', { name: 'Rapport vastleggen', exact: true })).toBeEnabled();
+  await expect(page.getByRole('article', { name: 'Inspectierapport', exact: true })).toContainText(
+    'Beschadiging naast douche',
+  );
+  await expect(page.getByRole('button', { name: 'Foto’s toevoegen', exact: true })).toHaveCount(0);
   await page.getByRole('button', { name: 'Rapport vastleggen', exact: true }).click();
   const finalise = page.getByRole('dialog', { name: 'Inspectie afronden', exact: true });
   await expect(finalise.getByText('Handtekeningen (optioneel)', { exact: true })).toBeVisible();
@@ -354,7 +374,7 @@ test('photos become reviewed observations and a signed immutable report', async 
     .getByRole('button', { name: 'Rapport definitief vastleggen', exact: true })
     .click();
   await expect(
-    page.getByRole('heading', { name: 'Vastgelegd rapport', exact: true }),
+    page.getByRole('heading', { name: 'Definitief inspectierapport', exact: true }),
   ).toBeVisible();
   await expect(
     page.getByRole('region', { name: 'Vastgelegde handtekeningen', exact: true }),
@@ -364,7 +384,9 @@ test('photos become reviewed observations and a signed immutable report', async 
     page.getByRole('img', { name: 'Handtekening van Sanne Inspecteur', exact: true }),
   ).toBeVisible();
   const downloadEvent = page.waitForEvent('download');
-  const pdfResponse = page.waitForResponse((response) => response.url().endsWith('/report/pdf'));
+  const pdfResponse = page.waitForResponse((response) =>
+    new URL(response.url()).pathname.endsWith('/report/pdf'),
+  );
   await page.getByRole('button', { name: 'PDF downloaden', exact: true }).click();
   expect((await pdfResponse).status()).toBe(200);
   const download = await downloadEvent;
@@ -377,7 +399,7 @@ test('photos become reviewed observations and a signed immutable report', async 
   expect(pdf.subarray(0, 5).toString()).toBe('%PDF-');
   expect(pdf.toString().trimEnd().endsWith('%%EOF')).toBe(true);
   await page.reload();
-  await expect(page.getByRole('article')).toContainText(
+  await expect(page.getByRole('article', { name: 'Inspectierapport', exact: true })).toContainText(
     'De wandafwerking naast de douche is beschadigd.',
   );
   await expect(page.getByRole('button', { name: 'Rapport vastleggen', exact: true })).toHaveCount(
@@ -391,16 +413,82 @@ test('photos become reviewed observations and a signed immutable report', async 
     'inspector',
     'resident',
   ]);
-  await page.getByRole('button', { name: 'Inspectie verwijderen', exact: true }).click();
-  await page
-    .getByRole('dialog', { name: 'Inspectie verwijderen', exact: true })
-    .getByRole('button', { name: 'Definitief verwijderen', exact: true })
+  page.setDefaultTimeout(30_000);
+  const receivingBase = process.env.VERA_RECEIVER_URL;
+  expect(receivingBase).toBeTruthy();
+  const receiver = await request.newContext({
+    baseURL: receivingBase,
+    ignoreHTTPSErrors: true,
+    extraHTTPHeaders: { 'X-Test-Control-Key': 'dummy-control-secret-only-for-tests' },
+  });
+  const unit = `e2e-${iid}`;
+  expect(
+    (
+      await receiver.post('/_test/seed', {
+        data: { resource: '/vastgoed/v4/eenheden', record: { id: unit, code: unit } },
+      })
+    ).status(),
+  ).toBe(201);
+  await receiver.dispose();
+  const destinationName = `Onderhoud ${iid.slice(0, 8)}`;
+  await page.goto('/app/settings?tab=handover');
+  await page.getByRole('button', { name: 'Bestemming toevoegen', exact: true }).click();
+  const destinationForm = page.getByRole('form', { name: 'VERA-bestemming bewerken' });
+  for (const [label, value] of [
+    ['Naam ontvangend systeem', destinationName],
+    ['Aanvullende API-basis-URL (optioneel)', `${receivingBase}/onderhoud/v4`],
+    ['Dossier API-basis-URL', `${receivingBase}/dossier/v4`],
+    ['Vastgoed API-basis-URL (optioneel)', `${receivingBase}/vastgoed/v4`],
+    ['OAuth2-token-URL', `${receivingBase}/oauth/token`],
+    ['OAuth2-client-ID', 'satvey-test'],
+    ['OAuth2-clientgeheim', 'dummy-client-secret-only-for-tests'],
+    ['Bronorganisatie', `E2E-${iid}`],
+    ['Bronadministratie', 'SATVEY'],
+  ])
+    await destinationForm.getByLabel(label, { exact: true }).fill(value);
+  await destinationForm.getByLabel('Bestemming inschakelen', { exact: true }).check();
+  await destinationForm.getByRole('button', { name: 'Bestemming opslaan', exact: true }).click();
+  await expect(
+    page
+      .getByRole('region', { name: 'VERA-synchronisatie', exact: true })
+      .getByRole('status')
+      .filter({ hasText: 'VERA-bestemming opgeslagen' }),
+  ).toContainText('VERA-bestemming opgeslagen');
+  await destinationForm.getByRole('button', { name: 'Bewerken sluiten', exact: true }).click();
+  const mapping = page.getByRole('region', {
+    name: 'Woning koppelen voor synchronisatie',
+    exact: true,
+  });
+  await mapping
+    .getByLabel('Bestemming voor woningkoppeling', { exact: true })
+    .selectOption({ label: destinationName });
+  await mapping.getByLabel('Zoek woning voor synchronisatie', { exact: true }).fill(address);
+  await mapping.getByRole('button').filter({ hasText: address }).first().click();
+  await mapping
+    .getByLabel('Eenheid-URI in het ontvangende systeem', { exact: true })
+    .fill(`${receivingBase}/vastgoed/v4/eenheden/${unit}`);
+  await mapping
+    .getByRole('button', { name: 'Woningkoppeling controleren en opslaan', exact: true })
     .click();
-  await expect(page.getByRole('heading', { name: 'Inspecties', exact: true })).toBeVisible();
-  expect((await page.request.get(`${base}/inspections/${iid}/report`)).status()).toBe(404);
+  await expect(
+    page
+      .getByRole('region', { name: 'VERA-synchronisatie', exact: true })
+      .getByRole('status')
+      .filter({ hasText: 'gecontroleerd en gekoppeld' }),
+  ).toContainText('gecontroleerd en gekoppeld');
+  await page.goto(`/app/inspections/${iid}/dossier`);
+  await expect(
+    page.getByRole('region', { name: 'Interne synchronisatie', exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: 'Overdracht goedkeuren', exact: true }),
+  ).toHaveCount(0);
+  await expect(
+    page.getByRole('button', { name: 'Onderhoudsvoorstellen maken', exact: true }),
+  ).toHaveCount(0);
 });
 
-test('inspection deletion confirms the address, handles failure and removes local drafts', async ({
+test('archiving refuses local work, preserves the dossier and allows restoration', async ({
   page,
 }) => {
   await login(page);
@@ -410,68 +498,43 @@ test('inspection deletion confirms the address, handles failure and removes loca
   const base = `/api/v1/orgs/${account.organisations[0].id}`;
   const scope = `${account.user.id}:${account.organisations[0].id}`;
   const path = `${base}/inspections/${iid}`;
-  const dossier = await (await page.request.get(path)).json();
-  await page.getByRole('link', { name: 'Alle inspecties', exact: true }).click();
-  await page.getByLabel('Inspecties zoeken', { exact: true }).fill(address);
-  const remove = page.getByRole('button', {
-    name: `Inspectie verwijderen: ${address}`,
-    exact: true,
-  });
-  await remove.click();
-  const dialog = page.getByRole('dialog', { name: 'Inspectie verwijderen', exact: true });
-  await expect(dialog).toContainText(address);
-  await dialog.getByRole('button', { name: 'Annuleren', exact: true }).click();
-  expect((await page.request.get(path)).status()).toBe(200);
   await page.evaluate(
     async ({ scope, iid }) => {
       const modulePath = '/src/workspace/outbox.ts';
       const outbox = await import(modulePath);
       await outbox.draftPut(`${scope}:inspectionDraft:${iid}:camera`, { id: 'local-draft' });
-      await outbox.saveAction({
-        id: `delete-test-${iid}`,
-        scope,
-        inspectionId: iid,
-        kind: 'edit',
-        path: '/unused',
-        payload: {},
-        state: 'conflict',
-        createdAt: Date.now(),
-      });
     },
     { scope, iid },
   );
-  let fail = true;
-  await page.route(`**/api/v1${path.replace('/api/v1', '')}`, (route) => {
-    if (route.request().method() === 'DELETE' && fail)
-      return route.fulfill({ status: 503, json: { error: 'Tijdelijk niet beschikbaar' } });
-    return route.continue();
-  });
-  await remove.click();
-  await dialog.getByRole('button', { name: 'Definitief verwijderen', exact: true }).click();
-  await expect(dialog.getByRole('alert')).toContainText('Tijdelijk niet beschikbaar');
-  expect((await page.request.get(path)).status()).toBe(200);
-  fail = false;
-  await dialog.getByRole('button', { name: 'Definitief verwijderen', exact: true }).click();
-  await expect(dialog).toBeHidden();
-  await expect(remove).toHaveCount(0);
-  expect((await page.request.get(`${base}/properties/${dossier.inspection.propertyId}`)).ok()).toBe(
-    true,
-  );
-  const remaining = await page.evaluate(
+  await page.getByText('Meer acties', { exact: true }).click();
+  await page.getByRole('button', { name: 'Inspectie archiveren', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Inspectie archiveren', exact: true });
+  await expect(dialog).toContainText(address);
+  await dialog.getByRole('textbox', { name: 'Reden', exact: true }).fill('Dubbele opdracht');
+  await dialog.getByRole('button', { name: 'Inspectie archiveren', exact: true }).click();
+  await expect(dialog.getByRole('alert')).toContainText('lokale wijzigingen');
+  await page.evaluate(
     async ({ scope, iid }) => {
       const modulePath = '/src/workspace/outbox.ts';
       const outbox = await import(modulePath);
-      return {
-        draft: await outbox.draftGet(`${scope}:inspectionDraft:${iid}:camera`),
-        pending: (await outbox.actions(scope)).filter(
-          (action: { inspectionId: string }) => action.inspectionId === iid,
-        ),
-      };
+      await outbox.draftRemove(`${scope}:inspectionDraft:${iid}:camera`);
     },
     { scope, iid },
   );
-  expect(remaining.draft).toBeUndefined();
-  expect(remaining.pending).toEqual([]);
+  await dialog.getByRole('button', { name: 'Inspectie archiveren', exact: true }).click();
+  await expect(dialog).toBeHidden();
+  const archived = await (await page.request.get(path)).json();
+  expect(archived.inspection.archivedAt).toBeTruthy();
+  await page.goto(`/app/inspections/${iid}/report`);
+  await page.getByText('Meer acties', { exact: true }).click();
+  await page.getByRole('button', { name: 'Inspectie herstellen', exact: true }).click();
+  const restore = page.getByRole('dialog', { name: 'Inspectie herstellen', exact: true });
+  await restore.getByRole('textbox', { name: 'Reden', exact: true }).fill('Opdracht hervatten');
+  await restore.getByRole('button', { name: 'Inspectie herstellen', exact: true }).click();
+  await expect(restore).toBeHidden();
+  const restored = await (await page.request.get(path)).json();
+  expect(restored.inspection.archivedAt).toBeNull();
+  expect(restored.rooms).toHaveLength(archived.rooms.length);
 });
 
 test('inline findings can be approved, rejected and corrected without an edit step', async ({
@@ -526,8 +589,7 @@ test('offline capture survives reload and uploads once after reconnecting', asyn
   await page.route('**/api/v1/orgs/**/inspections/*/batches', (route) =>
     rejectUploads ? route.abort('internetdisconnected') : route.fallback(),
   );
-  await page.getByLabel("Foto's toevoegen", { exact: true }).setInputFiles(photo);
-  await page.getByRole('button', { name: 'Opname bewaren', exact: true }).click();
+  await captureFiles(page, photo);
   await expect(page.getByRole('status').filter({ hasText: 'op apparaat' }).first()).toBeVisible();
   await page.reload();
   await expect(page.getByRole('status').filter({ hasText: 'op apparaat' }).first()).toBeVisible();
@@ -625,17 +687,268 @@ test('real MediaRecorder audio is persisted and played back', async ({
   await context.grantPermissions(['microphone']);
   await login(page);
   await inspection(page);
-  await page.getByRole('button', { name: 'Audio opnemen', exact: true }).click();
-  await expect(page.getByText(/Microfoon actief/)).toBeVisible();
-  await expect(page.getByRole('button', { name: /Stop 0:0[2-9]/ })).toBeVisible({ timeout: 10000 });
-  await page.getByRole('button', { name: /^Stop/ }).click();
-  await expect(page.locator('audio')).toBeVisible();
-  await page.getByRole('button', { name: 'Opname bewaren', exact: true }).click();
-  await expect(page.getByText('Spraaknotitie · intern')).toBeVisible({ timeout: 15000 });
+  await page.getByRole('button', { name: /Inspectie (starten|hervatten)/ }).click();
+  const camera = page.getByRole('dialog', { name: 'Inspectie opnemen', exact: true });
+  await expect(camera.getByRole('button', { name: 'Microfoon dempen', exact: true })).toBeVisible({
+    timeout: 10000,
+  });
+  await page.waitForTimeout(2200);
+  await camera.getByRole('button', { name: 'Microfoon dempen', exact: true }).click();
+  await camera.getByRole('button', { name: 'Gereed', exact: true }).click();
+  await expect(page.locator('audio')).toBeVisible({ timeout: 15000 });
   await page.reload();
   await expect(page.getByText('Spraaknotitie · intern')).toBeVisible();
   const url = await page.locator('audio').getAttribute('src');
   const response = await page.request.get(url!);
   expect(response.ok()).toBeTruthy();
   expect((await response.body()).length).toBeGreaterThan(100);
+});
+
+test('planning and agreements are inline and manual time inputs are absent', async ({ page }) => {
+  await login(page);
+  await inspection(page);
+  const iid = page.url().match(/inspections\/([^/]+)/)![1];
+  const me = await (await page.request.get('/api/v1/me')).json();
+  const path = `/api/v1/orgs/${me.organisations[0].id}/inspections/${iid}`;
+  await page.getByRole('link', { name: 'Dossier', exact: true }).click();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await page.getByLabel('Inspecteur', { exact: true }).selectOption(me.user.id);
+  await page.getByLabel('Externe zaakreferentie', { exact: true }).fill('AUTO-42');
+  await page.getByRole('button', { name: 'Planning bewaren', exact: true }).click();
+  await page.getByRole('button', { name: 'Afspraak toevoegen', exact: true }).click();
+  await page
+    .locator('form')
+    .filter({ has: page.getByRole('button', { name: 'Afspraak bewaren', exact: true }) })
+    .getByRole('textbox', { name: 'Afspraak', exact: true })
+    .fill('Bewoner verwijdert losse kast');
+  await page.getByLabel('Verantwoordelijk', { exact: true }).selectOption('resident');
+  await page.getByRole('button', { name: 'Afspraak bewaren', exact: true }).click();
+  await expect
+    .poll(async () => (await (await page.request.get(path)).json()).agreements.length)
+    .toBe(1);
+  await expect(page.getByRole('button', { name: 'Tijdmeting', exact: true })).toHaveCount(0);
+  await expect(page.getByLabel('Opnemen (minuten)', { exact: true })).toHaveCount(0);
+  const result = await (await page.request.get(path)).json();
+  expect(result.inspection.externalReference).toBe('AUTO-42');
+});
+
+test('native login consent survives the SSO return path and can be cancelled', async ({ page }) => {
+  await login(page);
+  const request = 'a'.repeat(64);
+  await page.goto(`/app?mobileRequest=${request}`);
+  await expect(
+    page.getByRole('heading', { name: 'Mobiele app koppelen', exact: true }),
+  ).toBeVisible();
+  // Identity providers return to /app; the original request is tab-scoped.
+  await page.goto('/app');
+  await expect(
+    page.getByRole('button', { name: 'Deze appaanmelding bevestigen', exact: true }),
+  ).toBeVisible();
+  await page.getByRole('link', { name: 'Annuleren', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Inspecties', exact: true })).toBeVisible();
+  expect(await page.evaluate(() => sessionStorage.getItem('satvey-mobile-request'))).toBeNull();
+});
+
+test('room dialog selects type, suggests editable names and exposes a rename pencil', async ({
+  page,
+}, info) => {
+  await login(page);
+  const me = await (await page.request.get('/api/v1/me')).json(),
+    base = `/api/v1/orgs/${me.organisations[0].id}`;
+  const original = await createTestFormat(page, base);
+  const revision = await (
+    await page.request.post(`${base}/formats/${original.id}/revisions`, { headers, data: {} })
+  ).json();
+  const format = await (await page.request.get(`${base}/formats/${revision.id}`)).json();
+  const bathroom = format.scopes.find((scope: { property: boolean }) => !scope.property);
+  const kitchen = {
+    ...bathroom,
+    id: randomUUID(),
+    name: 'Keuken',
+    repeatable: false,
+    normRoom: 'Keuken',
+    required: false,
+    questions: bathroom.questions.map((question: object) => ({ ...question, id: randomUUID() })),
+  };
+  const toilet = {
+    ...kitchen,
+    id: randomUUID(),
+    name: 'Toilet',
+    normRoom: 'Toilet',
+    questions: kitchen.questions.map((question: object) => ({ ...question, id: randomUUID() })),
+  };
+  format.scopes.push(kitchen, toilet);
+  const saved = await page.request.put(`${base}/formats/${format.id}`, { headers, data: format });
+  expect(saved.ok()).toBe(true);
+  expect(
+    (
+      await page.request.post(`${base}/formats/${format.id}/publish`, {
+        headers,
+        data: { revision: (await saved.json()).revision },
+      })
+    ).ok(),
+  ).toBe(true);
+  const property = await createTestProperty(page, base, `Ruimtedialoog ${randomUUID()}`),
+    iid = randomUUID(),
+    path = `${base}/inspections/${iid}`;
+  expect(
+    (
+      await page.request.post(`${base}/inspections`, {
+        headers,
+        data: { id: iid, propertyId: property.id, kind: 'pre', formatVersionId: format.id },
+      })
+    ).ok(),
+  ).toBe(true);
+  await page.goto(`/app/inspections/${iid}/capture`);
+  await page.getByRole('button', { name: 'Ruimte toevoegen', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Ruimte toevoegen', exact: true });
+  const type = dialog.getByLabel('Ruimtetype', { exact: true }),
+    name = dialog.getByRole('textbox', { name: 'Ruimtenaam', exact: true });
+  await expect(name).toHaveValue('Badkamer 2');
+  await type.selectOption(kitchen.id);
+  await expect(name).toHaveValue('Keuken 1');
+  await type.selectOption(toilet.id);
+  await expect(name).toHaveValue('Toilet 1');
+  await name.fill('Gastentoilet');
+  await type.selectOption(kitchen.id);
+  await expect(name).toHaveValue('Gastentoilet');
+  await type.selectOption(toilet.id);
+  await name.fill('  ');
+  await expect(dialog.getByRole('button', { name: 'Toevoegen', exact: true })).toBeDisabled();
+  await name.fill('Gastentoilet');
+  await page.screenshot({
+    path: `tests/artifacts/room-dialog-add-${info.project.name}.png`,
+    scale: 'css',
+  });
+  await dialog.getByRole('button', { name: 'Toevoegen', exact: true }).click();
+  await expect(dialog).toBeHidden();
+  const nav = page.getByRole('navigation', { name: 'Ruimtes', exact: true });
+  await expect(nav.getByRole('button', { name: 'Gastentoilet Open', exact: true })).toHaveAttribute(
+    'aria-current',
+    'location',
+  );
+  const data = await (await page.request.get(path)).json();
+  const room = data.rooms.find((room: { name: string }) => room.name === 'Gastentoilet');
+  expect(room.categoryId).toBe(toilet.id);
+  const answers = data.answers
+    .filter((answer: { roomId: string }) => answer.roomId === room.id)
+    .map((answer: { id: string }) => answer.id);
+  await nav.getByRole('button', { name: 'Naam wijzigen: Gastentoilet', exact: true }).click();
+  const rename = page.getByRole('dialog', { name: 'Ruimtenaam wijzigen', exact: true });
+  await expect(rename.getByRole('textbox', { name: 'Ruimtenaam', exact: true })).toBeFocused();
+  await rename.getByRole('textbox', { name: 'Ruimtenaam', exact: true }).fill('Toilet bij entree');
+  await rename.getByRole('button', { name: 'Opslaan', exact: true }).click();
+  await expect(rename).toBeHidden();
+  await expect(
+    nav.getByRole('button', { name: 'Naam wijzigen: Toilet bij entree', exact: true }),
+  ).toBeVisible();
+  await page.reload();
+  await expect(
+    nav.getByRole('button', { name: 'Naam wijzigen: Toilet bij entree', exact: true }),
+  ).toBeVisible();
+  const updated = await (await page.request.get(path)).json();
+  expect(updated.rooms.find((value: { id: string }) => value.id === room.id).categoryId).toBe(
+    toilet.id,
+  );
+  expect(
+    updated.answers
+      .filter((answer: { roomId: string }) => answer.roomId === room.id)
+      .map((answer: { id: string }) => answer.id),
+  ).toEqual(answers);
+  for (const expected of ['Keuken 1', 'Keuken 2']) {
+    await page.getByRole('button', { name: 'Ruimte toevoegen', exact: true }).click();
+    await type.selectOption(kitchen.id);
+    await expect(name).toHaveValue(expected);
+    await dialog.getByRole('button', { name: 'Toevoegen', exact: true }).click();
+    await expect(dialog).toBeHidden();
+    await expect(
+      nav.getByRole('button', { name: `Naam wijzigen: ${expected}`, exact: true }),
+    ).toBeVisible();
+  }
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(
+    true,
+  );
+  await page.screenshot({
+    path: `tests/artifacts/room-dialog-renamed-${info.project.name}.png`,
+    scale: 'css',
+  });
+});
+
+test('branding buttons fit their labels on desktop and landscape tablet', async ({
+  page,
+}, info) => {
+  await login(page);
+  await page.goto('/app/settings?tab=organisation');
+  const form = page
+    .locator('form')
+    .filter({ has: page.getByRole('heading', { name: 'Organisatie en huisstijl', exact: true }) });
+  for (const width of [1440, 1194]) {
+    await page.setViewportSize({ width, height: 834 });
+    await expect(form).toBeVisible();
+    const bounds = await form.boundingBox();
+    for (const label of ['Satvey-kleur herstellen', 'Voorbeeldknop', 'Rapportidentiteit bewaren']) {
+      const button = form.getByRole('button', { name: label, exact: true });
+      await expect(button).toBeVisible();
+      const box = await button.boundingBox();
+      expect(box!.width).toBeLessThan(Math.min(350, bounds!.width * 0.75));
+    }
+    await page.screenshot({
+      path: `tests/artifacts/room-dialog-branding-${width}-${info.project.name}.png`,
+      scale: 'css',
+    });
+  }
+});
+
+test('organisation logo picker previews, validates and saves the chosen image', async ({
+  page,
+}, info) => {
+  await login(page);
+  await page.goto('/app/settings?tab=organisation');
+  const form = page
+    .locator('form')
+    .filter({ has: page.getByRole('heading', { name: 'Organisatie en huisstijl', exact: true }) });
+  const input = form.getByLabel('Organisatielogo uploaden', { exact: true });
+  const choose = form.getByRole('button', { name: /^Logo (kiezen|vervangen)$/ });
+  await expect(choose).toBeVisible();
+  await expect(input).toBeHidden();
+  const picker = page.waitForEvent('filechooser');
+  await choose.click();
+  await (await picker).setFiles({ ...photo, name: 'organisatie-logo.png' });
+  await expect(form.getByRole('img', { name: 'Organisatielogo', exact: true })).toBeVisible();
+  await expect(form.getByRole('status')).toHaveText('organisatie-logo.png');
+  await expect(choose).toHaveText('Logo vervangen');
+  expect(
+    await form
+      .getByRole('img', { name: 'Organisatielogo', exact: true })
+      .evaluate((image: HTMLImageElement) => image.naturalWidth),
+  ).toBeGreaterThan(0);
+  const save = () =>
+    page.waitForResponse(
+      (response) =>
+        response.url().endsWith('/report-identity') && response.request().method() === 'PUT',
+    );
+  const saved = save();
+  await form.getByRole('button', { name: 'Rapportidentiteit bewaren', exact: true }).click();
+  expect((await saved).ok()).toBe(true);
+  await page.reload();
+  await expect(form.getByRole('img', { name: 'Organisatielogo', exact: true })).toBeVisible();
+  await input.setInputFiles({
+    name: 'te-groot.png',
+    mimeType: 'image/png',
+    buffer: Buffer.alloc(1048577),
+  });
+  await expect(form.getByRole('alert')).toContainText('Maximaal 1 MiB');
+  await expect(form.getByRole('img', { name: 'Organisatielogo', exact: true })).toBeVisible();
+  await page.screenshot({
+    path: `tests/artifacts/room-dialog-logo-${info.project.name}.png`,
+    scale: 'css',
+  });
+  await form.getByRole('button', { name: 'Logo verwijderen', exact: true }).click();
+  await expect(form.getByRole('img', { name: 'Organisatielogo', exact: true })).toHaveCount(0);
+  await expect(choose).toHaveText('Logo kiezen');
+  const removed = save();
+  await form.getByRole('button', { name: 'Rapportidentiteit bewaren', exact: true }).click();
+  expect((await removed).ok()).toBe(true);
+  await page.reload();
+  await expect(form.getByRole('button', { name: 'Logo kiezen', exact: true })).toBeVisible();
 });

@@ -2,21 +2,82 @@
 package maildelivery
 
 import (
+	"bytes"
 	"context"
 	"crypto/tls"
+	"encoding/base64"
+	"errors"
 	"fmt"
+	"mime"
+	"mime/multipart"
 	"net"
 	"net/mail"
 	"net/smtp"
+	"net/textproto"
 	"strings"
 	"time"
 )
 
 type Message struct {
-	To      string `json:"to"`
-	Subject string `json:"subject"`
-	Text    string `json:"text"`
+	ID          string       `json:"id,omitempty"`
+	To          string       `json:"to"`
+	Subject     string       `json:"subject"`
+	Text        string       `json:"text"`
+	Attachments []Attachment `json:"attachments,omitempty"`
 }
+type Attachment struct {
+	Name string `json:"name"`
+	MIME string `json:"mime"`
+	Data []byte `json:"data"`
+}
+
+func wireMessage(from, to string, m Message) ([]byte, error) {
+	var result bytes.Buffer
+	fmt.Fprintf(&result, "From: %s\r\nTo: %s\r\nSubject: %s\r\nMIME-Version: 1.0\r\n", from, to, mime.QEncoding.Encode("utf-8", m.Subject))
+	if m.ID != "" {
+		if strings.ContainsAny(m.ID, "\r\n<> ") {
+			return nil, fmt.Errorf("invalid message id")
+		}
+		fmt.Fprintf(&result, "Message-ID: <%s@satvey.inspect>\r\n", m.ID)
+	}
+	if len(m.Attachments) == 0 {
+		fmt.Fprintf(&result, "Content-Type: text/plain; charset=UTF-8\r\n\r\n%s\r\n", strings.ReplaceAll(strings.ReplaceAll(m.Text, "\r\n", "\n"), "\n", "\r\n"))
+		return result.Bytes(), nil
+	}
+	parts := multipart.NewWriter(&result)
+	fmt.Fprintf(&result, "Content-Type: multipart/mixed; boundary=%q\r\n\r\n", parts.Boundary())
+	body, err := parts.CreatePart(textproto.MIMEHeader{"Content-Type": {"text/plain; charset=UTF-8"}, "Content-Transfer-Encoding": {"base64"}})
+	if err != nil {
+		return nil, err
+	}
+	writeBase64(body, []byte(m.Text))
+	for _, a := range m.Attachments {
+		if a.Name == "" || strings.ContainsAny(a.Name+a.MIME, "\r\n") || len(a.Data) > 25<<20 {
+			return nil, fmt.Errorf("invalid attachment")
+		}
+		part, e := parts.CreatePart(textproto.MIMEHeader{"Content-Type": {mime.FormatMediaType(a.MIME, map[string]string{"name": a.Name})}, "Content-Disposition": {mime.FormatMediaType("attachment", map[string]string{"filename": a.Name})}, "Content-Transfer-Encoding": {"base64"}})
+		if e != nil {
+			return nil, e
+		}
+		writeBase64(part, a.Data)
+	}
+	if err = parts.Close(); err != nil {
+		return nil, err
+	}
+	return result.Bytes(), nil
+}
+func writeBase64(w interface{ Write([]byte) (int, error) }, data []byte) {
+	encoded := base64.StdEncoding.EncodeToString(data)
+	for len(encoded) > 0 {
+		n := 76
+		if len(encoded) < n {
+			n = len(encoded)
+		}
+		_, _ = w.Write([]byte(encoded[:n] + "\r\n"))
+		encoded = encoded[n:]
+	}
+}
+
 type Config struct{ Address, From, Username, Password, TLS string }
 
 func (c Config) Send(ctx context.Context, m Message) error {
@@ -84,13 +145,20 @@ func (c Config) Send(ctx context.Context, m Message) error {
 	if e != nil {
 		return fmt.Errorf("SMTP DATA failed")
 	}
-	text := strings.ReplaceAll(strings.ReplaceAll(m.Text, "\r\n", "\n"), "\n", "\r\n")
-	_, e = fmt.Fprintf(w, "From: %s\r\nTo: %s\r\nSubject: %s\r\nMIME-Version: 1.0\r\nContent-Type: text/plain; charset=UTF-8\r\n\r\n%s\r\n", from.String(), to.String(), m.Subject, text)
+	wire, encodeErr := wireMessage(from.String(), to.String(), m)
+	if encodeErr != nil {
+		return encodeErr
+	}
+	_, e = w.Write(wire)
 	if e != nil {
 		return fmt.Errorf("SMTP write failed")
 	}
 	if e = w.Close(); e != nil {
-		return fmt.Errorf("SMTP delivery refused")
+		var refused *textproto.Error
+		if errors.As(e, &refused) {
+			return fmt.Errorf("SMTP message refused")
+		}
+		return fmt.Errorf("delivery uncertain: SMTP acknowledgement unavailable")
 	}
 	_ = client.Quit()
 	return nil

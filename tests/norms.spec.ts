@@ -17,6 +17,11 @@ async function login(page: Page) {
   const account = await (await page.request.get('/api/v1/me')).json();
   return `/api/v1/orgs/${account.organisations[0].id}`;
 }
+async function openMainMenu(page: Page) {
+  const toggle = page.getByRole('button', { name: 'Navigatie openen', exact: true });
+  if ((await toggle.isVisible()) && (await toggle.getAttribute('aria-expanded')) === 'false')
+    await toggle.click();
+}
 async function noOverflow(page: Page) {
   const layout = await page.evaluate(() => ({
     width: innerWidth,
@@ -36,16 +41,18 @@ async function noOverflow(page: Page) {
 test('settings tabs separate account, members, roles and SSO while preserving form drafts', async ({
   page,
 }, info) => {
+  await page.setViewportSize({ width: 1194, height: 834 });
   await login(page);
+  await openMainMenu(page);
   await page.getByRole('link', { name: 'Instellingen', exact: true }).click();
   const tabs = page.getByRole('navigation', { name: 'Instellingenonderdelen', exact: true });
-  await expect(tabs.getByRole('link', { name: 'Account', exact: true })).toHaveAttribute(
+  await expect(tabs.getByRole('link', { name: 'Profiel', exact: true })).toHaveAttribute(
     'aria-current',
     'page',
   );
   await expect(page.getByLabel('Huidig wachtwoord', { exact: true })).toBeHidden();
   await expect(page.getByLabel('OIDC issuer URL', { exact: false })).toHaveCount(0);
-  await tabs.getByRole('link', { name: 'Rollen en privileges', exact: true }).click();
+  await tabs.getByRole('link', { name: 'Rollen en rechten', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Rol toevoegen', exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Lid uitnodigen', exact: true })).toHaveCount(0);
   const loaded = page.waitForResponse(
@@ -54,7 +61,7 @@ test('settings tabs separate account, members, roles and SSO while preserving fo
   await tabs.getByRole('link', { name: 'SSO', exact: true }).click();
   await loaded;
   await page.getByLabel(/^Client-ID/).fill('unsaved-settings-tab-draft');
-  await tabs.getByRole('link', { name: 'Account', exact: true }).click();
+  await tabs.getByRole('link', { name: 'Profiel', exact: true }).click();
   await tabs.getByRole('link', { name: 'SSO', exact: true }).click();
   await expect(page.getByLabel(/^Client-ID/)).toHaveValue('unsaved-settings-tab-draft');
   await noOverflow(page);
@@ -72,57 +79,68 @@ test('settings tabs separate account, members, roles and SSO while preserving fo
     'aria-current',
     'page',
   );
-  await page.getByRole('link', { name: 'Normen', exact: true }).click();
+  await openMainMenu(page);
+  await page
+    .getByRole('navigation', { name: 'Hoofdnavigatie', exact: true })
+    .getByRole('link', { name: 'Kwaliteitskaders', exact: true })
+    .click();
   await expect(
     page
-      .getByRole('navigation', { name: 'Normenmodule', exact: true })
-      .getByRole('link', { name: 'Inspectieformats', exact: true }),
+      .getByRole('navigation', { name: 'Kwaliteitskadersmodule', exact: true })
+      .getByRole('link', { name: 'Inspectiesjablonen', exact: true }),
   ).toHaveCount(0);
+  await openMainMenu(page);
   await expect(
     page
       .getByRole('navigation', { name: 'Hoofdnavigatie', exact: true })
-      .getByRole('link', { name: 'Inspectieformats', exact: true }),
+      .getByRole('link', { name: 'Inspectiesjablonen', exact: true }),
   ).toBeVisible();
 });
 
 test('inspectors see account settings without organisation-management forms', async ({ page }) => {
+  await page.setViewportSize({ width: 1194, height: 834 });
   await login(page);
-  await page.route('**/api/v1/me', async (route) => {
-    const response = await route.fetch();
-    const body = await response.json();
-    body.organisations = body.organisations.map((org: { privileges: string[] }) => ({
-      ...org,
-      roleName: 'Inspecteur',
-      privileges: org.privileges.filter((p) => p !== 'settings.manage'),
-    }));
-    await route.fulfill({ response, json: body });
-  });
+  const body = await (await page.request.get('/api/v1/me')).json();
+  body.organisations = body.organisations.map((org: { privileges: string[] }) => ({
+    ...org,
+    roleName: 'Inspecteur',
+    privileges: org.privileges.filter((p) =>
+      ['inspections.read', 'inspections.write', 'norms.read', 'formats.read'].includes(p),
+    ),
+  }));
+  await page.route('**/api/v1/me', (route) => route.fulfill({ json: body }));
   await page.goto('/app/settings?tab=sso');
   const tabs = page.getByRole('navigation', { name: 'Instellingenonderdelen', exact: true });
   await expect(tabs.getByRole('link')).toHaveCount(1);
-  await expect(tabs.getByRole('link', { name: 'Account', exact: true })).toHaveAttribute(
+  await expect(tabs.getByRole('link', { name: 'Profiel', exact: true })).toHaveAttribute(
     'aria-current',
     'page',
   );
-  await expect(page.getByRole('heading', { name: 'Je account', exact: true })).toBeVisible();
+  await expect(
+    page.getByRole('heading', { name: 'Profiel en beveiliging', exact: true }),
+  ).toBeVisible();
   await expect(page.getByLabel(/^Client-ID/)).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Rol toevoegen', exact: true })).toHaveCount(0);
   await page.unrouteAll({ behavior: 'wait' });
 });
 
 test('custom roles expose privileges and appear in invitation choices', async ({ page }, info) => {
+  await page.setViewportSize({ width: 1194, height: 834 });
   const base = await login(page);
+  await openMainMenu(page);
   await page.getByRole('link', { name: 'Instellingen', exact: true }).click();
-  await page.getByRole('link', { name: 'Rollen en privileges', exact: true }).click();
+  await page.getByRole('link', { name: 'Rollen en rechten', exact: true }).click();
   await page.getByRole('button', { name: 'Rol toevoegen', exact: true }).click();
   const dialog = page.getByRole('dialog');
   const name = `E2E Role ${Date.now()}-${info.project.name}`;
   await dialog.getByLabel(/^Rolnaam/).fill(name);
-  await dialog.getByRole('checkbox', { name: 'Normen beheren', exact: true }).check();
+  await dialog.getByRole('checkbox', { name: 'Kwaliteitskaders beheren', exact: true }).check();
   await expect(
-    dialog.getByRole('checkbox', { name: 'Normen bekijken', exact: true }),
+    dialog.getByRole('checkbox', { name: 'Kwaliteitskaders bekijken', exact: true }),
   ).toBeChecked();
-  await dialog.getByRole('checkbox', { name: 'Benchmark bekijken', exact: true }).check();
+  await dialog
+    .getByRole('checkbox', { name: 'Beoordelingsoverzicht bekijken', exact: true })
+    .check();
   await dialog.getByRole('button', { name: 'Rol opslaan' }).click();
   await expect(dialog).toBeHidden();
   const row = page
@@ -135,18 +153,20 @@ test('custom roles expose privileges and appear in invitation choices', async ({
     1,
   );
   await page.keyboard.press('Escape');
-  await page.getByRole('link', { name: 'Rollen en privileges', exact: true }).click();
+  await page.getByRole('link', { name: 'Rollen en rechten', exact: true }).click();
   await row.getByRole('button', { name: 'Rol bewerken' }).click();
-  await expect(dialog.getByRole('checkbox', { name: 'Normen beheren', exact: true })).toBeChecked();
-  await dialog.getByRole('checkbox', { name: 'Normen bekijken', exact: true }).uncheck();
   await expect(
-    dialog.getByRole('checkbox', { name: 'Normen beheren', exact: true }),
+    dialog.getByRole('checkbox', { name: 'Kwaliteitskaders beheren', exact: true }),
+  ).toBeChecked();
+  await dialog.getByRole('checkbox', { name: 'Kwaliteitskaders bekijken', exact: true }).uncheck();
+  await expect(
+    dialog.getByRole('checkbox', { name: 'Kwaliteitskaders beheren', exact: true }),
   ).not.toBeChecked();
   await expect(
-    dialog.getByRole('checkbox', { name: 'Benchmark bekijken', exact: true }),
+    dialog.getByRole('checkbox', { name: 'Beoordelingsoverzicht bekijken', exact: true }),
   ).not.toBeChecked();
   await dialog.getByRole('button', { name: 'Rol opslaan' }).click();
-  await expect(row.getByText('Geen privileges', { exact: true })).toBeVisible();
+  await expect(row.getByText('Geen rechten', { exact: true })).toBeVisible();
   await noOverflow(page);
   const roles = await (await page.request.get(`${base}/roles`)).json();
   const role = roles.roles.find((r: { name: string }) => r.name === name);
@@ -154,8 +174,13 @@ test('custom roles expose privileges and appear in invitation choices', async ({
 });
 
 test('quality managers define room elements and link measures to them', async ({ page }, info) => {
+  await page.setViewportSize({ width: 1194, height: 834 });
   const base = await login(page);
-  await page.getByRole('link', { name: 'Normen', exact: true }).click();
+  await openMainMenu(page);
+  await page
+    .getByRole('navigation', { name: 'Hoofdnavigatie', exact: true })
+    .getByRole('link', { name: 'Kwaliteitskaders', exact: true })
+    .click();
   await page.getByRole('link', { name: 'Ruimtes en elementen', exact: true }).click();
   await page.getByRole('button', { name: 'Element toevoegen', exact: true }).click();
   const dialog = page.getByRole('dialog');
@@ -199,13 +224,19 @@ test('quality managers define room elements and link measures to them', async ({
   await expect(page.getByRole('heading', { name, exact: true })).toBeVisible();
   await page.getByLabel('Ruimte filteren', { exact: true }).selectOption('Keuken');
   await expect(page.getByRole('heading', { name, exact: true })).toHaveCount(0);
-  await page.getByRole('link', { name: 'Normenkaders', exact: true }).click();
-  await page.getByRole('button', { name: 'Normenkader toevoegen', exact: true }).click();
+  await openMainMenu(page);
+  await page
+    .getByRole('navigation', { name: 'Hoofdnavigatie', exact: true })
+    .getByRole('link', { name: 'Kwaliteitskaders', exact: true })
+    .click();
+  await page.getByRole('button', { name: 'Kwaliteitskader toevoegen', exact: true }).click();
   const normName = `E2E Norms ${Date.now()}-${info.project.name}`;
-  await dialog.getByLabel(/^Naam normenkader/).fill(normName);
+  await dialog.getByLabel(/^Naam kwaliteitskader/).fill(normName);
   await dialog.getByRole('button', { name: 'Concept aanmaken', exact: true }).click();
   await expect(page.getByRole('heading', { name: normName, exact: true })).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'Maatregelen (12)', exact: true })).toBeVisible();
+  await expect(
+    page.getByRole('heading', { name: 'Beoordelingscriteria (12)', exact: true }),
+  ).toBeVisible();
   await page
     .getByLabel('Element uit de ruimtedefinities', { exact: true })
     .selectOption({ label: name });
@@ -248,6 +279,7 @@ test('quality managers define room elements and link measures to them', async ({
 test('pinned norms and editable transcripts produce confirmed benchmark results', async ({
   page,
 }, info) => {
+  await page.setViewportSize({ width: 1194, height: 834 });
   const base = await login(page);
   const name = `E2E Norms ${Date.now()}-${info.project.name}`;
   let res = await page.request.post(`${base}/norms`, { headers, data: { name, baseline: true } });
@@ -278,8 +310,8 @@ test('pinned norms and editable transcripts produce confirmed benchmark results'
     .getByRole('button')
     .filter({ hasText: address })
     .click();
-  await page.getByLabel('Inspectieformat', { exact: true }).selectOption(format.id);
-  await page.getByRole('button', { name: 'Aanmaken en opnemen', exact: true }).click();
+  await page.getByLabel('Inspectiesjabloon', { exact: true }).selectOption(format.id);
+  await page.getByRole('button', { name: 'Aanmaken', exact: true }).click();
   await expect(page.getByRole('heading', { name: address, exact: true })).toBeVisible();
   const iid = page.url().match(/inspections\/([^/]+)/)![1];
   const path = `${base}/inspections/${iid}`;
@@ -306,11 +338,14 @@ test('pinned norms and editable transcripts produce confirmed benchmark results'
     ).ok(),
   ).toBe(true);
   await page.reload();
-  await page.getByText(/Transcript bij spraaknotitie/).click();
   await page
-    .getByLabel('Transcript audio', { exact: true })
+    .getByText(/^Uitgeschreven spraaknotitie/, { exact: false })
+    .first()
+    .click();
+  await page
+    .getByLabel('Uitgeschreven spraaknotitie', { exact: true })
     .fill('Vochtsporen waargenomen naast de douche. De oorzaak is onbekend.');
-  await page.getByRole('button', { name: 'Transcript bewaren en analyseren', exact: true }).click();
+  await page.getByRole('button', { name: 'Tekst bewaren en analyseren', exact: true }).click();
   await expect
     .poll(
       async () => {
@@ -333,7 +368,7 @@ test('pinned norms and editable transcripts produce confirmed benchmark results'
   }
   await page.getByText('Vochtsporen beoordelen', { exact: true }).click();
   await page
-    .getByRole('group', { name: 'Normoordeel', exact: true })
+    .getByRole('group', { name: 'Kwaliteitsbeoordeling', exact: true })
     .getByRole('button', { name: 'Niet acceptabel', exact: true })
     .click();
   await page
@@ -343,18 +378,18 @@ test('pinned norms and editable transcripts produce confirmed benchmark results'
   await expect(
     page
       .getByRole('region', { name: 'Badkamer', exact: true })
-      .getByRole('button', { name: 'Ruimte goedkeuren', exact: true }),
+      .getByRole('button', { name: 'Beoordeling bevestigen', exact: true }),
   ).toBeEnabled({
     timeout: 20000,
   });
   await page
     .getByRole('region', { name: 'Badkamer', exact: true })
-    .getByRole('button', { name: 'Ruimte goedkeuren', exact: true })
+    .getByRole('button', { name: 'Beoordeling bevestigen', exact: true })
     .click();
   await expect(
     page
       .getByRole('region', { name: 'Badkamer', exact: true })
-      .getByRole('button', { name: 'Ruimte goedkeuren', exact: true }),
+      .getByRole('button', { name: 'Beoordeling bevestigen', exact: true }),
   ).toBeDisabled();
   await page.getByRole('link', { name: 'Rapport', exact: true }).click();
   await expect(
@@ -362,9 +397,15 @@ test('pinned norms and editable transcripts produce confirmed benchmark results'
       .getByRole('article', { name: 'Inspectierapport' })
       .getByText('Inspecteur bevestigt zichtbare vochtsporen.', { exact: false }),
   ).toBeVisible();
-  await page.getByRole('link', { name: 'Normen', exact: true }).click();
-  await page.getByRole('link', { name: 'Benchmark', exact: true }).click();
-  await page.getByLabel('Normversie voor benchmark', { exact: true }).selectOption(doc.id);
+  await openMainMenu(page);
+  await page
+    .getByRole('navigation', { name: 'Hoofdnavigatie', exact: true })
+    .getByRole('link', { name: 'Kwaliteitskaders', exact: true })
+    .click();
+  await page.getByRole('link', { name: 'Beoordelingsoverzicht', exact: true }).click();
+  await page
+    .getByLabel('Kaderversie voor beoordelingsoverzicht', { exact: true })
+    .selectOption(doc.id);
   await expect(page.getByRole('table')).toContainText(doc.rules[0].title);
   await expect(
     page.locator('[class*=benchmarkStats]').getByText('0%', { exact: true }),

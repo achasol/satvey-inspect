@@ -95,6 +95,7 @@ export async function createTestFormat(page: Page, base: string, normId?: string
     evidence: quality ? 'statement' : 'photo',
     minPhotos: quality ? 0 : 1,
   };
+  doc.signingPolicy = 'legacy'; // Signing-policy behavior has its own journey.
   doc.scopes = [
     property,
     {

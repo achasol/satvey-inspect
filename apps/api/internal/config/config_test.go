@@ -8,6 +8,7 @@ import (
 
 func production() map[string]string {
 	return map[string]string{
+		"LEGAL_ENTITY": "Satvey", "HOSTING_REGION": "EU", "SUPPORT_EMAIL": "support@example.org", "PRIVACY_POLICY_URL": "https://inspect.example.org/privacy-policy",
 		"APP_ENV": "production", "APP_URL": "https://inspect.example.org", "ALLOW_HTTP_OIDC": "false", "ALLOW_HTTP_PROPERTY_API": "false", "ALLOW_MOCK_ANALYSIS": "false",
 		"APP_ENCRYPTION_KEY": base64.StdEncoding.EncodeToString(make([]byte, 32)), "PROPERTY_ENCRYPTION_KEY": base64.StdEncoding.EncodeToString(make([]byte, 32)),
 		"DATABASE_URL": "postgres://satvey:a-long-random-database-password@postgres/satvey", "S3_ENDPOINT": "http://rustfs:9000", "S3_BUCKET": "evidence", "S3_ACCESS_KEY": "deployment-key", "S3_SECRET_KEY": "a-long-random-object-password",
@@ -16,6 +17,7 @@ func production() map[string]string {
 }
 func TestProductionValidation(t *testing.T) {
 	for _, tc := range []struct{ name, key, value string }{
+		{"missing operator", "LEGAL_ENTITY", ""}, {"invalid privacy", "PRIVACY_POLICY_URL", "http://example.org"}, {"missing support", "SUPPORT_EMAIL", ""},
 		{"http origin", "APP_URL", "http://inspect.example.org"}, {"origin path", "APP_URL", "https://inspect.example.org/app"}, {"origin credentials", "APP_URL", "https://user:pass@inspect.example.org"}, {"wildcard origin", "TRUSTED_ORIGINS", "*"},
 		{"mock", "IMAGE_ANALYSIS_PROVIDER", "mock"}, {"auto", "IMAGE_ANALYSIS_PROVIDER", "auto"}, {"missing inference", "BASETEN_KEY", ""}, {"disabled transcription", "TRANSCRIPTION_PROVIDER", "disabled"},
 		{"http oidc", "ALLOW_HTTP_OIDC", "true"}, {"unset flag", "ALLOW_MOCK_ANALYSIS", ""}, {"http property", "ALLOW_HTTP_PROPERTY_API", "true"},

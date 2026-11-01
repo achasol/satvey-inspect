@@ -51,7 +51,7 @@ test('administrator imports a catalog and inspector selects a source identity', 
   await page.getByRole('button', { name: 'Inspectie toevoegen', exact: true }).click();
   dialog = page.getByRole('dialog');
   await expect(dialog.getByLabel(/^Adres/)).toHaveCount(0);
-  await expect(dialog.getByLabel('Inspectieformat', { exact: true })).toHaveCount(0);
+  await expect(dialog.getByLabel('Inspectiesjabloon', { exact: true })).toHaveCount(0);
   await expect(
     dialog.getByRole('button', { name: 'Deze woning gebruiken', exact: true }),
   ).toHaveCount(0);
@@ -63,17 +63,17 @@ test('administrator imports a catalog and inspector selects a source identity', 
     .click();
   await expect(dialog.getByLabel('Zoek woning', { exact: true })).toHaveCount(0);
   await expect(dialog.getByRole('region', { name: 'Gekozen woning' })).toContainText('1982');
-  await dialog.getByLabel('Inspectieformat', { exact: true }).selectOption(format.id);
-  await dialog.getByRole('button', { name: 'Vorige stap', exact: true }).click();
-  await expect(dialog.getByLabel('Inspectieformat', { exact: true })).toHaveCount(0);
+  await dialog.getByLabel('Inspectiesjabloon', { exact: true }).selectOption(format.id);
+  await dialog.getByRole('button', { name: 'Vorige', exact: true }).click();
+  await expect(dialog.getByLabel('Inspectiesjabloon', { exact: true })).toHaveCount(0);
   const selected = dialog
     .getByRole('list', { name: 'Gevonden woningen' })
     .getByRole('button')
     .filter({ hasText: address });
   await expect(selected).toHaveAttribute('aria-pressed', 'true');
   await selected.click();
-  await expect(dialog.getByLabel('Inspectieformat', { exact: true })).toHaveValue(format.id);
-  await dialog.getByRole('button', { name: 'Aanmaken en opnemen', exact: true }).click();
+  await expect(dialog.getByLabel('Inspectiesjabloon', { exact: true })).toHaveValue(format.id);
+  await dialog.getByRole('button', { name: 'Aanmaken', exact: true }).click();
   await expect(page.getByRole('heading', { name: address, exact: true })).toBeVisible();
   const path = `${base}/inspections/${page.url().match(/inspections\/([^/]+)/)![1]}`;
   const dossier = await (await page.request.get(path)).json();
@@ -92,9 +92,11 @@ test('provisional inspection requires administrator link and explicitly adopts l
     format = await createTestFormat(page, base);
   await page.getByRole('button', { name: 'Inspectie toevoegen', exact: true }).click();
   let dialog = page.getByRole('dialog');
-  await dialog.getByRole('button', { name: 'Voorlopige woning aanmaken', exact: true }).click();
+  await dialog
+    .getByRole('button', { name: 'Woning niet gevonden? Voorlopige woning aanmaken', exact: true })
+    .click();
   const provisionalAddress = `Voorlopig ${unique}`;
-  await expect(dialog.getByLabel('Inspectieformat', { exact: true })).toHaveCount(0);
+  await expect(dialog.getByLabel('Inspectiesjabloon', { exact: true })).toHaveCount(0);
   await expect(
     dialog.getByRole('button', { name: 'Deze woning gebruiken', exact: true }),
   ).toBeDisabled();
@@ -112,26 +114,26 @@ test('provisional inspection requires administrator link and explicitly adopts l
   await dialog.getByLabel('Plaats', { exact: true }).fill('Leiden');
   await dialog.getByLabel(/^Adres/).press('Enter');
   await expect(
-    dialog.getByRole('heading', { name: 'Woning en inspectieformat', exact: true }),
+    dialog.getByRole('heading', { name: 'Woning en inspectiesjabloon', exact: true }),
   ).toBeFocused();
   await expect(dialog.getByRole('region', { name: 'Gekozen woning' })).toContainText(
     provisionalAddress,
   );
   await expect(dialog.getByRole('region', { name: 'Gekozen woning' })).toContainText('Leiden');
   await expect(dialog.getByLabel('Zoek woning', { exact: true })).toHaveCount(0);
-  await dialog.getByLabel('Inspectieformat', { exact: true }).selectOption(format.id);
-  await dialog.getByText('Afspraak toevoegen (optioneel)', { exact: true }).click();
-  await dialog.getByLabel('Afspraak (optioneel)', { exact: true }).fill('2026-11-16T10:30');
+  await dialog.getByLabel('Inspectiesjabloon', { exact: true }).selectOption(format.id);
+  await dialog.getByText('Gepland bezoek (optioneel)', { exact: true }).click();
+  await dialog.getByLabel('Gepland bezoek', { exact: true }).fill('2026-11-16T10:30');
   expect(creations).toEqual([]);
-  await dialog.getByRole('button', { name: 'Vorige stap', exact: true }).click();
+  await dialog.getByRole('button', { name: 'Vorige', exact: true }).click();
   await expect(dialog.getByRole('heading', { name: 'Woning kiezen', exact: true })).toBeFocused();
   await expect(dialog.getByLabel(/^Adres/)).toHaveValue(provisionalAddress);
   await expect(dialog.getByLabel('Postcode', { exact: true })).toHaveValue('2311 AB');
   await expect(dialog.getByLabel('Plaats', { exact: true })).toHaveValue('Leiden');
-  await expect(dialog.getByLabel('Inspectieformat', { exact: true })).toHaveCount(0);
+  await expect(dialog.getByLabel('Inspectiesjabloon', { exact: true })).toHaveCount(0);
   await dialog.getByRole('button', { name: 'Deze woning gebruiken', exact: true }).click();
-  await expect(dialog.getByLabel('Inspectieformat', { exact: true })).toHaveValue(format.id);
-  await expect(dialog.getByLabel('Afspraak (optioneel)', { exact: true })).toHaveValue(
+  await expect(dialog.getByLabel('Inspectiesjabloon', { exact: true })).toHaveValue(format.id);
+  await expect(dialog.getByLabel('Gepland bezoek', { exact: true })).toHaveValue(
     '2026-11-16T10:30',
   );
   expect(creations).toEqual([]);
@@ -143,13 +145,14 @@ test('provisional inspection requires administrator link and explicitly adopts l
     .withTags(['wcag2a', 'wcag2aa', 'wcag21aa'])
     .analyze();
   expect(wizardAxe.violations).toEqual([]);
-  await dialog.getByRole('button', { name: 'Aanmaken en opnemen', exact: true }).click();
+  await dialog.getByRole('button', { name: 'Aanmaken', exact: true }).click();
   await expect(page.getByRole('heading', { name: provisionalAddress, exact: true })).toBeVisible();
   const iid = page.url().match(/inspections\/([^/]+)/)![1],
     path = `${base}/inspections/${iid}`;
   const blocked = await page.request.post(`${path}/report`, { headers, data: {} });
   expect(blocked.status()).toBe(422);
   expect((await blocked.json()).error).toContain('Koppel de voorlopige woning');
+  await page.goto(`/app/inspections/${iid}/dossier`);
   await page.getByRole('link', { name: 'Woning koppelen', exact: true }).click();
   await page.getByLabel('Zoek voorlopige woning', { exact: true }).fill(unique);
   await page
@@ -188,7 +191,7 @@ test('provisional inspection requires administrator link and explicitly adopts l
       )
     ).ok(),
   ).toBe(true);
-  await page.goto(`/app/inspections/${iid}/capture`);
+  await page.goto(`/app/inspections/${iid}/dossier`);
   await expect(page.getByRole('heading', { name: address, exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Brongegevens vergelijken', exact: true }).click();
   dialog = page.getByRole('dialog');

@@ -17,3 +17,7 @@ tests/artifacts
 benchmarks/**/.local
 demo
 docs/benchmark-sources
+apps/web/android/**/build
+apps/web/android/.gradle
+apps/web/android/local.properties
+apps/web/ios/App/build

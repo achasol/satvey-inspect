@@ -6,6 +6,13 @@ import { api, can, json } from './api';
 import type { Organisation } from './api';
 import { RoleSettings } from './RoleSettings';
 import { PropertySettings } from './PropertySettings';
+import { HandoverSettings } from './HandoverSettings';
+import { PilotSettings } from './PilotOperations';
+import { PrivacyControls } from './PrivacyControls';
+import { nativeDevice } from './nativeStorage';
+import { ReportIdentity } from './ReportIdentity';
+import { DeletionProtection } from './DossierActions';
+import { ResponsiveTabs } from './ResponsiveTabs';
 import { Invitations } from './Invitations';
 import type { OrgRole, RolesData } from './RoleSettings';
 import s from './workspace.module.css';
@@ -23,13 +30,16 @@ export function SettingsView({
   const location = useLocation(),
     manage = can(org, 'settings.manage');
   const tabs = [
-    { id: 'account', label: 'Account' },
+    { id: 'account', label: 'Profiel' },
     ...(manage
       ? [
+          { id: 'organisation', label: 'Organisatie en huisstijl' },
           { id: 'members', label: 'Leden en uitnodigingen' },
-          { id: 'roles', label: 'Rollen en privileges' },
+          { id: 'roles', label: 'Rollen en rechten' },
           { id: 'sso', label: 'SSO' },
           { id: 'properties', label: 'Vastgoedkoppeling' },
+          { id: 'handover', label: 'VERA-koppeling' },
+          { id: 'pilot', label: 'Pilot en gegevensbeheer' },
         ]
       : []),
   ];
@@ -117,23 +127,27 @@ export function SettingsView({
       <div className={s.pageHeading}>
         <h1>Instellingen</h1>
       </div>
-      <nav className={s.stages} aria-label="Instellingenonderdelen">
-        {tabs.map((item) => (
-          <Link
-            key={item.id}
-            to={item.id === 'account' ? '/app/settings' : `/app/settings?tab=${item.id}`}
-            className={tab === item.id ? s.activeStage : ''}
-            aria-current={tab === item.id ? 'page' : undefined}
-          >
-            {item.label}
-          </Link>
-        ))}
-      </nav>
+      <ResponsiveTabs
+        label="Instellingenonderdelen"
+        value={tab}
+        items={tabs.map((item) => ({
+          ...item,
+          href: item.id === 'account' ? '/app/settings' : `/app/settings?tab=${item.id}`,
+        }))}
+      />
       {error && (
         <p role="alert" className={s.error}>
           {error}
         </p>
       )}
+      {tab === 'organisation' && manage && <ReportIdentity base={base} scope={scope} />}
+      {tab === 'pilot' && manage && (
+        <>
+          <PilotSettings base={base} scope={scope} />
+          <DeletionProtection base={base} scope={scope} />
+        </>
+      )}
+      {tab === 'handover' && manage && <HandoverSettings key={scope} base={base} scope={scope} />}
       {notice && (
         <p role="status" className={s.success}>
           {notice}
@@ -147,10 +161,17 @@ export function SettingsView({
         )}
         {tab === 'account' && (
           <section className={s.stack} aria-label="Je account">
-            <h2>Je account</h2>
-            <a href={`/api/v1/auth/oidc/start?org=${org.slug}&link=true`} className={s.nextLink}>
-              SSO aan dit account koppelen <ArrowRight size={16} />
-            </a>
+            <h2>Profiel en beveiliging</h2>
+            <p>
+              <Link to="/support">Hulp en contact</Link> ·{' '}
+              <Link to="/privacy">Privacy en gegevensgebruik</Link>
+            </p>
+            <PrivacyControls scope={scope} />
+            {!nativeDevice && (
+              <a href={`/api/v1/auth/oidc/start?org=${org.slug}&link=true`} className={s.nextLink}>
+                SSO aan dit account koppelen <ArrowRight size={16} />
+              </a>
+            )}
             <details>
               <summary>Wachtwoord wijzigen</summary>
               <form
@@ -264,6 +285,7 @@ export function SettingsView({
         open={inviteOpen && manage && tab === 'members'}
         onOpenChange={setInviteOpen}
         title="Lid uitnodigen"
+        closeLabel="Sluiten"
         description="Kies het e-mailadres en de rol."
       >
         <form

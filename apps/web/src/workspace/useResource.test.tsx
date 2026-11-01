@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiError, api } from './api';
 import { cacheGet, cachePut } from './outbox';
 import { useResource } from './useResource';
+import * as platform from './platform';
 
 vi.mock('./api', async (original) => ({
   ...(await original<typeof import('./api')>()),
@@ -53,6 +54,17 @@ describe('scoped resource recovery', () => {
     await waitFor(() => expect(hook.result.current.cached).toBe(true));
     expect(cacheGet).toHaveBeenCalledWith('user:org:/items');
     expect(hook.result.current.data).toEqual([]);
+  });
+  it('reports unavailable cached evidence without an unhandled recovery failure', async () => {
+    vi.mocked(api).mockRejectedValue(new TypeError('offline'));
+    vi.mocked(cacheGet).mockResolvedValue({ media: [] });
+    vi.spyOn(platform, 'prepareResponseResources').mockRejectedValue(
+      new Error('Lokaal bronbewijs is beschadigd'),
+    );
+    const hook = renderHook(() => useResource('user:org', '/items'));
+    await waitFor(() => expect(hook.result.current.error).toBe('Lokaal bronbewijs is beschadigd'));
+    expect(hook.result.current.data).toBeUndefined();
+    expect(hook.result.current.cached).toBe(false);
   });
   it.each([401, 403, 404])(
     'never falls back to cached confidential data after HTTP %s',

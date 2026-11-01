@@ -1,4 +1,6 @@
 export type Organisation = {
+  tint?: string;
+  logoAssetId?: string | null;
   id: string;
   slug: string;
   name: string;
@@ -95,12 +97,32 @@ export type PropertyImport = {
   changesTruncated?: boolean;
 };
 export type Inspection = Pick<Property, 'address' | 'postcode' | 'city' | 'id'> & {
+  inspectorName?: string;
+  latestReportId?: string | null;
+  assignedTo?: string | null;
+  reviewerId?: string | null;
+  reviewStatus?: 'none' | 'requested' | 'changes_requested' | 'approved';
+  reviewNote?: string;
+  priority?: 'normal' | 'high' | 'urgent';
+  visitOutcome?: 'scheduled' | 'visited' | 'no_access' | 'cancelled';
+  visitedAt?: string | null;
+  externalReference?: string;
+  mutationCaseId?: string | null;
+  predecessorId?: string | null;
   propertyId: string;
   propertySnapshot?: Property;
   propertyContextVersion?: number;
   propertyChanged?: boolean;
   kind: 'pre' | 'final';
   status: 'draft' | 'final';
+  revision: number;
+  retentionHold?: boolean;
+  retentionHoldReason?: string;
+  archivedAt?: string | null;
+  archiveReason?: string;
+  correctsInspectionId?: string | null;
+  correctionReason?: string;
+  supersededBy?: string | null;
   scheduledAt: string | null;
   createdAt: string;
   normVersionId?: string | null;
@@ -127,6 +149,7 @@ export type Media = {
   name: string;
   mime: string;
   duration?: number;
+  contentDeletedAt?: string | null;
   transcript?: string;
   transcriptVersion?: number;
   annotations?: PhotoAnnotation[];
@@ -151,6 +174,7 @@ export type Observation = {
   version: number;
 };
 export type Dossier = {
+  agreements?: Agreement[];
   inspection: Inspection;
   rooms: Room[];
   batches: Batch[];
@@ -165,6 +189,12 @@ export type Dossier = {
   transcriptionJobs?: { mediaId: string; status: string; error: string }[];
 };
 export type Report = Omit<Dossier, 'jobs' | 'observations' | 'assessments'> & {
+  organisation?: { id: string; name: string; logoAssetId?: string | null; tint?: string };
+  number?: number;
+  rendererVersion?: number;
+  acknowledgement?: string;
+  signingException?: { outcome: string; note: string } | null;
+  disagreement?: string;
   signatures?: ReportSignature[];
   id: string;
   createdAt: string;
@@ -176,9 +206,102 @@ export type Report = Omit<Dossier, 'jobs' | 'observations' | 'assessments'> & {
     ruleId: string;
     batchId: string;
     outcome: NormOutcome;
+    scoreDetail?: ScoreDetail | null;
     reason: string;
     photoIds?: string[];
   }[];
+};
+export type HandoverSource = {
+  key: string;
+  kind: 'observation' | 'answer' | 'assessment';
+  title: string;
+  description: string;
+  location: string;
+  photoIds: string[];
+  value?: string | number | boolean | null;
+  outcome?: string;
+};
+export type WorkProposal = {
+  id: string;
+  sourceKeys: string[];
+  description: string;
+  location: string;
+  urgency: 'unspecified' | 'routine' | 'soon' | 'urgent';
+  elementCode: string;
+  quantity?: number;
+  unit: string;
+};
+export type VERAHandoverContext = {
+  unitUri: string;
+  organisation: string;
+  administration: string;
+  inspectionOrderId: string;
+  reportTypeCode: string;
+  reportStatusCode: string;
+  taskStatusCode: string;
+  requestStatusCode: string;
+  maintenanceTypeCode: string;
+};
+export type HandoverDraft = {
+  destinationId?: string;
+  version: number;
+  destination: string;
+  externalReference: string;
+  proposals: WorkProposal[];
+  vera?: VERAHandoverContext;
+};
+export type HandoverExport = {
+  id: string;
+  draftVersion: number;
+  destination: string;
+  createdAt: string;
+  lastDownloadAt: string | null;
+  proposalCount: number;
+};
+export type HandoverData = {
+  report: { id: string; property: Property; sources: HandoverSource[] };
+  draft: HandoverDraft;
+  exports: HandoverExport[];
+  destinations: { id: string; name: string; enabled: boolean; ready: boolean; reason: string }[];
+  deliveries: HandoverDelivery[];
+};
+export type HandoverDelivery = {
+  id: string;
+  inspectionId: string;
+  destinationId: string;
+  destination: string;
+  draftVersion: number;
+  status: 'queued' | 'processing' | 'retrying' | 'blocked' | 'accepted' | 'manual';
+  attempts: number;
+  error: string;
+  createdAt: string;
+  acceptedAt: string | null;
+  nextAttemptAt: string;
+  acceptedCount: number;
+  proposals: WorkProposal[];
+  receipts: { key: string; receiverId: string; uri: string; acceptedAt: string }[];
+};
+export type HandoverDestination = {
+  id: string;
+  name: string;
+  enabled: boolean;
+  revision: number;
+  secretConfigured: boolean;
+  onderhoudUrl: string;
+  dossierUrl: string;
+  vastgoedUrl: string;
+  tokenUrl: string;
+  clientId: string;
+  scopes: string;
+  organisation: string;
+  administration: string;
+  reportTypeCode: string;
+  maintenanceTypeCode: string;
+};
+export type HandoverSettingsData = {
+  destinations: HandoverDestination[];
+  mappings: { destinationId: string; propertyId: string; unitUri: string; address: string }[];
+  deliveries: HandoverDelivery[];
 };
 export type SignatureInput = {
   name: string;
@@ -194,7 +317,23 @@ export type NormExample = {
   transcript?: string;
   assetId?: string;
 };
+export type ScoreDetail = {
+  score: number | null;
+  repairResponsibility: 'corporation' | 'resident' | 'undetermined';
+  costResponsibility: 'corporation' | 'resident' | 'undetermined';
+  note: string;
+};
+export type ScoreLevel = {
+  score: number;
+  label: string;
+  description: string;
+  outcome: '' | 'acceptable' | 'unacceptable';
+  repairResponsibility: ScoreDetail['repairResponsibility'];
+  costResponsibility: ScoreDetail['costResponsibility'];
+  references: { id: string; assetId: string; name: string; mime: string; caption: string }[];
+};
 export type NormRule = {
+  scoreLevels?: ScoreLevel[];
   elementId?: string;
   id: string;
   code: string;
@@ -224,6 +363,8 @@ export type NormDocument = Omit<NormSummary, 'ruleCount'> & {
   sources: { title: string; url: string; checkedAt: string }[];
 };
 export type NormAssessment = {
+  proposedScore?: number | null;
+  scoreDetail?: ScoreDetail | null;
   id: string;
   batchId: string;
   ruleId: string;
@@ -275,6 +416,8 @@ export type FormatScope = {
   questions: FormatQuestion[];
 };
 export type InspectionFormat = {
+  signingPolicy?: 'legacy' | 'resident_or_exception';
+  acknowledgement?: string;
   id: string;
   formatId: string;
   number: number;
@@ -286,7 +429,20 @@ export type InspectionFormat = {
   revision: number;
   scopes: FormatScope[];
 };
+export type Agreement = {
+  id: string;
+  description: string;
+  responsibility: 'resident' | 'corporation';
+  dueDate: string | null;
+  status: 'open' | 'completed' | 'disputed' | 'withdrawn';
+  note: string;
+  photoIds: string[];
+  version: number;
+  sourceAgreementId?: string | null;
+};
 export type FormatAnswer = {
+  proposedScore?: number | null;
+  scoreDetail?: ScoreDetail | null;
   id: string;
   roomId: string;
   questionId: string;

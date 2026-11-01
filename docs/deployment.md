@@ -29,3 +29,5 @@ The default private subnet is `172.30.0.0/24`, with Caddy/Nginx at `.2`/`.3`. If
 Investigate readiness failures by dependency, HTTP errors by request ID, and old/failed jobs by worker kind. Preserve evidence; retry transient failures or use manual continuation. Do not reset versions or clear queues to hide failures. Review disk/memory, backup timer failures and the newest successful off-host snapshot daily.
 
 API request logs omit query strings, bodies and token-bearing paths. Nginx access logs retain only IDs/method/status/timing, and its raw-URI error entries are suppressed below critical severity. Caddy filters request fields from runtime logs. Browser traces can contain credentials/screenshots; restrict access and retention. The single host is a failure domain. Daily backups permit up to 24 hours of data loss and a four-hour restore; they do not provide high availability.
+
+Customer pilot setup and acceptance: [customer readiness](customer-readiness.md). Native build, device acceptance and public store preparation: [mobile release](mobile-release.md).

@@ -52,13 +52,15 @@ type principal struct {
 	Name  string `json:"name"`
 }
 type membership struct {
-	ID         string   `json:"id"`
-	Slug       string   `json:"slug"`
-	Name       string   `json:"name"`
-	Role       string   `json:"role"`
-	RoleID     string   `json:"roleId"`
-	RoleName   string   `json:"roleName"`
-	Privileges []string `json:"privileges"`
+	Tint        string   `json:"tint"`
+	LogoAssetID *string  `json:"logoAssetId"`
+	ID          string   `json:"id"`
+	Slug        string   `json:"slug"`
+	Name        string   `json:"name"`
+	Role        string   `json:"role"`
+	RoleID      string   `json:"roleId"`
+	RoleName    string   `json:"roleName"`
+	Privileges  []string `json:"privileges"`
 }
 type loginLimiter struct {
 	sync.Mutex
@@ -109,11 +111,11 @@ func (l *loginLimiter) allow(key string) bool {
 }
 func (a *app) user(r *http.Request) (principal, error) {
 	var u principal
-	c, e := r.Cookie("satvey_session")
-	if e != nil {
+	credential, kind := sessionCredential(r)
+	if credential == "" {
 		return u, fail(401, "Log in om verder te gaan")
 	}
-	e = a.db.QueryRow(r.Context(), "SELECT u.id,u.email,u.name FROM sessions s JOIN users u ON u.id=s.user_id WHERE s.token_hash=$1 AND s.expires_at>now()", hash(c.Value)).Scan(&u.ID, &u.Email, &u.Name)
+	e := a.db.QueryRow(r.Context(), "SELECT u.id,u.email,u.name FROM sessions s JOIN users u ON u.id=s.user_id WHERE s.token_hash=$1 AND s.kind=$2 AND s.expires_at>now()", hash(credential), kind).Scan(&u.ID, &u.Email, &u.Name)
 	if e != nil {
 		return u, fail(401, "Log opnieuw in")
 	}
@@ -177,8 +179,8 @@ func (a *app) login(w http.ResponseWriter, r *http.Request) error {
 	return nil
 }
 func (a *app) logout(w http.ResponseWriter, r *http.Request) error {
-	if c, e := r.Cookie("satvey_session"); e == nil {
-		if _, e = a.db.Exec(r.Context(), "DELETE FROM sessions WHERE token_hash=$1", hash(c.Value)); e != nil {
+	if credential, kind := sessionCredential(r); credential != "" {
+		if _, e := a.db.Exec(r.Context(), "DELETE FROM sessions WHERE token_hash=$1 AND kind=$2", hash(credential), kind); e != nil {
 			return e
 		}
 	}
@@ -191,7 +193,7 @@ func (a *app) me(w http.ResponseWriter, r *http.Request) error {
 	if e != nil {
 		return e
 	}
-	rows, e := a.db.Query(r.Context(), "SELECT o.id,o.slug,o.name,m.role,ro.id,ro.name,ro.privileges FROM memberships m JOIN organisations o ON o.id=m.org_id JOIN organisation_roles ro ON ro.id=m.role_id AND ro.org_id=m.org_id WHERE m.user_id=$1 ORDER BY o.name", u.ID)
+	rows, e := a.db.Query(r.Context(), "SELECT o.id,o.slug,o.name,m.role,ro.id,ro.name,ro.privileges,o.brand_tint,o.logo_asset_id FROM memberships m JOIN organisations o ON o.id=m.org_id JOIN organisation_roles ro ON ro.id=m.role_id AND ro.org_id=m.org_id WHERE m.user_id=$1 ORDER BY o.name", u.ID)
 	if e != nil {
 		return e
 	}
@@ -199,7 +201,7 @@ func (a *app) me(w http.ResponseWriter, r *http.Request) error {
 	orgs := []membership{}
 	for rows.Next() {
 		var o membership
-		if e = rows.Scan(&o.ID, &o.Slug, &o.Name, &o.Role, &o.RoleID, &o.RoleName, &o.Privileges); e != nil {
+		if e = rows.Scan(&o.ID, &o.Slug, &o.Name, &o.Role, &o.RoleID, &o.RoleName, &o.Privileges, &o.Tint, &o.LogoAssetID); e != nil {
 			return e
 		}
 		orgs = append(orgs, o)

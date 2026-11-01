@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Satvey Inspect</string>
+    <string name="title_activity_main">Satvey Inspect</string>
+    <string name="package_name">nl.satvey.inspect</string>
+    <string name="custom_url_scheme">nl.satvey.inspect</string>
+</resources>

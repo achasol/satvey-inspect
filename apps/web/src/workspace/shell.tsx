@@ -1,3 +1,4 @@
+import { networkOnline } from './connectivity';
 import { lazy, useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
@@ -9,10 +10,10 @@ import {
   Settings,
   WifiOff,
 } from 'lucide-react';
-import { BrandMark, Button, Dialog } from '../components/ui';
+import { Avatar, BrandMark, Button, Dialog } from '../components/ui';
 import { api, can, json } from './api';
 import type { Account, Organisation } from './api';
-import { removeAction, saveAction, setScope, sync, useOutbox } from './outbox';
+import { removeAction, saveAction, setScope, sync, useOutbox, scopeDraftCount } from './outbox';
 const NormsModule = lazy(async () => ({ default: (await import('./Norms')).NormsModule }));
 const FormatsModule = lazy(async () => ({ default: (await import('./Formats')).FormatsModule }));
 const SettingsView = lazy(async () => ({ default: (await import('./Settings')).SettingsView }));
@@ -21,6 +22,14 @@ import { errorText, ErrorNotice, Select } from './shared';
 import { InspectionList } from './inspections';
 import { InspectionWorkspace } from './dossier';
 import { LocalGallery } from './capture';
+import { PropertyHistory } from './VisitWorkflow';
+import { organisationTheme } from './theme';
+import { protectedURL } from './platform';
+import { Analytics } from './Analytics';
+import { Sidebar } from './Sidebar';
+import { OfflineVisits } from './OfflineVisits';
+import { nativeDevice } from './nativeStorage';
+import { rememberSession } from './platform';
 
 export function OrganisationWorkspace({
   account,
@@ -42,19 +51,39 @@ export function OrganisationWorkspace({
   const scope = `${account.user.id}:${org.id}`,
     base = `/orgs/${org.id}`,
     { items, error: storageError } = useOutbox(scope);
+  const firstName = account.user.name.trim().split(/\s+/)[0] || 'Gebruiker';
 
-  const [online, setOnline] = useState(navigator.onLine),
+  const [online, setOnline] = useState(networkOnline()),
     [error, setError] = useState(''),
+    [durabilityError, setDurabilityError] = useState(''),
+    [drafts, setDrafts] = useState(0),
     [logoutOpen, setLogoutOpen] = useState(false);
 
+  useEffect(() => {
+    const root = document.documentElement;
+    const theme = organisationTheme(org.tint) as Record<string, string>;
+    const previous = new Map(
+      Object.keys(theme).map((key) => [key, root.style.getPropertyValue(key)]),
+    );
+    for (const [key, value] of Object.entries(theme)) root.style.setProperty(key, value);
+    return () => {
+      for (const [key, value] of previous) {
+        if (value) root.style.setProperty(key, value);
+        else root.style.removeProperty(key);
+      }
+    };
+  }, [org.id, org.tint]);
   const location = useLocation(),
-    match = location.pathname.match(/^\/app\/inspections\/([^/]+)(?:\/(capture|review|report))?$/),
+    match = location.pathname.match(
+      /^\/app\/inspections\/([^/]+)(?:\/(capture|review|report|handover|dossier))?$/,
+    ),
+    analytics = location.pathname === '/app/analytics',
     settings = location.pathname === '/app/settings',
     norms = location.pathname === '/app/norms',
     formats = location.pathname === '/app/formats';
 
   useEffect(() => {
-    const update = () => setOnline(navigator.onLine);
+    const update = () => setOnline(networkOnline());
 
     window.addEventListener('online', update);
 
@@ -77,11 +106,40 @@ export function OrganisationWorkspace({
     return () => window.removeEventListener('beforeunload', guard);
   }, [items]);
 
+  useEffect(() => {
+    const update = () => {
+      void scopeDraftCount(scope)
+        .then(setDrafts)
+        .catch((e) => setError(errorText(e)));
+    };
+    update();
+    window.addEventListener('satvey-outbox', update);
+    window.addEventListener('satvey-drafts', update);
+    return () => {
+      window.removeEventListener('satvey-outbox', update);
+      window.removeEventListener('satvey-drafts', update);
+    };
+  }, [scope]);
+
+  useEffect(() => {
+    const health = (event: Event) => setDurabilityError((event as CustomEvent<string>).detail);
+    window.addEventListener('satvey-storage-health', health);
+    return () => window.removeEventListener('satvey-storage-health', health);
+  }, []);
   async function logout() {
     try {
       setScope('');
 
-      await api('/auth/logout', json('POST', {}));
+      if (nativeDevice) {
+        if (networkOnline()) {
+          try {
+            await api('/auth/logout', json('POST', {}));
+          } catch {
+            /* Local sign-out must also work when the API is unreachable. */
+          }
+        }
+        await rememberSession(undefined);
+      } else await api('/auth/logout', json('POST', {}));
 
       onLogout();
     } catch (e) {
@@ -92,12 +150,12 @@ export function OrganisationWorkspace({
   }
 
   return (
-    <div className={s.app}>
+    <div className={s.app} style={organisationTheme(org.tint)}>
       <a className="skip-link" href="#workspace">
         Naar inhoud
       </a>
 
-      <aside className={s.sidebar}>
+      <Sidebar>
         <Link to="/app" className={s.brand} aria-label="Satvey inspecties">
           <BrandMark size={29} />
 
@@ -105,6 +163,13 @@ export function OrganisationWorkspace({
         </Link>
 
         <div className={s.orgBlock}>
+          {org.logoAssetId && (
+            <img
+              src={protectedURL(`/api/v1/orgs/${org.id}/norm-assets/${org.logoAssetId}`)}
+              alt={org.name}
+              style={{ maxWidth: 120, maxHeight: 48, objectFit: 'contain' }}
+            />
+          )}
           {account.organisations.length > 1 ? (
             <Select label="Organisatie" value={org.id} onChange={onOrg}>
               {account.organisations.map((o) => (
@@ -119,8 +184,12 @@ export function OrganisationWorkspace({
         </div>
 
         <nav aria-label="Hoofdnavigatie">
+          {nativeDevice && <Link to="/app/offline">Op dit apparaat</Link>}
           {can(org, 'inspections.read') && (
-            <Link className={!settings && !norms && !formats ? s.activeNav : ''} to="/app">
+            <Link
+              className={!settings && !norms && !formats && !analytics ? s.activeNav : ''}
+              to="/app"
+            >
               <ClipboardList size={19} />
               Inspecties
             </Link>
@@ -129,17 +198,23 @@ export function OrganisationWorkspace({
           {can(org, 'norms.read') && (
             <Link className={norms ? s.activeNav : ''} to="/app/norms">
               <BookOpen size={19} />
-              Normen
+              Kwaliteitskaders
             </Link>
           )}
 
           {can(org, 'formats.read') && (
             <Link className={formats ? s.activeNav : ''} to="/app/formats">
               <ClipboardList size={19} />
-              Inspectieformats
+              Inspectiesjablonen
             </Link>
           )}
 
+          {can(org, 'settings.manage') && (
+            <Link className={analytics ? s.activeNav : ''} to="/app/analytics">
+              <ClipboardList size={19} />
+              Analytics
+            </Link>
+          )}
           <Link className={settings ? s.activeNav : ''} to="/app/settings">
             <Settings size={19} />
             Instellingen
@@ -147,21 +222,23 @@ export function OrganisationWorkspace({
         </nav>
 
         <div className={s.user}>
-          <span>
-            {account.user.name}
-
-            <small>{org.roleName}</small>
-          </span>
+          <div className={s.userIdentity}>
+            <Avatar
+              initials={Array.from(firstName)[0].toLocaleUpperCase('nl-NL')}
+              label={firstName}
+            />
+            <span className={s.userName}>{firstName}</span>
+          </div>
 
           <Button
             variant="ghost"
             aria-label="Uitloggen"
-            onClick={() => (items.length ? setLogoutOpen(true) : void logout())}
+            onClick={() => (items.length || drafts ? setLogoutOpen(true) : void logout())}
           >
             <LogOut size={18} />
           </Button>
         </div>
-      </aside>
+      </Sidebar>
 
       <div className={s.body}>
         <header className={s.topbar}>
@@ -169,9 +246,9 @@ export function OrganisationWorkspace({
             {settings
               ? 'Instellingen'
               : formats
-                ? 'Inspectieformats'
+                ? 'Inspectiesjablonen'
                 : norms
-                  ? 'Normen'
+                  ? 'Kwaliteitskaders'
                   : 'Inspecties'}
           </span>
 
@@ -183,10 +260,12 @@ export function OrganisationWorkspace({
               </>
             )}
 
-            {items.length ? (
+            {durabilityError ? (
+              <strong>Opslagfout op apparaat</strong>
+            ) : items.length || drafts ? (
               <button onClick={() => void sync(scope)}>
                 <RefreshCw size={14} />
-                {items.length} op apparaat
+                {items.length} op apparaat{drafts ? ` ? ${drafts} lokale concepten` : ''}
               </button>
             ) : (
               <>
@@ -198,22 +277,37 @@ export function OrganisationWorkspace({
         </header>
 
         <main id="workspace" className={s.main}>
-          {(error || storageError) && <ErrorNotice>{error || storageError}</ErrorNotice>}
+          {(error || storageError || durabilityError) && (
+            <ErrorNotice>{durabilityError || error || storageError}</ErrorNotice>
+          )}
 
-          {settings ? (
+          {analytics ? (
+            can(org, 'settings.manage') ? (
+              <Analytics base={base} scope={scope} />
+            ) : (
+              <ErrorNotice>Analytics is beschikbaar voor beheerders.</ErrorNotice>
+            )
+          ) : settings ? (
             <SettingsView base={base} org={org} scope={scope} />
           ) : formats ? (
             can(org, 'formats.read') ? (
               <FormatsModule base={base} scope={scope} org={org} />
             ) : (
-              <ErrorNotice>Je rol kan geen inspectieformats bekijken.</ErrorNotice>
+              <ErrorNotice>Je rol kan geen inspectiesjablonen bekijken.</ErrorNotice>
             )
           ) : norms ? (
             can(org, 'norms.read') ? (
               <NormsModule base={base} scope={scope} org={org} />
             ) : (
-              <ErrorNotice>Je rol kan normen niet bekijken.</ErrorNotice>
+              <ErrorNotice>Je rol kan kwaliteitskaders niet bekijken.</ErrorNotice>
             )
+          ) : location.pathname.match(/^\/app\/properties\/([^/]+)$/) &&
+            can(org, 'inspections.read') ? (
+            <PropertyHistory
+              base={base}
+              scope={scope}
+              propertyID={location.pathname.split('/').pop()!}
+            />
           ) : match && can(org, 'inspections.read') ? (
             <InspectionWorkspace
               key={match[1]}
@@ -224,8 +318,16 @@ export function OrganisationWorkspace({
               stage={match[2] || 'capture'}
               pending={items}
             />
+          ) : (location.pathname === '/app/offline' || (!online && nativeDevice)) &&
+            can(org, 'inspections.read') ? (
+            <OfflineVisits scope={scope} />
           ) : can(org, 'inspections.read') ? (
-            <InspectionList base={base} scope={scope} canWrite={can(org, 'inspections.write')} />
+            <InspectionList
+              base={base}
+              scope={scope}
+              canWrite={can(org, 'inspections.write')}
+              org={org}
+            />
           ) : can(org, 'norms.read') ? (
             <NormsModule base={base} scope={scope} org={org} />
           ) : (

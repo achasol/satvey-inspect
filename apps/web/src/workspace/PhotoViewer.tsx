@@ -1,3 +1,4 @@
+import { PhotoLocation } from './PhotoLocation';
 import { useEffect, useRef, useState } from 'react';
 import type { PointerEvent as ReactPointerEvent } from 'react';
 import {
@@ -306,6 +307,15 @@ function PhotoViewer({
       }}
     >
       <div className={s.editor}>
+        {editing && (
+          <PhotoLocation
+            media={media}
+            path={editing.path}
+            scope={editing.scope}
+            disabled={dirty || queued || saving}
+            onMoved={onClose}
+          />
+        )}
         <div className={s.toolbar} aria-label="Fotogereedschappen">
           {editing && (
             <div className={s.tools}>

@@ -16,6 +16,12 @@ import { DeleteInspection, AddRoom } from './inspections';
 import { Capture } from './capture';
 import { BatchCard } from './observations';
 import { ReportView } from './report';
+import { DossierHistory } from './DossierActions';
+import { VisitWorkflow } from './VisitWorkflow';
+import { useActivity } from './activity';
+import { SyncStatus } from './InternalSync';
+import { PrepareOffline } from './OfflineVisits';
+import { RenameRoom } from './EvidenceControls';
 
 export function InspectionWorkspace({
   base,
@@ -45,14 +51,36 @@ export function InspectionWorkspace({
   const path = `${base}/inspections/${inspectionId}`,
     { data, error, cached } = useResource<Dossier>(scope, path),
     [roomId, setRoomId] = useState(''),
-    [cameraOpen, setCameraOpen] = useState(false);
+    [addedRoomId, setAddedRoomId] = useState(''),
+    [cameraOpen, setCameraOpen] = useState(false),
+    [cameraLive, setCameraLive] = useState(false),
+    [expandedRooms, setExpandedRooms] = useState<Record<string, boolean>>({});
+  useActivity({
+    base,
+    scope,
+    inspectionId,
+    phase: stage,
+    roomId,
+    capturing: cameraOpen && cameraLive,
+    enabled: can(org, 'inspections.write'),
+  });
   const navigate = useNavigate();
 
-  const write = can(org, 'inspections.write') && data?.inspection.status !== 'final';
+  const write =
+    can(org, 'inspections.write') &&
+    data?.inspection.status !== 'final' &&
+    !data?.inspection.archivedAt;
 
   useEffect(() => {
     if (data && !roomId) setRoomId(data.rooms[0]?.id || '');
   }, [data, roomId]);
+  useEffect(() => {
+    if (!addedRoomId || !data?.rooms.some((room) => room.id === addedRoomId)) return;
+    document
+      .getElementById(`room-nav-${addedRoomId}`)
+      ?.parentElement?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    setAddedRoomId('');
+  }, [addedRoomId, data?.rooms]);
   const reviewRoomIds = data?.rooms.map((r) => r.id).join(',') || '';
   useEffect(() => {
     if (stage !== 'review' || !reviewRoomIds) return;
@@ -97,18 +125,6 @@ export function InspectionWorkspace({
 
           <h1>{data.inspection.address}</h1>
 
-          {data.format && (
-            <p className={s.muted}>
-              Format: {data.format.name} · versie {data.format.number}
-            </p>
-          )}
-
-          {data.norms && (
-            <p className={s.muted}>
-              Normenkader: {data.norms.name} · versie {data.norms.number}
-            </p>
-          )}
-
           <p className={s.muted}>
             {data.inspection.postcode} {data.inspection.city} ·{' '}
             {dateLabel(data.inspection.scheduledAt)}
@@ -122,12 +138,17 @@ export function InspectionWorkspace({
               : `${reviewed}/${data.format ? data.rooms.length : data.batches.length} ${data.format ? 'ruimtes' : 'opnamen'} beoordeeld`}
           </Badge>
           {can(org, 'inspections.write') && (
-            <DeleteInspection
-              base={base}
-              scope={scope}
-              inspection={data.inspection}
-              onDeleted={() => navigate('/app', { replace: true })}
-            />
+            <details>
+              <summary>Meer acties</summary>
+              <DeleteInspection
+                canManage={can(org, 'inspections.archive')}
+                canPurge={can(org, 'inspections.purge')}
+                base={base}
+                scope={scope}
+                inspection={data.inspection}
+                onDeleted={() => navigate('/app', { replace: true })}
+              />
+            </details>
           )}
         </div>
       </div>
@@ -138,14 +159,6 @@ export function InspectionWorkspace({
         </ErrorNotice>
       )}
 
-      <InspectionProperty
-        inspection={data.inspection}
-        base={base}
-        scope={scope}
-        canWrite={!!write}
-        canManage={can(org, 'settings.manage')}
-      />
-
       <nav className={s.stages} aria-label="Inspectiestappen">
         {[
           ['capture', 'Opnemen', Camera],
@@ -153,6 +166,7 @@ export function InspectionWorkspace({
           ['review', 'Beoordelen', CheckCheck],
 
           ['report', 'Rapport', ClipboardList],
+          ['dossier', 'Dossier', House],
         ].map(([key, label, Icon]) => {
           const I = Icon as typeof Camera;
 
@@ -177,11 +191,51 @@ export function InspectionWorkspace({
           path={path}
           data={data}
           initialRoomId={roomId}
+          onActivityChange={setCameraLive}
           onRoomChange={setRoomId}
           onClose={() => setCameraOpen(false)}
         />
       )}
-      {stage === 'report' ? (
+      {stage === 'dossier' || stage === 'handover' ? (
+        <section className={s.stack}>
+          <h2>Dossier</h2>
+          <SyncStatus base={base} path={path} scope={scope} admin={can(org, 'settings.manage')} />
+          <details>
+            <summary>Sjabloon en kwaliteitskader</summary>
+            <p>
+              {data.format?.name} · versie {data.format?.number}
+            </p>
+            <p>
+              {data.norms?.name} · versie {data.norms?.number}
+            </p>
+          </details>
+          <DossierHistory
+            path={path}
+            inspection={data.inspection}
+            canWrite={can(org, 'inspections.write')}
+            canManage={can(org, 'settings.manage')}
+          />
+          {data.inspection.archivedAt && (
+            <p className={s.warning}>Gearchiveerd: {data.inspection.archiveReason}</p>
+          )}
+          <PrepareOffline scope={scope} path={path} />
+          <VisitWorkflow
+            path={path}
+            base={base}
+            scope={scope}
+            data={data}
+            org={org}
+            pending={local}
+          />
+          <InspectionProperty
+            inspection={data.inspection}
+            base={base}
+            scope={scope}
+            canWrite={!!write}
+            canManage={can(org, 'settings.manage')}
+          />
+        </section>
+      ) : stage === 'report' ? (
         <ReportView
           org={org}
           scope={scope}
@@ -197,34 +251,48 @@ export function InspectionWorkspace({
 
             <nav aria-label="Ruimtes">
               {data.rooms.map((room) => (
-                <button
-                  key={room.id}
-                  className={room.id === roomId ? s.selectedRoom : ''}
-                  aria-current={room.id === roomId ? 'location' : undefined}
-                  onClick={() => {
-                    setRoomId(room.id);
-                    if (stage === 'review')
-                      document
-                        .getElementById(`review-room-${room.id}`)
-                        ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                  }}
-                >
-                  <House size={17} />
+                <div key={room.id} className={s.roomNavItem}>
+                  <button
+                    id={`room-nav-${room.id}`}
+                    className={room.id === roomId ? s.selectedRoom : ''}
+                    aria-current={room.id === roomId ? 'location' : undefined}
+                    onClick={() => {
+                      setRoomId(room.id);
+                      setExpandedRooms((ids) => ({ ...ids, [room.id]: true }));
+                      if (stage === 'review')
+                        document
+                          .getElementById(`review-room-${room.id}`)
+                          ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }}
+                  >
+                    <House size={17} />
 
-                  <span>{room.name}</span>
+                    <span>{room.name}</span>
 
-                  <small>
-                    {data.format
-                      ? room.approvedGeneration === room.generation
-                        ? '\u2713'
-                        : 'Open'
-                      : data.batches.filter((b) => b.roomId === room.id).length}
-                  </small>
-                </button>
+                    <small>
+                      {data.format
+                        ? room.approvedGeneration === room.generation
+                          ? '\u2713'
+                          : 'Open'
+                        : data.batches.filter((b) => b.roomId === room.id).length}
+                    </small>
+                  </button>
+                  {write && <RenameRoom room={room} path={path} />}
+                </div>
               ))}
             </nav>
 
-            {write && <AddRoom path={path} data={data} />}
+            {write && (
+              <AddRoom
+                path={path}
+                data={data}
+                onAdded={(id) => {
+                  setRoomId(id);
+                  setAddedRoomId(id);
+                  setExpandedRooms((rooms) => ({ ...rooms, [id]: true }));
+                }}
+              />
+            )}
           </aside>
 
           <div className={s.roomContent}>
@@ -236,53 +304,69 @@ export function InspectionWorkspace({
                   className={s.reviewRoom}
                   aria-label={room.name}
                 >
-                  <div className={s.roomHeading}>
-                    <h2>{room.name}</h2>
-                    <span className={s.muted}>
-                      {data.batches.filter((b) => b.roomId === room.id).length} opnamen
-                    </span>
-                  </div>
-                  {stage === 'capture' && write && (
-                    <Capture
-                      key={room.id}
-                      scope={scope}
-                      path={path}
-                      inspectionId={inspectionId}
-                      roomId={room.id}
-                      pending={local}
-                      data={data}
-                      onOpenCamera={() => setCameraOpen(true)}
-                    />
-                  )}
-                  {data.batches
-                    .filter((b) => b.roomId === room.id)
-                    .map((batch) => (
-                      <BatchCard
-                        key={batch.id}
-                        batch={batch}
-                        data={data}
-                        org={org}
+                  <details
+                    open={
+                      stage === 'capture' ||
+                      (expandedRooms[room.id] ?? room.approvedGeneration !== room.generation)
+                    }
+                  >
+                    <summary
+                      className={s.roomHeading}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setExpandedRooms((ids) => ({
+                          ...ids,
+                          [room.id]: !(ids[room.id] ?? room.approvedGeneration !== room.generation),
+                        }));
+                      }}
+                    >
+                      <h2>{room.name}</h2>
+                      <span className={s.muted}>
+                        {data.batches.filter((b) => b.roomId === room.id).length} opnamen
+                      </span>
+                    </summary>
+                    {stage === 'capture' && write && (
+                      <Capture
+                        key={room.id}
                         scope={scope}
                         path={path}
-                        canWrite={!!write}
-                        review={stage === 'review'}
+                        inspectionId={inspectionId}
+                        roomId={room.id}
                         pending={local}
+                        data={data}
+                        onOpenCamera={() => setCameraOpen(true)}
                       />
-                    ))}
-                  {!data.batches.some((b) => b.roomId === room.id) && (
-                    <p className={s.emptySmall}>Nog geen opnamen in deze ruimte.</p>
-                  )}
-                  {data.format && stage === 'review' && (
-                    <FormatRoomReview
-                      data={data}
-                      room={room}
-                      path={path}
-                      scope={scope}
-                      org={org.id}
-                      pending={local}
-                      canWrite={!!write}
-                    />
-                  )}
+                    )}
+                    {data.batches
+                      .filter((b) => b.roomId === room.id)
+                      .map((batch) => (
+                        <BatchCard
+                          key={batch.id}
+                          batch={batch}
+                          data={data}
+                          org={org}
+                          scope={scope}
+                          path={path}
+                          canWrite={!!write}
+                          review={stage === 'review'}
+                          pending={local}
+                        />
+                      ))}
+                    {!data.batches.some((b) => b.roomId === room.id) && (
+                      <p className={s.emptySmall}>Nog geen opnamen in deze ruimte.</p>
+                    )}
+                    {data.format && stage === 'review' && (
+                      <FormatRoomReview
+                        data={data}
+                        room={room}
+                        path={path}
+                        scope={scope}
+                        org={org.id}
+                        pending={local}
+                        canWrite={!!write}
+                      />
+                    )}
+                  </details>
                 </section>
               ),
             )}

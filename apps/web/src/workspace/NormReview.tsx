@@ -1,3 +1,6 @@
+import { ScoreFields } from './Scoring';
+import type { ScoreDetail } from './api';
+import { protectedURL } from './platform';
 import { useEffect, useState } from 'react';
 import { Badge, Button, Dialog, Field } from '../components/ui';
 import { api, json } from './api';
@@ -55,7 +58,7 @@ export function TranscriptEditor({
   return (
     <details className={s.transcript}>
       <summary>
-        Transcript bij spraaknotitie{' '}
+        Uitgeschreven spraaknotitie{' '}
         {job?.status === 'pending' || job?.status === 'processing'
           ? '\u00b7 wordt uitgeschreven'
           : job?.status === 'failed'
@@ -132,9 +135,9 @@ export function TranscriptEditor({
         </form>
       </Dialog>
       <label className={s.field}>
-        <span>Transcript audio</span>
+        <span>Uitgeschreven spraaknotitie</span>
         <textarea
-          aria-label="Transcript audio"
+          aria-label="Uitgeschreven spraaknotitie"
           rows={4}
           maxLength={20000}
           readOnly={!canWrite || queued}
@@ -164,7 +167,7 @@ export function TranscriptEditor({
               }
             }}
           >
-            Transcript bewaren en analyseren
+            Tekst bewaren en analyseren
           </Button>
           {dirty && (
             <Button
@@ -183,7 +186,7 @@ export function TranscriptEditor({
       )}
       {queued && (
         <p className={s.muted} role="status">
-          Transcript wacht op synchronisatie
+          Spraaknotitie wacht op synchronisatie
         </p>
       )}
       {error && (
@@ -216,7 +219,8 @@ export function NormAssessmentReview({
   const rule = norms.rules.find((r) => r.id === a.ruleId),
     endpoint = `${path}/assessments/${a.id}`,
     key = `${scope}:inspectionDraft:${inspectionId}:assessment:${a.id}`;
-  const [outcome, setOutcome] = useState<NormOutcome>(
+  const [scoreDetail, setScoreDetail] = useState<ScoreDetail | null | undefined>(a.scoreDetail),
+    [outcome, setOutcome] = useState<NormOutcome>(
       a.reviewedOutcome || a.previousReviewedOutcome || a.outcome,
     ),
     [note, setNote] = useState(a.reviewNote || a.previousReviewNote || ''),
@@ -226,8 +230,14 @@ export function NormAssessmentReview({
   const queued = pending.some((p) => p.path === endpoint);
   useEffect(() => {
     let alive = true;
-    void draftGet<{ outcome: NormOutcome; note: string; version: number }>(key).then((v) => {
+    void draftGet<{
+      outcome: NormOutcome;
+      note: string;
+      version: number;
+      scoreDetail?: ScoreDetail | null;
+    }>(key).then((v) => {
       if (alive && v) {
+        setScoreDetail(v.scoreDetail);
         setOutcome(v.outcome);
         setNote(v.note);
         setVersion(v.version);
@@ -240,12 +250,14 @@ export function NormAssessmentReview({
   }, [key]);
   useEffect(() => {
     if (!dirty && !queued) {
+      setScoreDetail(a.scoreDetail);
       setOutcome(a.reviewedOutcome || a.previousReviewedOutcome || a.outcome);
       setNote(a.reviewNote || a.previousReviewNote || '');
       setVersion(a.version);
     }
   }, [
     a.version,
+    a.scoreDetail,
     a.outcome,
     a.reviewedOutcome,
     a.reviewNote,
@@ -255,12 +267,20 @@ export function NormAssessmentReview({
     queued,
   ]);
   function saveDraft(nextOutcome: NormOutcome, nextNote: string) {
+    const nextScore = ['not_assessable', 'not_applicable'].includes(nextOutcome)
+      ? null
+      : scoreDetail;
+    setScoreDetail(nextScore);
     setOutcome(nextOutcome);
     setNote(nextNote);
     setDirty(true);
-    void draftPut(key, { outcome: nextOutcome, note: nextNote, version, draft: true }).catch((e) =>
-      setError(String(e)),
-    );
+    void draftPut(key, {
+      outcome: nextOutcome,
+      note: nextNote,
+      version,
+      scoreDetail: nextScore,
+      draft: true,
+    }).catch((e) => setError(String(e)));
   }
   const noteRequired = outcome !== a.outcome || a.reason === 'Nog niet beoordeeld';
   const noteField = (
@@ -310,7 +330,9 @@ export function NormAssessmentReview({
                 {' '}
                 ·{' '}
                 <a
-                  href={`/api/v1${path.split('/inspections/')[0]}/norm-assets/${ex.assetId}`}
+                  href={protectedURL(
+                    `/api/v1${path.split('/inspections/')[0]}/norm-assets/${ex.assetId}`,
+                  )}
                   target="_blank"
                   rel="noreferrer"
                 >
@@ -330,10 +352,35 @@ export function NormAssessmentReview({
             : 'Bewijs nog te beoordelen'}{' '}
         · {outcomeLabels[a.outcome]}
       </p>
+      {a.proposedScore != null && (
+        <p className={s.muted}>
+          Voorgestelde score: {a.proposedScore} · bevestig je eigen beoordeling.
+        </p>
+      )}
+      {rule && (
+        <ScoreFields
+          org={path.split('/')[2]}
+          rule={rule}
+          value={scoreDetail}
+          disabled={!canWrite || processing || queued || a.stale}
+          onChange={(next, mapped) => {
+            setScoreDetail(next);
+            setDirty(true);
+            if (mapped) setOutcome(mapped);
+            void draftPut(key, {
+              outcome: mapped || outcome,
+              note,
+              version,
+              scoreDetail: next,
+              draft: true,
+            }).catch((e) => setError(String(e)));
+          }}
+        />
+      )}
       <label className={s.field}>
-        <span>Uitkomst normbeoordeling</span>
+        <span>Uitkomst kwaliteitsbeoordeling</span>
         <select
-          aria-label="Uitkomst normbeoordeling"
+          aria-label="Uitkomst kwaliteitsbeoordeling"
           disabled={!canWrite || processing || a.stale || queued}
           value={outcome}
           onChange={(e) => saveDraft(e.target.value as NormOutcome, note)}
@@ -372,7 +419,12 @@ export function NormAssessmentReview({
             }
             onClick={async () => {
               try {
-                await enqueueEdit(scope, inspectionId, endpoint, { outcome, note, version });
+                await enqueueEdit(scope, inspectionId, endpoint, {
+                  outcome,
+                  note,
+                  version,
+                  scoreDetail,
+                });
                 await draftRemove(key);
                 setDirty(false);
               } catch (e) {
@@ -388,6 +440,7 @@ export function NormAssessmentReview({
               variant="ghost"
               onClick={() => {
                 void draftRemove(key);
+                setScoreDetail(a.scoreDetail);
                 setOutcome(a.reviewedOutcome || a.outcome);
                 setNote(a.reviewNote);
                 setVersion(a.version);

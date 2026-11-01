@@ -477,7 +477,21 @@
   .dialog {
     padding: 20px;
   }
+  .fullOnMobile .dialogHeader {
+    flex: 0 0 auto;
+    margin: 0;
+    padding-bottom: 16px;
+  }
+  .fullOnMobile .dialogBody {
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    min-height: 0;
+    flex: 1;
+    padding: 2px;
+  }
   .fullOnMobile {
+    display: flex;
+    flex-direction: column;
     inset: 0;
     transform: none;
     width: 100%;

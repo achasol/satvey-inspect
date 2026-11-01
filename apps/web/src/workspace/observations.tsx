@@ -409,16 +409,13 @@ export function ObservationEditor({
               placeholder="Wat zie je op de foto's?"
             />
           </label>
-          <details>
-            <summary>Label (optioneel)</summary>
-            <Field
-              label="Label (optioneel)"
-              value={draft.label}
-              maxLength={100}
-              disabled={queued}
-              onChange={(e) => patch({ label: e.target.value })}
-            />
-          </details>
+          <Field
+            label="Label (optioneel)"
+            value={draft.label}
+            maxLength={100}
+            disabled={queued}
+            onChange={(e) => patch({ label: e.target.value })}
+          />
           <div className={s.reviewDecisions}>
             <Button
               icon={<Check size={18} />}

@@ -44,6 +44,8 @@ Six synthetic inspection photographs are in `demo/sleutels/images`; their exact 
 
 Run `.\scripts\start-sleutels-demo.ps1` without `-Seed` to bring the services/frontend up without reapplying the demo catalog. Vite runs as a hidden background process, with its PID and logs under `.cache/sleutels-vite*`. `compose.demo.yaml` publishes the authenticated API on loopback port 8088 for this native frontend; other container services and data volumes remain in Compose. A custom `TRUSTED_ORIGINS` configuration must include `http://localhost:5174` and `http://127.0.0.1:5174`.
 
+To test automatic delivery locally, run `.\scripts\start-sleutels-demo.ps1 -VERA` after preparing the demo. This adds the isolated HTTPS test receiver on loopback port 8090, trusts its public test CA in the API, and creates **VERA testontvanger (lokaal)** with explicit mappings for the fictional demo properties. It does not approve or send reports. Open a definitive report's **Overdracht** tab to select work and approve delivery. The receiver stores test records in memory; restarting it clears them. The public dummy credentials are test-only. This optional overlay is not part of production Compose.
+
 ## Property catalog, VERA and CSV
 
 New inspections select a property from the organisation's catalog by object number, address or postcode. The stable identity is **organisation + source administration + source object ID**; an address or BAG reference never automatically merges properties. **Instellingen > Vastgoedkoppeling** lets administrators (`settings.manage`) configure sources, import files, test VERA connections, inspect sync jobs and confirm provisional-property links. Inspectors can search the catalog and refresh a VERA property with their existing inspection permissions.
@@ -64,7 +66,7 @@ docker compose exec -T app node -e "console.log(require('node:crypto').randomByt
 
 Add the result as `PROPERTY_ENCRYPTION_KEY` in the existing `.env`, then recreate the API. Keep this key with your deployment secrets and backups: stored API keys and client secrets use AES-256-GCM bound to the organisation and source. Credentials are never returned to the browser. HTTPS is required; `ALLOW_HTTP_PROPERTY_API=true` enables an isolated local test server. Resource references stay on the configured API host and resource paths, and redirects are refused. The OAuth token endpoint is separately configured.
 
-The catalog synchronises hourly and can be refreshed manually. Durable jobs commit each successful page, resume at the saved cursor and retry a failing page at most three times. One job per source can run at a time; repeated cursors or unit IDs stop a broken pagination sequence. Disabling or editing a source revokes its active job. Errors and per-property fetch times remain visible; source failures retain existing catalog facts. A supplier integration still needs a practical contract test against its actual API before production use. DICO and writes back to source systems are not included.
+The catalog synchronises hourly and can be refreshed manually. Durable jobs commit each successful page, resume at the saved cursor and retry a failing page at most three times. One job per source can run at a time; repeated cursors or unit IDs stop a broken pagination sequence. Disabling or editing a source revokes its active job. Errors and per-property fetch times remain visible; source failures retain existing catalog facts. A supplier integration still needs a practical contract test against its actual API before production use. The catalog connection remains read-only. The separate handover workflow below sends approved reports and proposals through a configured VERA destination; DICO delivery is not included.
 
 An inspector can explicitly create a **voorlopige woning** and capture/review immediately. Finalisation requires an administrator-confirmed source identity. The administrator compares the provisional property and target, then confirms their revisions; all draft inspections move to the source property, with an audit trail and renewed review. Previously finalised reports remain frozen.
 
@@ -142,16 +144,16 @@ Settings use Account, Leden en uitnodigingen, Rollen en privileges and SSO tabs,
 
 **Instellingen > Rollen en privileges** supports creating, renaming and editing organisation roles. Assign roles to members and invitation links. Permission edits apply to existing sessions on their next API request. The API enforces privileges independently of the UI and legacy role names.
 
-| Privilege | Permitted actions |
-| --- | --- |
-| `inspections.read` | Open dossiers, media and reports |
-| `inspections.write` | Capture, edit transcripts, review findings and norms, finalise reports |
-| `norms.read` | Open published frameworks, elements and reference examples |
-| `norms.manage` | Author/publish frameworks, manage elements and upload examples |
-| `formats.read` | Open published inspection formats |
-| `formats.manage` | Author/publish formats, conditional questions, evidence requirements and talking prompts; also requires `norms.read` |
-| `benchmarks.read` | Open norm benchmarks |
-| `settings.manage` | Manage members, invitations, SSO, roles and privileges |
+| Privilege           | Permitted actions                                                                                                    |
+| ------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `inspections.read`  | Open dossiers, media and reports                                                                                     |
+| `inspections.write` | Capture, edit transcripts, review findings and norms, finalise reports                                               |
+| `norms.read`        | Open published frameworks, elements and reference examples                                                           |
+| `norms.manage`      | Author/publish frameworks, manage elements and upload examples                                                       |
+| `formats.read`      | Open published inspection formats                                                                                    |
+| `formats.manage`    | Author/publish formats, conditional questions, evidence requirements and talking prompts; also requires `norms.read` |
+| `benchmarks.read`   | Open norm benchmarks                                                                                                 |
+| `settings.manage`   | Manage members, invitations, SSO, roles and privileges                                                               |
 
 Write privileges require the matching read privilege; benchmark access requires norms.read. Roles with no privileges are allowed. Default templates are Beheerder, Inspecteur, Leestoegang and Kwaliteitsbeheerder; their permissions are editable. At least one actual member must retain settings.manage. Assigned roles cannot be deleted. Versioned edits prevent overwriting concurrent changes.
 
@@ -190,7 +192,33 @@ Organisation roles and their privileges are configurable in Settings. Records ar
 - Queue retries run while the app is open and on reconnection. Previously loaded dossiers have an on-device fallback. This is not a fully offline installed application: reopening the application without connectivity is not guaranteed.
 - Concurrent observation and batch edits use versions. Conflicts retain the local text for comparison and require explicit resolution; they never silently overwrite another user's edits.
 
-Reports can only be finalised when all captures are reviewed or explicitly excluded and all included expected media has reached storage. Included observations require an approved title and description. The server freezes the report and locks further inspection/media changes. External report sharing, agreements and maintenance follow-up remain outside this workflow.
+Reports can only be finalised when all captures are reviewed or explicitly excluded and all included expected media has reached storage. Included observations require an approved title and description. The server freezes the report and locks further inspection/media changes. The separate handover workflow prepares approved evidence and proposed work for another system; commissioning, agreements and maintenance execution remain with the receiving organisation.
+
+### Maintenance and VERA handover
+
+The inspection workflow is **Opnemen > Beoordelen > Rapport > Overdracht**. The dedicated Overdracht tab is available before finalisation with an explanation; the editable workflow requires a definitive report and linked property. It presents approved observations, confirmed questionnaire answers and quality assessments grouped by room, with search, thumbnails and bulk selection. Create separate proposals or combine selected findings into one. Descriptions are prefilled from report content and remain editable; urgency is never inferred. Selecting findings determines proposed work, not which parts of the definitive report are sent.
+
+Draft changes save automatically after a short pause, with visible save state, scoped local recovery and explicit conflict comparison. Empty work descriptions or incomplete quantity/unit pairs stay local until corrected. **Overdracht goedkeuren** freezes the saved revision and queues server-side VERA delivery. No file download is needed. Approval retries converge on the same delivery; processing continues when the browser closes. Previously approved proposals are immutable; additional proposals can be approved in a new revision. Cancellation and changes to accepted work belong in the receiving system for this release.
+
+Administrators configure **Instellingen > VERA-overdracht** separately from the read-only property connection. A destination defines the Onderhoud, Dossier and Vastgoed API bases, OAuth2 token URL/client/scopes, agreed source organisation/administration and optional report/maintenance type codes. Secrets use the existing PROPERTY_ENCRYPTION_KEY encryption with a destination-specific context and are never returned. Endpoints, source identity and content mappings become immutable after the first approval. Credential changes or disabling a destination stop subsequent requests and require an explicit retry after correction. The connection test verifies TLS, OAuth2 and property reads; it does not pretend to prove write permissions.
+
+For the same VERA Vastgoed base as the pinned property source, Satvey uses the known receiving resource ID. Other sources, including CSV, require an administrator-verified property-to-unit URI mapping. Addresses are never used as identity matches. Inspectors choose a destination instead of entering URLs, codes or credentials.
+
+The sender implements the VERA `4.3.3+261002.6` handover profile: Dossier Informatieobject, Onderhoud Inspectierapport, selected Defect records, proposed Onderhoudstaak records and, when there are proposals, an Onderhoudsverzoek. No maintenance orders are created. It supplies inline base64 bytes, resolves receiving keys and document URIs, and completes cyclic associations in a second pass. Receiver-owned associations are preserved; execution statuses are never reset. Full source keys remain stable across retries and follow-up revisions of the same report. Unknown reference codes are omitted; urgency, quantity and element codes remain in the canonical proposal where no verified VERA mapping exists.
+
+A private evidence archive is generated once, stored in S3 with a database checksum, and reused byte-for-byte on retries. It contains the report PDF, oriented/EXIF-stripped photos and annotated SVGs; raw audio, transcripts and unapproved data are excluded. The sender checks the archive integrity and confirms receiver content and final associations. Durable leased jobs and per-resource receipts retain partial progress. An acknowledgement failure triggers source-key reconciliation before another create. Transport errors, HTTP 429 and 5xx responses get five retries after 1, 5, 15, 60 and 240 minutes, respecting longer Retry-After values up to 24 hours. Authentication, mapping and validation problems show **Actie nodig**. Only a complete read-back-confirmed handover shows **Ontvangen**; this is acceptance of data, not commissioning or completion of work.
+
+The sender requires HTTPS and uses the existing production integration-host/DNS policy. `VERA_CA_FILE` optionally adds a trusted CA bundle to system roots; it never disables verification. The supported JSON-record limit is 8 MiB, including base64 content. Large files require a separately agreed supplier transport profile. Production destinations must be explicitly enabled and validated against the supplier's writable sandbox; there is no retrospective sending of historical inspections. Bidirectional work-progress synchronization and DICO remain future adapters.
+
+Existing JSON/CSV/ZIP export APIs and frozen export history remain compatible for legacy consumers, but exports are no longer part of the normal inspector workflow. A legacy download is never treated as an acceptance receipt. Deleting an inspection also removes its delivery state and schedules private delivery-artifact cleanup; deletion returns a conflict while a sender holds that inspection's execution lock. Data already accepted by another system remains there.
+
+The [test receiver and verification guide](testing.md#vera-handover-test-receiver) describe the pinned official schemas, controls, test credentials and supported scope. The isolated suite exercises the actual production sender and browser approval workflow against that receiver with trusted TLS.
+
+### Dutch product vocabulary
+
+Use **Inspecties**, **Voorinspectie/Eindinspectie**, **Opnemen**, **Beoordelen**, **Rapport** and **Overdracht** for the inspector workflow. Administrative navigation uses **Kwaliteitskaders**, **Inspectiesjablonen** and **Instellingen**. A reusable inspectiesjabloon defines the inspectieformulier used during a visit. A kwaliteitskader contains beoordelingscriteria and referentievoorbeelden; an assessment rule is not a maintenance measure. Keep Acceptabel/Niet acceptabel as the existing assessment outcomes. The current same-framework comparison is a **Beoordelingsoverzicht**, not an external sector benchmark. Use **Onderhoudsvoorstel** for proposed work and **Rollen en rechten** in settings.
+
+These names are editorial choices grounded in the [CORA inspection process](https://www.coraveraonline.nl/index.php/Id-e1c34e02-a6c1-5496-53c6-ee78c90bfab4), [VERA Onderhoud](https://www.coraveraonline.nl/index.php/Id-c26eaadc-92ae-385c-33b0-ec7513a609fa), [Zig's Opname App](https://www.zig.eu/nl/zig365/maintenance/opname/) and [YourAssets' basiskwaliteit terminology](https://yourassets.nl/), reviewed 2026-10-31. Formal VERA entity names stay in integration mappings. API identifiers, organisation-authored text and published/signed snapshots are not renamed. The quality feature does not imply NEN certification.
 
 **Beoordelen** shows every room in one scrollable list, with direct title/description fields. **Goedkeuren** or **Afwijzen** saves both text and the decision; the last finding decision automatically marks a capture reviewed once processing finishes. An empty AI result still requires an explicit capture/room review. The separate room summary confirmation checks format answers and evidence; it cannot silently approve undecided findings.
 
@@ -231,3 +259,5 @@ Use the root README and [testing guide](testing.md). Integration tests run only 
 ## Production operations
 
 See [deployment](deployment.md) and [backup and recovery](recovery.md) for the production manifests, configuration, backups and restore procedures.
+
+Customer pilot setup and acceptance: [customer readiness](customer-readiness.md). Native build, device acceptance and public store preparation: [mobile release](mobile-release.md).

@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import type { FormatQuestion } from './types';
 import s from './workspace.module.css';
 export const evidenceLabels: Record<FormatQuestion['evidence'], string> = {
-  none: 'Geen apart bewijs',
+  none: 'Geen aparte onderbouwing',
   photo: 'Foto',
   statement: 'Gesproken of geschreven waarneming',
   photo_statement: 'Foto en waarneming',
@@ -13,8 +13,8 @@ export const questionLabels: Record<FormatQuestion['kind'], string> = {
   choice: 'Keuze',
   number: 'Getal',
   text: 'Korte beschrijving',
-  quality: 'Normoordeel',
-  evidence: 'Bewijs met beschrijving',
+  quality: 'Kwaliteitsbeoordeling',
+  evidence: 'Onderbouwing met beschrijving',
 };
 export function FormatSelect({
   label,

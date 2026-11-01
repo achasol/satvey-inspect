@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"encoding/json"
+	"strings"
 )
 
 // One filter for final reports and PDF drafts: only reviewed, approved content is exportable.
@@ -23,13 +24,13 @@ func reportSnapshot(ctx context.Context, q querier, org, inspection string) (map
 	if e != nil {
 		return nil, e
 	}
-	snapshot["assessments"], e = list(ctx, q, `SELECT a.rule_id AS "ruleId",a.batch_id AS "batchId",a.reviewed_outcome AS outcome,a.photo_ids AS "photoIds",CASE WHEN a.review_note<>'' THEN a.review_note ELSE a.reason END AS reason FROM norm_assessments a JOIN batches b ON b.id=a.batch_id AND b.org_id=a.org_id WHERE a.inspection_id=$1 AND a.org_id=$2 AND b.status='reviewed' AND a.reviewed_outcome IS NOT NULL AND NOT a.stale`, inspection, org)
+	snapshot["assessments"], e = list(ctx, q, `SELECT a.rule_id AS "ruleId",a.batch_id AS "batchId",a.reviewed_outcome AS outcome,a.score_detail AS "scoreDetail",a.photo_ids AS "photoIds",CASE WHEN a.review_note<>'' THEN a.review_note ELSE a.reason END AS reason FROM norm_assessments a JOIN batches b ON b.id=a.batch_id AND b.org_id=a.org_id WHERE a.inspection_id=$1 AND a.org_id=$2 AND b.status='reviewed' AND a.reviewed_outcome IS NOT NULL AND NOT a.stale`, inspection, org)
 	if e != nil {
 		return nil, e
 	}
 	if format, ok := data["format"].(*formatDocument); ok && format != nil {
 		// Keep only explicit, current room reviews. Draft suggestions and raw audio stay internal.
-		snapshot["answers"], e = list(ctx, q, answerSelect+` WHERE inspection_id=$1 AND org_id=$2 AND status IN ('confirmed','unanswerable') AND EXISTS(SELECT 1 FROM rooms r WHERE r.id=format_answers.room_id AND r.org_id=format_answers.org_id AND r.approved_generation=r.generation)`, inspection, org)
+		snapshot["answers"], e = list(ctx, q, strings.Replace(answerSelect, `proposed_score AS "proposedScore",`, "", 1)+` WHERE inspection_id=$1 AND org_id=$2 AND status IN ('confirmed','unanswerable') AND EXISTS(SELECT 1 FROM rooms r WHERE r.id=format_answers.room_id AND r.org_id=format_answers.org_id AND r.approved_generation=r.generation)`, inspection, org)
 		if e != nil {
 			return nil, e
 		}
@@ -37,6 +38,18 @@ func reportSnapshot(ctx context.Context, q querier, org, inspection string) (map
 		if e != nil {
 			return nil, e
 		}
+	}
+	var existingPhotos []struct {
+		ID string `json:"id"`
+	}
+	_ = json.Unmarshal(snapshot["media"], &existingPhotos)
+	photoIDs := []string{}
+	for _, p := range existingPhotos {
+		photoIDs = append(photoIDs, p.ID)
+	}
+	snapshot["media"], e = list(ctx, q, `SELECT m.id,m.batch_id AS "batchId",m.kind,m.name,m.mime,m.annotations,m.annotation_version AS "annotationVersion" FROM media m JOIN batches b ON b.id=m.batch_id AND b.org_id=m.org_id WHERE m.org_id=$1 AND m.inspection_id=$2 AND m.kind='photo' AND b.status='reviewed' AND (m.id=ANY($3::uuid[]) OR EXISTS(SELECT 1 FROM inspection_agreements a WHERE a.org_id=m.org_id AND a.inspection_id=m.inspection_id AND m.id=ANY(a.photo_ids))) ORDER BY m.created_at,m.id`, org, inspection, photoIDs)
+	if e != nil {
+		return nil, e
 	}
 	delete(snapshot, "scopeJobs")
 	delete(snapshot, "transcriptionJobs")
@@ -48,12 +61,13 @@ func reportSnapshot(ctx context.Context, q querier, org, inspection string) (map
 }
 
 func fillReportMetadata(ctx context.Context, q querier, org, inspection string, snapshot map[string]json.RawMessage) error {
-	var organisation, creator string
-	if e := q.QueryRow(ctx, "SELECT o.name,u.name FROM inspections i JOIN organisations o ON o.id=i.org_id JOIN users u ON u.id=i.created_by WHERE i.id=$1 AND i.org_id=$2", inspection, org).Scan(&organisation, &creator); e != nil {
+	var organisation, creator, tint string
+	var logo *string
+	if e := q.QueryRow(ctx, "SELECT COALESCE(NULLIF(o.report_name,''),o.name),u.name,o.logo_asset_id,o.brand_tint FROM inspections i JOIN organisations o ON o.id=i.org_id JOIN users u ON u.id=i.created_by WHERE i.id=$1 AND i.org_id=$2", inspection, org).Scan(&organisation, &creator, &logo, &tint); e != nil {
 		return e
 	}
 	if len(snapshot["organisation"]) == 0 {
-		snapshot["organisation"], _ = json.Marshal(map[string]string{"name": organisation})
+		snapshot["organisation"], _ = json.Marshal(map[string]any{"name": organisation, "logoAssetId": logo, "tint": tint})
 	}
 	if len(snapshot["createdBy"]) == 0 {
 		snapshot["createdBy"], _ = json.Marshal(map[string]string{"name": creator})

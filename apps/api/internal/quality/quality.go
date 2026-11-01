@@ -36,16 +36,18 @@ type Scope struct {
 	Questions  []Question `json:"questions"`
 }
 type Format struct {
-	ID            string  `json:"id"`
-	FormatID      string  `json:"formatId"`
-	Number        int     `json:"number"`
-	Name          string  `json:"name"`
-	Description   string  `json:"description"`
-	Kind          string  `json:"kind"`
-	NormVersionID *string `json:"normVersionId"`
-	Status        string  `json:"status"`
-	Revision      int     `json:"revision"`
-	Scopes        []Scope `json:"scopes"`
+	SigningPolicy   string  `json:"signingPolicy"`
+	Acknowledgement string  `json:"acknowledgement"`
+	ID              string  `json:"id"`
+	FormatID        string  `json:"formatId"`
+	Number          int     `json:"number"`
+	Name            string  `json:"name"`
+	Description     string  `json:"description"`
+	Kind            string  `json:"kind"`
+	NormVersionID   *string `json:"normVersionId"`
+	Status          string  `json:"status"`
+	Revision        int     `json:"revision"`
+	Scopes          []Scope `json:"scopes"`
 }
 
 type Example struct {
@@ -55,20 +57,37 @@ type Example struct {
 	Transcript string `json:"transcript,omitempty"`
 	AssetID    string `json:"assetId,omitempty"`
 }
+type ScoreReference struct {
+	ID      string `json:"id"`
+	AssetID string `json:"assetId"`
+	Name    string `json:"name"`
+	MIME    string `json:"mime"`
+	Caption string `json:"caption"`
+}
+type ScoreLevel struct {
+	Score                int              `json:"score"`
+	Label                string           `json:"label"`
+	Description          string           `json:"description"`
+	Outcome              string           `json:"outcome"`
+	RepairResponsibility string           `json:"repairResponsibility"`
+	CostResponsibility   string           `json:"costResponsibility"`
+	References           []ScoreReference `json:"references"`
+}
 type Rule struct {
-	ElementID    string    `json:"elementId,omitempty"`
-	ID           string    `json:"id"`
-	Code         string    `json:"code"`
-	Title        string    `json:"title"`
-	Rooms        []string  `json:"rooms"`
-	ObjectType   string    `json:"objectType"`
-	Acceptable   string    `json:"acceptable"`
-	Unacceptable string    `json:"unacceptable"`
-	AIGuidance   string    `json:"aiGuidance"`
-	Modalities   []string  `json:"modalities"`
-	Priority     string    `json:"priority"`
-	SourceURLs   []string  `json:"sourceUrls"`
-	Examples     []Example `json:"examples"`
+	ScoreLevels  []ScoreLevel `json:"scoreLevels,omitempty"`
+	ElementID    string       `json:"elementId,omitempty"`
+	ID           string       `json:"id"`
+	Code         string       `json:"code"`
+	Title        string       `json:"title"`
+	Rooms        []string     `json:"rooms"`
+	ObjectType   string       `json:"objectType"`
+	Acceptable   string       `json:"acceptable"`
+	Unacceptable string       `json:"unacceptable"`
+	AIGuidance   string       `json:"aiGuidance"`
+	Modalities   []string     `json:"modalities"`
+	Priority     string       `json:"priority"`
+	SourceURLs   []string     `json:"sourceUrls"`
+	Examples     []Example    `json:"examples"`
 }
 type Source struct {
 	Title     string `json:"title"`
@@ -202,6 +221,33 @@ func ValidateNorms(in Norms, publish bool) error {
 	for _, r := range in.Rules {
 		if !identity.ValidID(r.ID) || seen[r.ID] || strings.TrimSpace(r.Code) == "" || len(r.Code) > 40 || codes[strings.ToLower(r.Code)] || strings.TrimSpace(r.Title) == "" || len(r.Title) > 160 || len(r.Rooms) == 0 || len(r.Rooms) > 20 || strings.TrimSpace(r.ObjectType) == "" || len(r.ObjectType) > 120 || len(r.Modalities) == 0 || len(r.Modalities) > 2 || len(r.Examples) > 6 {
 			return fault.New(400, "Controleer codes, ruimtes, objecten en voorbeelden van de maatregelen")
+		}
+		if len(r.ScoreLevels) != 0 && len(r.ScoreLevels) != 6 {
+			return fault.New(422, "Gebruik precies zes scoreniveaus")
+		}
+		levels := map[int]bool{}
+		for _, level := range r.ScoreLevels {
+			if level.Score < 1 || level.Score > 6 || levels[level.Score] || len(level.Label) > 100 || len(level.Description) > 3000 || len(level.References) > 6 {
+				return fault.New(422, "Controleer de zes unieke scoreniveaus en referentiebestanden")
+			}
+			levels[level.Score] = true
+			responsibility := func(value string) bool {
+				return value == "corporation" || value == "resident" || value == "undetermined"
+			}
+			if !responsibility(level.RepairResponsibility) || !responsibility(level.CostResponsibility) {
+				return fault.New(422, "Kies afzonderlijk wie herstelt en wie de kosten draagt")
+			}
+			if level.Outcome != "" && level.Outcome != "acceptable" && level.Outcome != "unacceptable" {
+				return fault.New(422, "Kies acceptabel of niet acceptabel per scoreniveau")
+			}
+			if publish && (strings.TrimSpace(level.Label) == "" || strings.TrimSpace(level.Description) == "" || level.Outcome == "") {
+				return fault.New(422, "Vul naam, omschrijving en uitkomst in voor ieder scoreniveau")
+			}
+			for _, ref := range level.References {
+				if !identity.ValidID(ref.ID) || !identity.ValidID(ref.AssetID) || len(ref.Name) > 240 || len(ref.Caption) > 2000 || !(strings.HasPrefix(ref.MIME, "image/") || ref.MIME == "application/pdf") {
+					return fault.New(422, "Controleer de scorereferenties")
+				}
+			}
 		}
 		seen[r.ID] = true
 		codes[strings.ToLower(r.Code)] = true

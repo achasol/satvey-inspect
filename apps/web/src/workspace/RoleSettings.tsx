@@ -23,10 +23,10 @@ export function RoleSettings({ base, scope }: { base: string; scope: string }) {
   const [editing, setEditing] = useState<OrgRole | null | undefined>(),
     [failure, setFailure] = useState('');
   return (
-    <section className={s.panel} style={{ gridColumn: '1 / -1' }} aria-label="Rollen en privileges">
+    <section className={s.panel} style={{ gridColumn: '1 / -1' }} aria-label="Rollen en rechten">
       <div className={s.pageHeading}>
         <div>
-          <h2>Rollen en privileges</h2>
+          <h2>Rollen en rechten</h2>
           <p className={s.muted}>
             Rechten gelden binnen deze organisatie. Rollen kunnen zelf worden samengesteld.
           </p>
@@ -47,7 +47,7 @@ export function RoleSettings({ base, scope }: { base: string; scope: string }) {
               {role.privileges.map((p) => (
                 <Badge key={p}>{data.privileges.find((v) => v.key === p)?.label || p}</Badge>
               ))}
-              {!role.privileges.length && <Badge>Geen privileges</Badge>}
+              {!role.privileges.length && <Badge>Geen rechten</Badge>}
             </div>
           </div>
           <div className={s.actions}>
@@ -118,6 +118,10 @@ function RoleEditor({
       let next = checked ? [...current, key] : current.filter((p) => p !== key);
       const dependencies: Record<string, string> = {
         'inspections.write': 'inspections.read',
+        'inspections.archive': 'inspections.read',
+        'inspections.purge': 'inspections.archive',
+        'inspections.plan': 'inspections.read',
+        'inspections.review': 'inspections.read',
         'formats.manage': 'formats.read',
         'norms.manage': 'norms.read',
         'benchmarks.read': 'norms.read',

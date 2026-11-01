@@ -36,13 +36,15 @@ export default defineConfig({
     {
       name: 'mobile-chrome',
       use: { ...devices['Pixel 7'] },
-      testMatch: /(?:accounts|interactions|inspector|norms|formats|properties)\.spec\.ts/,
+      testMatch:
+        /(?:accounts|interactions|inspector|norms|formats|properties|visual-review)\.spec\.ts/,
     },
     {
       name: 'mobile-safari',
       timeout: 120_000,
       use: { ...devices['iPhone 13'] },
-      testMatch: /(?:accounts|interactions|inspector|norms|formats|properties)\.spec\.ts/,
+      testMatch:
+        /(?:accounts|interactions|inspector|norms|formats|properties|visual-review)\.spec\.ts/,
     },
   ],
   webServer: process.env.PLAYWRIGHT_BASE_URL

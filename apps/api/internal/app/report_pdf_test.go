@@ -132,11 +132,11 @@ func TestPDFSnapshotAndRendererContract(t *testing.T) {
 	if _, e := f.a.db.Exec(context.Background(), "UPDATE memberships SET role='viewer' WHERE user_id=$1 AND org_id=$2", f.uid, f.org); e != nil {
 		t.Fatal(e)
 	}
-	pdfResponse(f, path, 200) // Read-only roles can download saved reports.
+	frozenPDF := pdfResponse(f, path, 200) // Read-only roles can download saved reports.
 	broken := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { http.Error(w, "private-renderer-error", 503) }))
 	defer broken.Close()
 	f.a.pdfURL = broken.URL
-	if raw := pdfResponse(f, path, 503); bytes.Contains(raw, []byte("private-renderer-error")) {
+	if raw := pdfResponse(f, path, 200); !bytes.Equal(raw, frozenPDF) {
 		t.Fatal("renderer failure leaked")
 	}
 }

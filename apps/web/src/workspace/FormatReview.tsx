@@ -1,3 +1,6 @@
+import { ScoreFields, ScoreSummary } from './Scoring';
+import { EvidenceThumbnail } from './EvidenceThumbnail';
+import { protectedURL } from './platform';
 import { PhotoTile } from './PhotoViewer';
 import { useEffect, useMemo, useEffectEvent, useState } from 'react';
 import { CheckCheck, Mic, X } from 'lucide-react';
@@ -166,7 +169,7 @@ export function TalkingGuide({
         <p>
           {candidates.length
             ? 'Onderwerpen tijdelijk verborgen. Vragen blijven openstaan.'
-            : 'De antwoorden lijken ingevuld. Controleer en keur de ruimtesamenvatting goed.'}
+            : 'De antwoorden lijken ingevuld. Controleer en bevestig de bevindingen en ruimtesamenvatting.'}
         </p>
       )}
       {visible.length > 3 && (
@@ -373,9 +376,10 @@ export function FormatRoomReview({
                   {answerText(answer)}
                   {q.unit && answer.value !== null ? ` ${q.unit}` : ''}
                 </p>
+                <ScoreSummary value={answer.scoreDetail} />
                 {answer.status === 'unanswerable' && <p>{answer.reason}</p>}
                 <div className={f.sources}>
-                  {answer.photoIds.map((id, i) => (
+                  {answer.photoIds.map((id) => (
                     <a
                       href={mediaURL(org, id)}
                       key={id}
@@ -383,7 +387,11 @@ export function FormatRoomReview({
                       rel="noreferrer"
                       onClick={(e) => e.stopPropagation()}
                     >
-                      Foto {i + 1}
+                      <EvidenceThumbnail
+                        org={org}
+                        id={id}
+                        name={data.media.find((m) => m.id === id)?.name || 'Bronfoto'}
+                      />
                     </a>
                   ))}
                   {answer.audioIds.length > 0 && <span>Bron: spraaknotitie</span>}
@@ -452,7 +460,7 @@ export function FormatRoomReview({
               }
               onClick={() => void approve()}
             >
-              Ruimte goedkeuren
+              Beoordeling bevestigen
             </Button>
           </div>
           <details className={f.exception}>
@@ -612,6 +620,11 @@ function AnswerEditor({
           !draft.audioIds.length)));
   function patch(v: Partial<FormatAnswer>) {
     const next = { ...draft, ...v };
+    if (
+      next.status === 'unanswerable' ||
+      ['not_assessable', 'not_applicable'].includes(next.outcome)
+    )
+      next.scoreDetail = null;
     setDraft(next);
     setDirty(true);
     void draftPut(key, next).catch((e) => setError(message(e)));
@@ -652,6 +665,27 @@ function AnswerEditor({
   return (
     <div className={f.answerBody}>
       {q.instruction && <p>{q.instruction}</p>}
+      {draft.proposedScore != null && (
+        <p className={s.muted}>
+          Voorgestelde score: {draft.proposedScore} · controle blijft nodig.
+        </p>
+      )}
+      {rule && draft.status !== 'unanswerable' && (
+        <ScoreFields
+          org={org}
+          rule={rule}
+          value={draft.scoreDetail}
+          disabled={!canWrite || queued}
+          onChange={(scoreDetail, mapped) =>
+            patch({
+              scoreDetail,
+              ...(mapped
+                ? { outcome: mapped, ...(q.kind === 'quality' ? { value: mapped } : {}) }
+                : {}),
+            })
+          }
+        />
+      )}
       {rule && (
         <details className={f.reference}>
           <summary>Normcriteria en voorbeelden</summary>
@@ -664,7 +698,10 @@ function AnswerEditor({
           {rule.examples.map((ex) => (
             <figure key={ex.id}>
               {ex.assetId && (
-                <img alt={ex.caption} src={`/api/v1/orgs/${org}/norm-assets/${ex.assetId}`} />
+                <img
+                  alt={ex.caption}
+                  src={protectedURL(`/api/v1/orgs/${org}/norm-assets/${ex.assetId}`)}
+                />
               )}
               <figcaption>{ex.caption}</figcaption>
             </figure>
@@ -706,7 +743,7 @@ function AnswerEditor({
               </FormatSelect>
             ) : q.kind === 'quality' ? (
               <QuickChoices
-                label="Normoordeel"
+                label="Kwaliteitsbeoordeling"
                 value={draft.outcome || String(draft.value || '')}
                 options={[
                   { value: 'acceptable', label: 'Acceptabel' },
@@ -963,10 +1000,12 @@ export function FormatReportResults({
   data,
   org,
   editing,
+  showPhotos = true,
 }: {
   data: Pick<Dossier, 'format' | 'answers' | 'rooms'> & Partial<Pick<Dossier, 'media'>>;
   org?: string;
   editing?: { scope: string; path: string; inspectionId: string };
+  showPhotos?: boolean;
 }) {
   if (!data.format) return null;
   return (
@@ -1002,7 +1041,7 @@ export function FormatReportResults({
                   </p>
                 );
               })}
-            {org && (
+            {org && showPhotos && (
               <div className={s.gallery}>
                 {(data.media || [])
                   .filter(

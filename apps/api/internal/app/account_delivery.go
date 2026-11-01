@@ -20,7 +20,10 @@ func (a *app) queueMail(ctx context.Context, tx pgx.Tx, org, invitation, user, p
 	if os.Getenv("SMTP_ADDR") == "" && a.deliver == nil {
 		return "manual", nil
 	}
-	jid := id()
+	jid := m.ID
+	if jid == "" {
+		jid = id()
+	}
 	body, e := json.Marshal(m)
 	if e != nil {
 		return "", e
@@ -213,6 +216,11 @@ func (a *app) mailWorker(ctx context.Context) {
 	}
 }
 func (a *app) processMail(ctx context.Context) error {
+	// A crash after DATA may already have delivered a report. Require an explicit
+	// operator resend rather than silently producing another attachment email.
+	if _, err := a.db.Exec(ctx, `UPDATE mail_jobs SET status='failed',last_error='Verzending onzeker: controleer de verzending voordat je opnieuw verstuurt',run_token=NULL,lease_until=NULL WHERE purpose='inspection_report' AND status='processing' AND lease_until<now() AND ($1::uuid IS NULL OR org_id=$1)`, nullableID(a.workerOrg)); err != nil {
+		return err
+	}
 	var jid, payload, run string
 	var attempts int
 	run = id()
@@ -241,6 +249,10 @@ func (a *app) processMail(ctx context.Context) error {
 	if e != nil {
 		status = "pending"
 		message = "E-mail tijdelijk niet bezorgd. Controleer de SMTP-configuratie."
+		if strings.Contains(fmt.Sprint(e), "delivery uncertain") {
+			status = "failed"
+			message = "Verzending onzeker: controleer de verzending voordat je opnieuw verstuurt"
+		}
 		if attempts >= 5 {
 			status = "failed"
 		}
@@ -366,7 +378,7 @@ func (a *app) checkStoredSecrets(ctx context.Context) error {
 	if e = rows.Err(); e != nil {
 		return e
 	}
-	rows, e = a.db.Query(ctx, `SELECT org_id,id,secret FROM property_sources WHERE secret<>''`)
+	rows, e = a.db.Query(ctx, `SELECT org_id,id::text,secret FROM property_sources WHERE secret<>'' UNION ALL SELECT org_id,'handover:'||id::text,secret FROM handover_destinations WHERE secret<>''`)
 	if e != nil {
 		return e
 	}

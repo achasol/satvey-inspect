@@ -103,7 +103,9 @@ export function SignaturesEditor({
   value,
   onChange,
   disabled,
+  required = false,
 }: {
+  required?: boolean;
   value: SignatureInput[];
   onChange: (value: SignatureInput[]) => void;
   disabled: boolean;
@@ -113,7 +115,7 @@ export function SignaturesEditor({
   return (
     <section className={s.stack} aria-label="Handtekeningen verzamelen">
       <div>
-        <h3>Handtekeningen (optioneel)</h3>
+        <h3>{required ? 'Handtekeningen' : 'Handtekeningen (optioneel)'}</h3>
         <p className={s.muted}>Laat de inspecteur, bewoner of een andere aanwezige tekenen.</p>
       </div>
       {value.map((signature, index) => (

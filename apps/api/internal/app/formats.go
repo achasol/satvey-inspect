@@ -16,7 +16,7 @@ func readFormat(ctx context.Context, q querier, org, version string) (*formatDoc
 	}
 	var d formatDocument
 	var raw []byte
-	e := q.QueryRow(ctx, `SELECT id,format_id,number,name,description,kind,norm_version_id,status,revision,scopes FROM format_versions WHERE id=$1 AND org_id=$2`, version, org).Scan(&d.ID, &d.FormatID, &d.Number, &d.Name, &d.Description, &d.Kind, &d.NormVersionID, &d.Status, &d.Revision, &raw)
+	e := q.QueryRow(ctx, `SELECT id,format_id,number,name,description,kind,norm_version_id,status,revision,scopes,signing_policy,acknowledgement FROM format_versions WHERE id=$1 AND org_id=$2`, version, org).Scan(&d.ID, &d.FormatID, &d.Number, &d.Name, &d.Description, &d.Kind, &d.NormVersionID, &d.Status, &d.Revision, &raw, &d.SigningPolicy, &d.Acknowledgement)
 	if e == nil {
 		e = json.Unmarshal(raw, &d.Scopes)
 	}
@@ -34,7 +34,7 @@ func (a *app) formatsList(w http.ResponseWriter, r *http.Request) error {
 	if _, _, e := a.require(r, "formats.read"); e != nil {
 		return e
 	}
-	out, e := list(r.Context(), a.db, `SELECT id,format_id AS "formatId",number,name,description,kind,norm_version_id AS "normVersionId",status,revision,scopes FROM format_versions WHERE org_id=$1 AND (status='published' OR $2) ORDER BY name,number DESC`, r.PathValue("org"), a.hasPrivilege(r, "formats.manage"))
+	out, e := list(r.Context(), a.db, `SELECT id,format_id AS "formatId",number,name,description,kind,norm_version_id AS "normVersionId",status,revision,scopes,signing_policy AS "signingPolicy",acknowledgement FROM format_versions WHERE org_id=$1 AND (status='published' OR $2) ORDER BY name,number DESC`, r.PathValue("org"), a.hasPrivilege(r, "formats.manage"))
 	if e != nil {
 		return e
 	}
@@ -73,7 +73,7 @@ func (a *app) createFormat(w http.ResponseWriter, r *http.Request) error {
 		return e
 	}
 	if !a.hasPrivilege(r, "norms.read") {
-		return fail(403, "Normen bekijken is nodig om een format te beheren")
+		return fail(403, "Kwaliteitskaders bekijken is nodig om een format te beheren")
 	}
 	var in struct {
 		Name          string  `json:"name"`
@@ -95,21 +95,21 @@ func (a *app) createFormat(w http.ResponseWriter, r *http.Request) error {
 	org := r.PathValue("org")
 	if in.NormVersionID != nil {
 		if !validID(*in.NormVersionID) {
-			return fail(422, "Ongeldig normenkader")
+			return fail(422, "Ongeldig kwaliteitskader")
 		}
 		var ok bool
 		if e = tx.QueryRow(r.Context(), `SELECT EXISTS(SELECT 1 FROM norm_versions WHERE id=$1 AND org_id=$2 AND status='published')`, *in.NormVersionID, org).Scan(&ok); e != nil {
 			return e
 		}
 		if !ok {
-			return fail(422, "Kies een gepubliceerd normenkader")
+			return fail(422, "Kies een gepubliceerd kwaliteitskader")
 		}
 	}
 	if _, e = tx.Exec(r.Context(), `INSERT INTO inspection_formats(id,org_id) VALUES($1,$2)`, fid, org); e != nil {
 		return e
 	}
 	raw, _ := json.Marshal(starterScopes())
-	if _, e = tx.Exec(r.Context(), `INSERT INTO format_versions(id,org_id,format_id,number,name,kind,norm_version_id,scopes,created_by) VALUES($1,$2,$3,1,$4,$5,$6,$7,$8)`, vid, org, fid, strings.TrimSpace(in.Name), in.Kind, in.NormVersionID, raw, u.ID); e != nil {
+	if _, e = tx.Exec(r.Context(), `INSERT INTO format_versions(id,org_id,format_id,number,name,kind,norm_version_id,scopes,created_by,acknowledgement) VALUES($1,$2,$3,1,$4,$5,$6,$7,$8,'Ondertekenaars bevestigen kennis te hebben genomen van de vastgelegde waarnemingen, afspraken en eventuele bezwaren.')`, vid, org, fid, strings.TrimSpace(in.Name), in.Kind, in.NormVersionID, raw, u.ID); e != nil {
 		return e
 	}
 	if e = tx.Commit(r.Context()); e != nil {
@@ -123,7 +123,7 @@ func (a *app) updateFormat(w http.ResponseWriter, r *http.Request) error {
 		return e
 	}
 	if !a.hasPrivilege(r, "norms.read") {
-		return fail(403, "Normen bekijken is nodig")
+		return fail(403, "Kwaliteitskaders bekijken is nodig")
 	}
 	var in formatDocument
 	if e := readJSON(w, r, &in); e != nil {
@@ -145,9 +145,15 @@ func (a *app) updateFormat(w http.ResponseWriter, r *http.Request) error {
 	if e = validateFormat(&in, norm, false); e != nil {
 		return e
 	}
+	if in.SigningPolicy == "" {
+		in.SigningPolicy = "resident_or_exception"
+	}
+	if !contains([]string{"legacy", "resident_or_exception"}, in.SigningPolicy) || len(in.Acknowledgement) > 4000 || (in.SigningPolicy != "legacy" && strings.TrimSpace(in.Acknowledgement) == "") {
+		return fail(422, "Vul de ondertekenverklaring in")
+	}
 	raw, _ := json.Marshal(in.Scopes)
 	// Published rows are excluded before the immutability trigger is reached.
-	tag, e := a.db.Exec(r.Context(), `UPDATE format_versions SET name=$1,description=$2,kind=$3,norm_version_id=$4,scopes=$5,revision=revision+1 WHERE id=$6 AND org_id=$7 AND status='draft' AND revision=$8`, strings.TrimSpace(in.Name), in.Description, in.Kind, in.NormVersionID, raw, r.PathValue("format"), org, in.Revision)
+	tag, e := a.db.Exec(r.Context(), `UPDATE format_versions SET name=$1,description=$2,kind=$3,norm_version_id=$4,scopes=$5,signing_policy=$9,acknowledgement=$10,revision=revision+1 WHERE id=$6 AND org_id=$7 AND status='draft' AND revision=$8`, strings.TrimSpace(in.Name), in.Description, in.Kind, in.NormVersionID, raw, r.PathValue("format"), org, in.Revision, in.SigningPolicy, in.Acknowledgement)
 	if e != nil {
 		return e
 	}
@@ -244,7 +250,7 @@ func (a *app) reviseFormat(w http.ResponseWriter, r *http.Request) error {
 	if e == pgx.ErrNoRows {
 		draft = id()
 		raw, _ := json.Marshal(d.Scopes)
-		_, e = tx.Exec(r.Context(), `INSERT INTO format_versions(id,org_id,format_id,number,name,description,kind,norm_version_id,scopes,created_by) SELECT $1,$2,$3,max(number)+1,$4,$5,$6,$7,$8,$9 FROM format_versions WHERE format_id=$3 AND org_id=$2`, draft, org, d.FormatID, d.Name, d.Description, d.Kind, d.NormVersionID, raw, u.ID)
+		_, e = tx.Exec(r.Context(), `INSERT INTO format_versions(id,org_id,format_id,number,name,description,kind,norm_version_id,scopes,created_by,acknowledgement) SELECT $1,$2,$3,max(number)+1,$4,$5,$6,$7,$8,$9,'Ondertekenaars bevestigen kennis te hebben genomen van de vastgelegde waarnemingen, afspraken en eventuele bezwaren.' FROM format_versions WHERE format_id=$3 AND org_id=$2`, draft, org, d.FormatID, d.Name, d.Description, d.Kind, d.NormVersionID, raw, u.ID)
 	}
 	if e != nil {
 		return e

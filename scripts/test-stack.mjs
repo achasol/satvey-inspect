@@ -115,15 +115,17 @@ function buildImages() {
   const definitions = {
     api: ['apps/api/Dockerfile', 'apps/api'],
     go: ['apps/api/Dockerfile', 'apps/api', 'build'],
+    'vera-receiver': ['tools/vera-receiver/Dockerfile', 'tools/vera-receiver'],
+    'vera-tests': ['tools/vera-receiver/Dockerfile', 'tools/vera-receiver', 'build'],
     'pdf-check': ['infra/pdf-check.Dockerfile', '.'],
     app: ['Dockerfile', '.', 'build'],
     browsers: ['infra/browser-tests.Dockerfile', '.'],
   };
   const targets =
     process.argv[2] === 'backend'
-      ? ['api', 'go', 'pdf-check']
+      ? ['api', 'go', 'vera-receiver', 'vera-tests', 'pdf-check']
       : process.argv[2] === 'browser'
-        ? ['api', 'app', 'browsers']
+        ? ['api', 'app', 'browsers', 'vera-receiver']
         : Object.keys(definitions);
   try {
     for (const target of targets) {
@@ -197,10 +199,21 @@ acquireLock();
 let exitCode = 0;
 try {
   buildImages();
-  run(['up', '-d', '--wait', 'postgres', 'browser-postgres', 'rustfs', 'pdf', 'mail']);
+  run([
+    'up',
+    '-d',
+    '--wait',
+    'postgres',
+    'browser-postgres',
+    'rustfs',
+    'pdf',
+    'mail',
+    'vera-receiver',
+  ]);
   for (const bucket of ['satvey-test-go', 'satvey-test-browser'])
     run(['run', '--rm', '--no-deps', '-e', `S3_BUCKET=${bucket}`, 'api', 'storage-init']);
   if (process.argv[2] !== 'browser') {
+    run(['run', '--rm', '--no-deps', 'vera-tests']);
     const goArgs = (process.env.TEST_GO_ARGS || '').split(/\s+/).filter(Boolean);
     run([
       'run',

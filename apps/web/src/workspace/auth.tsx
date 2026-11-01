@@ -7,8 +7,14 @@ import { api, json } from './api';
 import type { Account } from './api';
 import s from './workspace.module.css';
 import { errorText, ErrorNotice } from './shared';
+import { nativeDevice } from './nativeStorage';
+import { NativeLogin } from './MobileLogin';
 
 export function Login({ onLogin }: { onLogin: () => void }) {
+  return nativeDevice ? <NativeLogin /> : <BrowserLogin onLogin={onLogin} />;
+}
+
+function BrowserLogin({ onLogin }: { onLogin: () => void }) {
   const [email, setEmail] = useState(''),
     [password, setPassword] = useState(''),
     [passwordStep, setPasswordStep] = useState(false);

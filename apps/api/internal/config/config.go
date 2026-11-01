@@ -45,6 +45,19 @@ func Validate(get Lookup, command string) error {
 			return fmt.Errorf("%s must be 32 random bytes encoded as base64", name)
 		}
 	}
+	if command == "serve" || command == "check-config" {
+		if strings.TrimSpace(get("LEGAL_ENTITY")) == "" || strings.TrimSpace(get("HOSTING_REGION")) == "" {
+			return fmt.Errorf("production requires LEGAL_ENTITY and HOSTING_REGION")
+		}
+		if _, e := mail.ParseAddress(get("SUPPORT_EMAIL")); e != nil {
+			return fmt.Errorf("production requires a valid SUPPORT_EMAIL")
+		}
+		privacy, e := url.Parse(get("PRIVACY_POLICY_URL"))
+		if e != nil || privacy.Scheme != "https" || privacy.Hostname() == "" || privacy.User != nil {
+			return fmt.Errorf("production requires an HTTPS PRIVACY_POLICY_URL")
+		}
+	}
+
 	if command == "rotate-secrets" {
 		key, e := base64.StdEncoding.DecodeString(get("APP_ENCRYPTION_KEY_NEW"))
 		if e != nil || len(key) != 32 {

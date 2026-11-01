@@ -28,6 +28,7 @@ func testPublishedFormat(f *fixture, scopes []formatScope) (formatDocument, norm
 	if scopes != nil {
 		doc.Scopes = scopes
 	}
+	doc.SigningPolicy = "legacy" // Unrelated cases retain their original fixture contract.
 	f.request("PUT", base+"/formats/"+doc.ID, doc, 200)
 	doc.Revision++
 	f.request("POST", base+"/formats/"+doc.ID+"/publish", map[string]any{"revision": doc.Revision}, 200)
@@ -198,6 +199,7 @@ func TestFormatEvidenceReviewAndBenchmark(t *testing.T) {
 	prop := formatScope{ID: id(), Name: "Woning algemeen", NormRoom: "Woning algemeen", Property: true, Questions: []formatQuestion{}}
 	roomScope := formatScope{ID: id(), Name: "Keuken", NormRoom: "Keuken", Required: true, Questions: []formatQuestion{{ID: id(), Title: "Wandkwaliteit", Kind: "quality", Required: true, RuleID: norm.Rules[0].ID, Evidence: "photo", MinPhotos: 1}}}
 	doc.Scopes = []formatScope{prop, roomScope}
+	doc.SigningPolicy = "legacy"
 	f.request("PUT", base+"/formats/"+doc.ID, doc, 200)
 	f.request("POST", base+"/formats/"+doc.ID+"/publish", map[string]any{"revision": 2}, 200)
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -427,6 +429,7 @@ func TestFormatAIPrefillUsesAccumulatedEvidenceAndPinnedContext(t *testing.T) {
 	_ = json.Unmarshal(encoded, &doc)
 	quality := formatQuestion{ID: id(), Title: "Wandnorm", Kind: "quality", Required: true, Evidence: "photo", MinPhotos: 1, RuleID: norm.Rules[0].ID}
 	doc.Scopes[1].Questions = append(doc.Scopes[1].Questions, quality)
+	doc.SigningPolicy = "legacy"
 	f.request("PUT", base+"/formats/"+doc.ID, doc, 200)
 	f.request("POST", base+"/formats/"+doc.ID+"/publish", map[string]any{"revision": 2}, 200)
 	photo1, photo2, audio := id(), id(), id()

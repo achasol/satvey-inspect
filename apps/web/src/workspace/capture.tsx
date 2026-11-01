@@ -1,11 +1,10 @@
-import { useEffect, useRef, useState } from 'react';
-import { Camera, Mic, Square, Upload, X } from 'lucide-react';
-import { Badge, Button } from '../components/ui';
+import { useEffect, useState } from 'react';
+import { Camera, Mic, X } from 'lucide-react';
+import { Button } from '../components/ui';
 import { mediaURL, uuid } from './api';
 import type { Dossier, Media } from './api';
-import { draftGet, draftPut, draftRemove, saveAction, sync } from './outbox';
+import { draftGet, commitCaptureDraft, sync } from './outbox';
 import type { Action, LocalMedia } from './outbox';
-import { TalkingGuide } from './FormatReview';
 import { PhotoTile } from './PhotoViewer';
 import s from './workspace.module.css';
 import { errorText, ErrorNotice } from './shared';
@@ -74,431 +73,79 @@ export function LocalPreview({
 
 export function Capture({
   scope,
-
   path,
-
   inspectionId,
-
   roomId,
-
-  pending,
-
   data,
   onOpenCamera,
 }: {
-  onOpenCamera: () => void;
-  data: Dossier;
-
   scope: string;
-
   path: string;
-
   inspectionId: string;
-
   roomId: string;
-
   pending: Action[];
+  data: Dossier;
+  onOpenCamera: () => void;
 }) {
-  const draftKey = `${scope}:capture:${inspectionId}:${roomId}`,
-    [files, setFiles] = useState<LocalMedia[]>([]),
+  const key = `${scope}:capture:${inspectionId}:${roomId}`;
+  const [files, setFiles] = useState<LocalMedia[]>([]),
     [error, setError] = useState(''),
-    [ready, setReady] = useState(false),
-    [saving, setSaving] = useState(false),
-    [recording, setRecording] = useState(false),
-    [seconds, setSeconds] = useState(0),
-    [notice, setNotice] = useState('');
-
-  const input = useRef<HTMLInputElement>(null),
-    recorder = useRef<MediaRecorder | null>(null),
-    stream = useRef<MediaStream | null>(null),
-    timer = useRef<number | undefined>(undefined),
-    mounted = useRef(true),
-    currentFiles = useRef(files),
-    audioAbort = useRef(false);
-
+    [busy, setBusy] = useState(false);
   useEffect(() => {
     let alive = true;
-
-    mounted.current = true;
-
-    void draftGet(draftKey)
+    void draftGet<{ files?: LocalMedia[] }>(key)
       .then((d) => {
-        if (alive) {
-          setFiles(d?.files || []);
-
-          currentFiles.current = d?.files || [];
-
-          setReady(true);
-        }
+        if (alive) setFiles(d?.files || []);
       })
-
       .catch((e) => setError(errorText(e)));
-
     return () => {
       alive = false;
-
-      mounted.current = false;
-
-      audioAbort.current = true;
-
-      if (recorder.current?.state === 'recording') recorder.current.stop();
-
-      stream.current?.getTracks().forEach((t) => t.stop());
-
-      window.clearInterval(timer.current);
     };
-  }, [draftKey]);
-
-  async function store(next: LocalMedia[]) {
-    currentFiles.current = next;
-
-    setFiles(next);
-
-    setNotice('');
-
-    try {
-      await draftPut(draftKey, { roomId, files: next });
-    } catch (e) {
-      setError(`Opslaan op apparaat mislukt. Houd dit scherm open. ${errorText(e)}`);
-
-      throw e;
-    }
-  }
-
-  async function add(selected: File[]) {
-    setError('');
-
-    const additions: LocalMedia[] = [];
-
-    try {
-      for (const file of selected) {
-        if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type))
-          throw new Error(
-            'Gebruik JPG, PNG of WebP. Kies op je telefoon zo nodig een compatibel cameraformaat.',
-          );
-
-        if (file.size > 20 * 1024 * 1024) throw new Error('Maximaal 20 MB per foto.');
-
-        additions.push({
-          id: uuid(),
-
-          name: file.name,
-
-          mime: file.type,
-
-          bytes: await file.arrayBuffer(),
-
-          duration: 0,
-        });
-      }
-
-      if (currentFiles.current.length + additions.length > 30)
-        throw new Error('Maximaal 30 bestanden per opname.');
-
-      await store([...currentFiles.current, ...additions]);
-    } catch (e) {
-      setError(errorText(e));
-    }
-  }
-
-  async function startRecording() {
-    setError('');
-
-    setNotice('');
-
-    if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) {
-      setError('Audio opnemen vereist een ondersteunde browser op localhost of HTTPS.');
-
-      return;
-    }
-
-    if (files.length >= 30) {
-      setError('Maximaal 30 bestanden per opname.');
-
-      return;
-    }
-
-    try {
-      const mic = await navigator.mediaDevices.getUserMedia({ audio: true });
-
-      if (!mounted.current) {
-        mic.getTracks().forEach((t) => t.stop());
-
-        return;
-      }
-
-      stream.current = mic;
-
-      const mime = ['audio/webm;codecs=opus', 'audio/mp4', 'audio/ogg;codecs=opus'].find((t) =>
-        MediaRecorder.isTypeSupported(t),
-      );
-
-      const rec = new MediaRecorder(mic, mime ? { mimeType: mime } : undefined);
-
-      recorder.current = rec;
-
-      const chunks: Blob[] = [];
-
-      const started = Date.now();
-
-      audioAbort.current = false;
-
-      rec.ondataavailable = (e) => {
-        if (e.data.size) chunks.push(e.data);
-      };
-
-      rec.onerror = () => {
-        setError('Opnemen onderbroken. Controleer de opgeslagen audio en probeer opnieuw.');
-
-        rec.stop();
-      };
-
-      rec.onstop = () => {
-        mic.getTracks().forEach((t) => t.stop());
-
-        clearInterval(timer.current);
-
-        if (mounted.current) setRecording(false);
-
-        const type = rec.mimeType.split(';')[0],
-          blob = new Blob(chunks, { type });
-
-        if (audioAbort.current || !mounted.current) return;
-
-        if (!blob.size) {
-          setError('Geen audio opgenomen. Probeer opnieuw.');
-
-          return;
-        }
-
-        if (blob.size > 50 * 1024 * 1024) {
-          setError('Audio groter dan 50 MB. Maak een kortere opname.');
-
-          return;
-        }
-
-        void blob
-
-          .arrayBuffer()
-
-          .then((bytes) =>
-            store([
-              ...currentFiles.current,
-
-              {
-                id: uuid(),
-
-                name: `Spraaknotitie-${new Date().toISOString().slice(0, 19).replaceAll(':', '-')}.${type.includes('mp4') ? 'm4a' : type.includes('ogg') ? 'ogg' : 'webm'}`,
-
-                mime: type,
-
-                bytes,
-
-                duration: Math.min(600, (Date.now() - started) / 1000),
-              },
-            ]),
-          )
-
-          .catch((e) => setError(errorText(e)));
-      };
-
-      rec.start(1000);
-
-      setSeconds(0);
-
-      setRecording(true);
-
-      timer.current = window.setInterval(() => {
-        const elapsed = Math.floor((Date.now() - started) / 1000);
-
-        setSeconds(elapsed);
-
-        if (elapsed >= 600 && rec.state === 'recording') rec.stop();
-      }, 1000);
-    } catch (e) {
-      stream.current?.getTracks().forEach((t) => t.stop());
-
-      setError(
-        e instanceof DOMException && e.name === 'NotAllowedError'
-          ? 'Microfoontoegang geweigerd. Geef toestemming in je browser en probeer opnieuw.'
-          : errorText(e),
-      );
-    }
-  }
-
-  async function save() {
-    setSaving(true);
-
-    setError('');
-
-    try {
-      const id = uuid();
-
-      await saveAction({
-        id,
-
-        scope,
-
-        inspectionId,
-
-        kind: 'capture',
-
-        path: `${path}/batches`,
-
-        payload: { id, roomId, mediaIds: files.map((f) => f.id) },
-
-        files,
-
-        uploaded: [],
-
-        createdAt: Date.now(),
-
-        state: 'pending',
-      });
-
-      await draftRemove(draftKey);
-
-      setFiles([]);
-
-      currentFiles.current = [];
-
-      setNotice('Opname op apparaat bewaard.');
-
-      void sync(scope);
-    } catch (e) {
-      setError(errorText(e));
-    } finally {
-      setSaving(false);
-    }
-  }
-
+  }, [key]);
   return (
     <section className={s.capture} aria-label="Nieuwe opname">
-      <div className={s.captureActions}>
-        <Button
-          size="lg"
-          icon={<Camera size={21} />}
-          onClick={onOpenCamera}
-          disabled={!ready || saving || recording}
-        >
-          Foto maken
-        </Button>
-
-        <Button variant="ghost" onClick={() => input.current?.click()} disabled={!ready || saving}>
-          Foto’s toevoegen
-        </Button>
-        {recording ? (
-          <Button
-            size="lg"
-            variant="destructive"
-            icon={<Square size={18} />}
-            onClick={() => recorder.current?.stop()}
-          >
-            Stop {Math.floor(seconds / 60)}:{String(seconds % 60).padStart(2, '0')}
-          </Button>
-        ) : (
-          <Button
-            size="lg"
-            variant="secondary"
-            icon={<Mic size={21} />}
-            onClick={() => void startRecording()}
-            disabled={!ready || saving}
-          >
-            Audio opnemen
-          </Button>
-        )}
-      </div>
-
-      {data.format && <TalkingGuide data={data} roomId={roomId} recording={recording} />}
-
-      <input
-        ref={input}
-        type="file"
-        accept="image/jpeg,image/png,image/webp"
-        capture="environment"
-        multiple
-        hidden
-        aria-label="Foto's toevoegen"
-        onChange={(e) => {
-          void add(Array.from(e.target.files || []));
-
-          e.target.value = '';
-        }}
-      />
-
-      {recording && (
-        <p className={s.recording} role="status">
-          <span />
-          Microfoon actief · blijf op dit scherm
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => {
-              audioAbort.current = true;
-
-              recorder.current?.stop();
-            }}
-          >
-            Opname verwerpen
-          </Button>
-        </p>
-      )}
-
-      {files.length > 0 && (
+      <Button size="lg" icon={<Camera size={21} />} onClick={onOpenCamera}>
+        Inspectie {data.batches.length ? 'hervatten' : 'starten'}
+      </Button>
+      <p className={s.muted}>
+        Loop door de woning, maak foto’s en wissel van ruimte. Audio staat aan totdat je dempt.
+      </p>
+      {!!files.length && (
         <>
-          <LocalGallery
-            files={files}
-            remove={(id) => {
-              void store(files.filter((f) => f.id !== id)).catch(() => {});
+          <p>Eerder opgeslagen opnamen op dit apparaat</p>
+          <LocalGallery files={files} />
+          <Button
+            loading={busy}
+            onClick={async () => {
+              setBusy(true);
+              try {
+                const id = uuid();
+                await commitCaptureDraft(key, {
+                  id,
+                  scope,
+                  inspectionId,
+                  kind: 'capture',
+                  path: `${path}/batches`,
+                  payload: { id, roomId, mediaIds: files.map((f) => f.id) },
+                  files,
+                  uploaded: [],
+                  createdAt: Date.now(),
+                  state: 'pending',
+                });
+                setFiles([]);
+                void sync(scope);
+              } catch (e) {
+                setError(errorText(e));
+              } finally {
+                setBusy(false);
+              }
             }}
-          />
-
-          <div className={s.captureFooter}>
-            <Badge tone="warning">Concept op apparaat</Badge>
-
-            <span>
-              {files.filter((f) => f.mime.startsWith('image')).length} foto's ·{' '}
-              {files.filter((f) => f.mime.startsWith('audio')).length} audio
-            </span>
-
-            <Button
-              loading={saving}
-              disabled={recording}
-              icon={<Upload size={17} />}
-              onClick={() => void save()}
-            >
-              Opname bewaren
-            </Button>
-          </div>
+          >
+            Herstelde opnamen bewaren
+          </Button>
         </>
       )}
-
-      {notice && (
-        <p role="status" className={s.muted}>
-          {notice}
-        </p>
-      )}
-
       {error && <ErrorNotice>{error}</ErrorNotice>}
-
-      {pending
-
-        .filter((p) => p.kind === 'capture' && p.payload.roomId === roomId)
-
-        .map((p) => (
-          <div className={s.localBatch} key={p.id}>
-            <Badge tone={p.state === 'failed' || p.state === 'conflict' ? 'danger' : 'warning'}>
-              {p.state === 'uploading'
-                ? 'Uploaden'
-                : p.state === 'pending'
-                  ? 'Op apparaat'
-                  : 'Mislukt'}{' '}
-              · {p.uploaded?.length || 0}/{p.files?.length || 0}
-            </Badge>
-
-            <LocalGallery files={p.files || []} />
-          </div>
-        ))}
     </section>
   );
 }
@@ -523,8 +170,11 @@ export function Gallery({
               <Mic size={15} />
               Spraaknotitie · intern
             </span>
-
-            <audio controls preload="metadata" src={mediaURL(org, m.id)} aria-label={m.name} />
+            {m.contentDeletedAt ? (
+              <p>Originele audio verwijderd volgens het bewaarbeleid.</p>
+            ) : (
+              <audio controls preload="metadata" src={mediaURL(org, m.id)} aria-label={m.name} />
+            )}
           </div>
         ),
       )}

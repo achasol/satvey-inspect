@@ -1,0 +1,21 @@
+{
+  "revision": "694c528e373da739bb6a76c61776ed50c7e6cf2c",
+  "retrievedAt": "2026-10-31",
+  "files": [
+    {
+      "file": "Onderhoud.yaml",
+      "source": "https://raw.githubusercontent.com/Aedes-datastandaarden/vera-openapi/694c528e373da739bb6a76c61776ed50c7e6cf2c/Informatiedomeinen/Onderhoud.yaml",
+      "sha256": "c7424b1b0781ddffeda0031518223a6ab2c6b8ea12b41939c6373c067ddc9238"
+    },
+    {
+      "file": "Dossier.yaml",
+      "source": "https://raw.githubusercontent.com/Aedes-datastandaarden/vera-openapi/694c528e373da739bb6a76c61776ed50c7e6cf2c/Informatiedomeinen/Dossier.yaml",
+      "sha256": "065e5e3858627535612fd687dc9dbc0184beee0c01508d61cfad1014028270f4"
+    },
+    {
+      "file": "Vastgoed.yaml",
+      "source": "https://raw.githubusercontent.com/Aedes-datastandaarden/vera-openapi/694c528e373da739bb6a76c61776ed50c7e6cf2c/Informatiedomeinen/Vastgoed.yaml",
+      "sha256": "2fdbc9106a7fc42985bd97c615f0951aea1b8dc886ebd2353b569ef6dab5afb2"
+    }
+  ]
+}

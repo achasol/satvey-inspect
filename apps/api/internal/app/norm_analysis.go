@@ -34,6 +34,7 @@ type normAnalysisInput struct {
 	References             []referencePhoto  `json:"-"`
 }
 type normCheck struct {
+	Score    *int     `json:"score,omitempty"`
 	RuleID   string   `json:"ruleId"`
 	Outcome  string   `json:"outcome"`
 	Reason   string   `json:"reason"`
@@ -146,6 +147,15 @@ func parseNormAnalysis(raw string, in normAnalysisInput, photos []analysisPhoto)
 		rule, ok := rules[c.RuleID]
 		if !ok || seen[c.RuleID] || !validOutcome(c.Outcome) || strings.TrimSpace(c.Reason) == "" || len(c.Reason) > 3000 || !validRefs(c.PhotoIDs, photoIDs) || !validRefs(c.AudioIDs, audioIDs) {
 			return out, fmt.Errorf("normanalyse bevat ongeldige criteria of bronverwijzingen")
+		}
+		if c.Score != nil {
+			valid := false
+			for _, level := range rule.ScoreLevels {
+				valid = valid || (level.Score == *c.Score && level.Outcome == c.Outcome)
+			}
+			if !valid {
+				return out, fmt.Errorf("voorgestelde score past niet bij het criterium")
+			}
 		}
 		seen[c.RuleID] = true
 		if c.Outcome == "acceptable" || c.Outcome == "unacceptable" {

@@ -1,3 +1,4 @@
+import { protectedURL } from './platform';
 import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { ArrowLeft, BookOpen, Plus, Upload } from 'lucide-react';
@@ -15,6 +16,8 @@ import type {
 import { useResource } from './useResource';
 import { ElementsModule } from './Elements';
 import s from './workspace.module.css';
+import { ScoreLevelsEditor } from './Scoring';
+import { ResponsiveTabs, useMobile } from './ResponsiveTabs';
 import { outcomeLabels } from './labels';
 
 export function NormsModule({
@@ -26,10 +29,11 @@ export function NormsModule({
   scope: string;
   org: Organisation;
 }) {
+  const mobile = useMobile();
   const location = useLocation(),
     params = new URLSearchParams(location.search),
     version = params.get('version'),
-    benchmark = params.get('tab') === 'benchmark',
+    benchmark = !mobile && params.get('tab') === 'benchmark',
     elements = params.get('tab') === 'elements';
   const { data, error, reload } = useResource<NormSummary[]>(scope, `${base}/norms`),
     [create, setCreate] = useState(false);
@@ -38,31 +42,36 @@ export function NormsModule({
     <>
       <div className={s.pageHeading}>
         <div>
-          <h1>Normen</h1>
+          <h1>Kwaliteitskaders</h1>
           <p className={s.muted}>
-            Ruimtes en elementen beschrijven wat waar hoort. Normenkaders bepalen wanneer iets
+            Ruimtes en elementen beschrijven wat waar hoort. Kwaliteitskaders bepalen wanneer iets
             acceptabel is.
           </p>
         </div>
-        {can(org, 'norms.manage') && !elements && (
+        {can(org, 'norms.manage') && !mobile && !elements && (
           <Button icon={<Plus size={17} />} onClick={() => setCreate(true)}>
-            Normenkader toevoegen
+            Kwaliteitskader toevoegen
           </Button>
         )}
       </div>
-      <nav className={s.stages} aria-label="Normenmodule">
-        <Link className={!benchmark && !elements ? s.activeStage : ''} to="/app/norms">
-          Normenkaders
-        </Link>
-        <Link className={elements ? s.activeStage : ''} to="/app/norms?tab=elements">
-          Ruimtes en elementen
-        </Link>
-        {can(org, 'benchmarks.read') && (
-          <Link className={benchmark ? s.activeStage : ''} to="/app/norms?tab=benchmark">
-            Benchmark
-          </Link>
-        )}
-      </nav>
+      <ResponsiveTabs
+        label="Kwaliteitskadersmodule"
+        value={elements ? 'elements' : benchmark ? 'benchmark' : 'norms'}
+        items={[
+          { id: 'norms', label: 'Kwaliteitskaders', href: '/app/norms' },
+          { id: 'elements', label: 'Ruimtes en elementen', href: '/app/norms?tab=elements' },
+          ...(can(org, 'benchmarks.read')
+            ? [
+                {
+                  id: 'benchmark',
+                  label: 'Beoordelingsoverzicht',
+                  href: '/app/norms?tab=benchmark',
+                  mobileHidden: true,
+                },
+              ]
+            : []),
+        ]}
+      />
       {error && (
         <p className={s.error} role="alert">
           {error}
@@ -78,7 +87,7 @@ export function NormsModule({
             versions={data?.filter((v) => v.status === 'published') || []}
           />
         ) : (
-          <p>Je rol kan de benchmark niet bekijken.</p>
+          <p>Je rol kan het beoordelingsoverzicht niet bekijken.</p>
         )
       ) : (
         <div className={s.stack}>
@@ -88,7 +97,7 @@ export function NormsModule({
               <div>
                 <strong>{v.name}</strong>
                 <p className={s.muted}>
-                  Versie {v.number} · {v.ruleCount} maatregelen
+                  Versie {v.number} · {v.ruleCount} criteria
                 </p>
               </div>
               <Badge tone={v.status === 'published' ? 'success' : 'warning'}>
@@ -99,8 +108,8 @@ export function NormsModule({
           {data && !data.length && (
             <section className={s.empty}>
               <BookOpen size={30} />
-              <h2>Nog geen normenkaders</h2>
-              <p>Een kwaliteitsbeheerder kan starten met het basiskader of eigen maatregelen.</p>
+              <h2>Nog geen kwaliteitskaders</h2>
+              <p>Een kwaliteitsbeheerder kan starten met het basiskader of eigen criteria.</p>
             </section>
           )}
         </div>
@@ -138,7 +147,7 @@ function CreateNorm({
       onOpenChange={(v) => {
         if (!v) onClose();
       }}
-      title="Normenkader toevoegen"
+      title="Kwaliteitskader toevoegen"
       description="Een nieuw kader begint als concept en wordt pas na publicatie gebruikt."
       closeLabel="Sluiten"
     >
@@ -159,13 +168,13 @@ function CreateNorm({
         }}
       >
         <Field
-          label="Naam normenkader"
+          label="Naam kwaliteitskader"
           required
           value={name}
           onChange={(e) => setName(e.target.value)}
         />
         <Checkbox
-          label="Start met basiskader (12 maatregelen en 24 voorbeelden)"
+          label="Start met basiskader (12 criteria en 24 voorbeelden)"
           checked={baseline}
           onCheckedChange={setBaseline}
         />
@@ -196,6 +205,7 @@ function NormVersion({
   org: Organisation;
   id: string;
 }) {
+  const mobile = useMobile();
   const { data, error, reload } = useResource<NormDocument>(scope, `${base}/norms/${id}`);
   if (!data)
     return (
@@ -205,7 +215,7 @@ function NormVersion({
             {error}
           </p>
         )}
-        <p role="status">Normenkader laden…</p>
+        <p role="status">Kwaliteitskader laden…</p>
       </>
     );
   return (
@@ -214,7 +224,7 @@ function NormVersion({
       initial={data}
       scope={scope}
       base={base}
-      editable={can(org, 'norms.manage')}
+      editable={!mobile && can(org, 'norms.manage')}
       reload={reload}
     />
   );
@@ -281,7 +291,7 @@ function NormEditor({
         }}
       >
         <ArrowLeft size={16} />
-        Normenkaders
+        Kwaliteitskaders
       </button>
       <div className={s.pageHeading}>
         <div>
@@ -334,7 +344,7 @@ function NormEditor({
                         json('POST', { revision: draft.revision }),
                       );
                       reload();
-                      setNotice('Normenkader gepubliceerd');
+                      setNotice('Kwaliteitskader gepubliceerd');
                     });
                 }}
               >
@@ -389,7 +399,7 @@ function NormEditor({
       )}
       <div className={s.normEditorGrid}>
         <aside className={s.normRuleNav}>
-          <h2>Maatregelen ({draft.rules.length})</h2>
+          <h2>Beoordelingscriteria ({draft.rules.length})</h2>
           {draft.rules.map((r) => (
             <button
               key={r.id}
@@ -414,7 +424,7 @@ function NormEditor({
                       {
                         id,
                         code: `MAAT-${draft.rules.length + 1}`,
-                        title: 'Nieuwe maatregel',
+                        title: 'Nieuw criterium',
                         rooms: ['*'],
                         objectType: 'Bouwdeel',
                         acceptable: '',
@@ -430,7 +440,7 @@ function NormEditor({
                   setSelected(id);
                 }}
               >
-                Maatregel toevoegen
+                Criterium toevoegen
               </Button>
             </div>
           )}
@@ -445,13 +455,13 @@ function NormEditor({
                     size="sm"
                     variant="ghost"
                     onClick={() => {
-                      if (window.confirm('Deze maatregel uit het concept verwijderen?')) {
+                      if (window.confirm('Dit criterium uit het concept verwijderen?')) {
                         patch({ rules: draft.rules.filter((r) => r.id !== rule.id) });
                         setSelected(draft.rules.find((r) => r.id !== rule.id)?.id || '');
                       }
                     }}
                   >
-                    Maatregel verwijderen
+                    Criterium verwijderen
                   </Button>
                 )}
               </div>
@@ -465,7 +475,7 @@ function NormEditor({
                       onChange={(e) => patchRule({ code: e.target.value })}
                     />
                     <Field
-                      label="Titel maatregel"
+                      label="Naam criterium"
                       maxLength={160}
                       value={rule.title}
                       onChange={(e) => patchRule({ title: e.target.value })}
@@ -559,9 +569,9 @@ function NormEditor({
                       }
                     />
                     <label className={s.field}>
-                      Prioriteit
+                      Beoordelingsprioriteit
                       <select
-                        aria-label="Prioriteit"
+                        aria-label="Beoordelingsprioriteit"
                         value={rule.priority}
                         onChange={(e) =>
                           patchRule({ priority: e.target.value as NormRule['priority'] })
@@ -578,11 +588,17 @@ function NormEditor({
                     {rule.modalities
                       .map((m) => (m === 'photo' ? 'Foto' : 'Transcript'))
                       .join(' + ')}{' '}
-                    · {rule.priority}
+                    · {{ low: 'Laag', medium: 'Normaal', high: 'Hoog' }[rule.priority]}
                   </Badge>
                 )}
               </div>
-              <h3>Voorbeelden</h3>
+              <ScoreLevelsEditor
+                rule={rule}
+                base={base}
+                editable={write}
+                onChange={(scoreLevels) => patchRule({ scoreLevels })}
+              />
+              <h3>Referentievoorbeelden</h3>
               <p className={s.muted}>
                 Leg zowel acceptabele als niet-acceptabele situaties vast. Foto's zijn
                 referentiebeelden; audio gebruikt het ingevoerde voorbeeldtranscript.
@@ -618,7 +634,7 @@ function NormEditor({
               )}
               {rule.sourceUrls.length > 0 && (
                 <div className={s.stack}>
-                  <h3>Bronnen bij deze maatregel</h3>
+                  <h3>Bronnen bij dit criterium</h3>
                   {rule.sourceUrls.map((url) => (
                     <a
                       key={url}
@@ -634,7 +650,7 @@ function NormEditor({
               )}
             </>
           ) : (
-            <p>Voeg een maatregel toe om het kwaliteitsniveau vast te leggen.</p>
+            <p>Voeg een criterium toe om het kwaliteitsniveau vast te leggen.</p>
           )}
         </section>
       </div>
@@ -813,7 +829,7 @@ function ExampleEditor({
           className={s.sourceLink}
           target="_blank"
           rel="noreferrer"
-          href={`/api/v1${base}/norm-assets/${ex.assetId}`}
+          href={protectedURL(`/api/v1${base}/norm-assets/${ex.assetId}`)}
         >
           Referentiebestand openen
         </a>
@@ -849,16 +865,16 @@ function Benchmark({
   return (
     <section className={s.stack}>
       <p className={s.muted}>
-        Vergelijk bevestigde beoordelingen binnen dezelfde normversie. Niet te beoordelen en niet
+        Vergelijk bevestigde beoordelingen binnen dezelfde kaderversie. Niet te beoordelen en niet
         van toepassing tellen niet als acceptabel. Aantallen zijn beoordelingen, geen aantallen
         woningen.
       </p>
       {id ? (
         <>
           <label className={s.field}>
-            <span>Normversie voor benchmark</span>
+            <span>Kaderversie voor beoordelingsoverzicht</span>
             <select
-              aria-label="Normversie voor benchmark"
+              aria-label="Kaderversie voor beoordelingsoverzicht"
               value={id}
               onChange={(e) => setSelected(e.target.value)}
             >
@@ -872,7 +888,7 @@ function Benchmark({
           <BenchmarkResults key={id} base={base} scope={scope} id={id} />
         </>
       ) : (
-        <p>Publiceer eerst een normenkader om beoordelingen te vergelijken.</p>
+        <p>Publiceer eerst een kwaliteitskader om beoordelingen te vergelijken.</p>
       )}
     </section>
   );
@@ -918,10 +934,10 @@ function BenchmarkResults({ base, scope, id }: { base: string; scope: string; id
       </div>
       <div className={s.normTableWrap}>
         <table className={s.normTable}>
-          <caption>Beoordelingen per maatregel en ruimte · {data?.norms.name}</caption>
+          <caption>Beoordelingen per criterium en ruimte · {data?.norms.name}</caption>
           <thead>
             <tr>
-              <th>Maatregel / ruimte</th>
+              <th>Criterium / ruimte</th>
               <th>Acceptabel</th>
               <th>Niet acceptabel</th>
               <th>Niet te beoordelen</th>
@@ -947,7 +963,7 @@ function BenchmarkResults({ base, scope, id }: { base: string; scope: string; id
         </table>
       </div>
       {data && !data.rows.length && (
-        <p className={s.emptySmall}>Nog geen beoordelingen met deze normversie.</p>
+        <p className={s.emptySmall}>Nog geen beoordelingen met deze kaderversie.</p>
       )}
     </>
   );

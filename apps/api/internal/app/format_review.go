@@ -11,6 +11,8 @@ import (
 )
 
 type formatAnswer struct {
+	ProposedScore      *int            `json:"proposedScore,omitempty"`
+	ScoreDetail        *scoreDetail    `json:"scoreDetail,omitempty"`
 	ID                 string          `json:"id"`
 	RoomID             string          `json:"roomId"`
 	QuestionID         string          `json:"questionId"`
@@ -25,7 +27,7 @@ type formatAnswer struct {
 	Version            int             `json:"version"`
 }
 
-const answerSelect = `SELECT id,room_id AS "roomId",question_id AS "questionId",value,outcome,reason,status,photo_ids AS "photoIds",audio_ids AS "audioIds",transcript_versions AS "transcriptVersions",human,version FROM format_answers`
+const answerSelect = `SELECT id,room_id AS "roomId",question_id AS "questionId",value,outcome,reason,status,photo_ids AS "photoIds",audio_ids AS "audioIds",transcript_versions AS "transcriptVersions",score_detail AS "scoreDetail",proposed_score AS "proposedScore",human,version FROM format_answers`
 
 func readAnswers(ctx context.Context, q querier, org, inspection, room string) ([]formatAnswer, error) {
 	raw, e := list(ctx, q, answerSelect+` WHERE org_id=$1 AND inspection_id=$2 AND ($3::uuid IS NULL OR room_id=$3::uuid) ORDER BY id`, org, inspection, nullableID(room))
@@ -296,8 +298,12 @@ func (a *app) saveFormatAnswer(w http.ResponseWriter, r *http.Request) error {
 	if in.AudioIDs == nil {
 		in.AudioIDs = []string{}
 	}
+	if e = validateScored(r.Context(), tx, org, inspection, question.RuleID, in.Outcome, in.Status, in.ScoreDetail); e != nil {
+		return e
+	}
+	scoreJSON, _ := json.Marshal(in.ScoreDetail)
 	versions, _ := json.Marshal(in.TranscriptVersions)
-	tag, e := tx.Exec(r.Context(), `UPDATE format_answers SET value=$1,outcome=$2,reason=$3,status=$4,photo_ids=$5,audio_ids=$6,transcript_versions=$7,human=true,reviewed_by=$8,reviewed_at=now(),version=version+1 WHERE id=$9 AND org_id=$10 AND inspection_id=$11 AND version=$12`, in.Value, in.Outcome, strings.TrimSpace(in.Reason), in.Status, in.PhotoIDs, in.AudioIDs, versions, u.ID, r.PathValue("answer"), org, inspection, in.Version)
+	tag, e := tx.Exec(r.Context(), `UPDATE format_answers SET value=$1,outcome=$2,reason=$3,status=$4,photo_ids=$5,audio_ids=$6,transcript_versions=$7,human=true,reviewed_by=$8,reviewed_at=now(),version=version+1,score_detail=$13 WHERE id=$9 AND org_id=$10 AND inspection_id=$11 AND version=$12`, in.Value, in.Outcome, strings.TrimSpace(in.Reason), in.Status, in.PhotoIDs, in.AudioIDs, versions, u.ID, r.PathValue("answer"), org, inspection, in.Version, scoreJSON)
 	if e != nil {
 		return e
 	}
@@ -414,6 +420,9 @@ func (a *app) approveFormatScope(w http.ResponseWriter, r *http.Request) error {
 				return fail(422, "Nog niet beantwoord: "+q.Title)
 			}
 			continue
+		}
+		if e = validateScored(r.Context(), tx, org, inspection, q.RuleID, v.Outcome, v.Status, v.ScoreDetail); e != nil {
+			return e
 		}
 		if e = validateAnswerEvidence(q, v, ev); e != nil {
 			if q.Required || v.Status != "missing" {
@@ -579,6 +588,9 @@ func validateFormatCompletion(ctx context.Context, q querier, org, inspection st
 			v := byQ[question.ID]
 			if v.Status != "confirmed" && v.Status != "unanswerable" {
 				return fail(422, "Bevestig: "+question.Title)
+			}
+			if err = validateScored(ctx, q, org, inspection, question.RuleID, v.Outcome, v.Status, v.ScoreDetail); err != nil {
+				return err
 			}
 			if err = validateAnswerEvidence(question, v, ev); err != nil {
 				return err

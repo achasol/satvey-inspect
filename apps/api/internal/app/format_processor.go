@@ -14,6 +14,7 @@ import (
 )
 
 type formatSuggestion struct {
+	Score      *int            `json:"score,omitempty"`
 	QuestionID string          `json:"questionId"`
 	Value      json.RawMessage `json:"value"`
 	Reason     string          `json:"reason"`
@@ -39,6 +40,19 @@ func validateFormatSuggestions(answers []formatSuggestion, in normAnalysisInput,
 		q, ok := known[v.QuestionID]
 		if !ok || seen[v.QuestionID] || len(v.Reason) > 3000 {
 			return fmt.Errorf("analyse gaf ongeldige vraagverwijzingen")
+		}
+		if v.Score != nil {
+			valid := false
+			for _, rule := range in.Rules {
+				if rule.ID == q.RuleID {
+					for _, level := range rule.ScoreLevels {
+						valid = valid || level.Score == *v.Score
+					}
+				}
+			}
+			if !valid {
+				return fmt.Errorf("voorgestelde score ontbreekt in het criterium")
+			}
 		}
 		seen[v.QuestionID] = true
 		ids := map[string]bool{}
@@ -303,7 +317,7 @@ func (a *app) processScopeJob(ctx context.Context) error {
 				version = old.Version
 			}
 		}
-		if _, e = tx.Exec(ctx, `UPDATE format_answers SET value=$1,outcome=$2,reason=$3,status='suggested',photo_ids=$4,audio_ids=$5,transcript_versions=$6,version=version+1 WHERE room_id=$7 AND org_id=$8 AND question_id=$9 AND NOT human AND version=$10`, suggestion.Value, outcome, suggestion.Reason, suggestion.PhotoIDs, suggestion.AudioIDs, raw, room, org, question.ID, version); e != nil {
+		if _, e = tx.Exec(ctx, `UPDATE format_answers SET value=$1,outcome=$2,reason=$3,status='suggested',proposed_score=$11,photo_ids=$4,audio_ids=$5,transcript_versions=$6,version=version+1 WHERE room_id=$7 AND org_id=$8 AND question_id=$9 AND NOT human AND version=$10`, suggestion.Value, outcome, suggestion.Reason, suggestion.PhotoIDs, suggestion.AudioIDs, raw, room, org, question.ID, version, suggestion.Score); e != nil {
 			return e
 		}
 	}

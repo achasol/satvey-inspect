@@ -1,11 +1,15 @@
 import { useEffectEvent, useEffect, useRef, useState } from 'react';
-import { ArrowRight, Camera, ChevronDown, RefreshCw } from 'lucide-react';
+import { ArrowRight, Camera, ChevronDown, RefreshCw, Mic, MicOff } from 'lucide-react';
 import { Button, Dialog } from '../components/ui';
 import { uuid } from './api';
 import type { Dossier } from './api';
 import { commitCaptureDraft, draftGet, draftPut, sync } from './outbox';
 import type { LocalMedia } from './outbox';
+import { nativeDevice } from './nativeStorage';
+import { nativePhotos, finishNativeCapture } from './nativeCapture';
 import s from './camera.module.css';
+import { RoomAudio } from './roomAudio';
+import { scopeForRoom } from './FormatReview';
 
 type Visit = { draft: true; id: string; roomId: string; files: LocalMedia[] };
 
@@ -15,12 +19,14 @@ export function CameraSession({
   data,
   initialRoomId,
   onRoomChange,
+  onActivityChange,
   onClose,
 }: {
   scope: string;
   path: string;
   data: Dossier;
   initialRoomId: string;
+  onActivityChange: (active: boolean) => void;
   onRoomChange: (id: string) => void;
   onClose: () => void;
 }) {
@@ -34,7 +40,11 @@ export function CameraSession({
     [cameraError, setCameraError] = useState(''),
     [files, setFiles] = useState<LocalMedia[]>([]),
     [notice, setNotice] = useState(''),
-    [thumb, setThumb] = useState('');
+    [thumb, setThumb] = useState(''),
+    [muted, setMuted] = useState(false),
+    [recording, setRecording] = useState(false),
+    [audioError, setAudioError] = useState('');
+  const audio = useRef<RoomAudio | null>(null);
   const video = useRef<HTMLVideoElement>(null),
     stream = useRef<MediaStream | null>(null),
     visit = useRef<Visit>({ draft: true, id: uuid(), roomId: initialRoomId, files: [] }),
@@ -86,7 +96,11 @@ export function CameraSession({
           }
         }),
       );
-      if (active.current && token === request.current) setLive(true);
+      if (active.current && token === request.current) {
+        setLive(true);
+        if (audio.current)
+          void audio.current.start(visit.current.roomId).catch((e) => setAudioError(String(e)));
+      }
     } catch (e) {
       if (active.current && token === request.current) {
         stream.current?.getTracks().forEach((t) => t.stop());
@@ -110,19 +124,43 @@ export function CameraSession({
   useEffect(() => {
     let cancelled = false;
     active.current = true;
-    void draftGet<Visit>(key)
-      .then((saved) => {
-        if (cancelled) return;
-        if (saved?.files.length) {
-          visit.current = saved;
-          setFiles(saved.files);
-          setRoomId(saved.roomId);
-          recoverRoom(saved.roomId);
-          setNotice('Eerdere camerasessie hersteld.');
-        }
-        setReady(true);
-      })
-      .catch((e) => setError(`Herstellen mislukt: ${String(e)}`));
+    const recorder = new RoomAudio({
+      scope,
+      inspectionId: data.inspection.id,
+      path,
+      state: setRecording,
+      error: setAudioError,
+    });
+    audio.current = recorder;
+    const restore = () => {
+      void draftGet<Visit>(key)
+        .then((saved) => {
+          if (cancelled) return;
+          if (saved?.files.length) {
+            visit.current = saved;
+            setFiles(saved.files);
+            setRoomId(saved.roomId);
+            recoverRoom(saved.roomId);
+            setNotice('Eerdere camerasessie hersteld.');
+          }
+          void recorder
+            .recover()
+            .then(() => {
+              if (!cancelled) {
+                setReady(true);
+                if (!document.hidden)
+                  void recorder.start(visit.current.roomId).catch((e) => setAudioError(String(e)));
+              }
+            })
+            .catch((e) => setAudioError(String(e)));
+        })
+        .catch((e) => setError(`Herstellen mislukt: ${String(e)}`));
+    };
+    restore();
+    const restored = (event: Event) => {
+      if ((event as CustomEvent<string>).detail === key) restore();
+    };
+    window.addEventListener('satvey-camera-restored', restored);
     // StrictMode's discarded mount must not open a second hardware stream.
     queueMicrotask(() => {
       if (!cancelled) void startCamera();
@@ -130,16 +168,29 @@ export function CameraSession({
     const hide = () => {
       if (document.hidden) {
         stopCamera();
+        void recorder.pause().catch((e) => setAudioError(String(e)));
         setCameraError('Camera gepauzeerd. Je foto’s blijven op dit apparaat bewaard.');
       }
     };
+    const nativePause = (event: Event) => {
+      if (!(event as CustomEvent<{ active: boolean }>).detail.active) {
+        stopCamera();
+        void recorder.pause().catch((e) => setAudioError(String(e)));
+        setCameraError('Camera gepauzeerd. Je opnamen zijn op dit apparaat bewaard.');
+      }
+    };
+    window.addEventListener('satvey-app-state', nativePause);
     document.addEventListener('visibilitychange', hide);
     return () => {
       cancelled = true;
+      window.removeEventListener('satvey-camera-restored', restored);
+      void recorder.pause().catch((e) => setAudioError(String(e)));
+      if (audio.current === recorder) audio.current = null;
       closeCamera();
+      window.removeEventListener('satvey-app-state', nativePause);
       document.removeEventListener('visibilitychange', hide);
     };
-  }, [key]);
+  }, [key, scope, path, data.inspection.id]);
   useEffect(() => {
     const last = files[files.length - 1];
     if (!last) {
@@ -233,6 +284,7 @@ export function CameraSession({
     setError('');
     try {
       await seal();
+      await audio.current?.setRoom(id);
       visit.current.roomId = id;
       setRoomId(id);
       onRoomChange(id);
@@ -251,6 +303,7 @@ export function CameraSession({
     setBusy(true);
     setError('');
     try {
+      await audio.current?.pause();
       await seal();
       stopCamera();
       onClose();
@@ -260,6 +313,14 @@ export function CameraSession({
       setBusy(false);
     }
   }
+  const guidance =
+    scopeForRoom(data, roomId)
+      ?.questions.filter((q) => q.required)
+      .map((q) => q.talkingPrompt || q.instruction || q.title) || [];
+  useEffect(() => {
+    onActivityChange(live);
+    return () => onActivityChange(false);
+  }, [live, onActivityChange]);
   const nextRoom = data.rooms[data.rooms.findIndex((r) => r.id === roomId) + 1];
   return (
     <Dialog
@@ -267,7 +328,7 @@ export function CameraSession({
       wide
       fullOnMobile
       touch
-      title="Camera"
+      title="Inspectie opnemen"
       description="Maak foto’s en wissel van ruimte zonder de camera te sluiten."
       closeLabel="Camera sluiten"
       onOpenChange={(open) => {
@@ -287,7 +348,10 @@ export function CameraSession({
               {data.rooms.find((r) => r.id === roomId)?.name || 'Kies ruimte'}{' '}
               <ChevronDown size={20} />
             </button>
-            <span className={s.counter}>{files.length} foto’s</span>
+            <span className={s.counter}>
+              {files.filter((f) => f.mime.startsWith('image/')).length} foto’s ·{' '}
+              {recording ? 'Audio aan' : muted ? 'Gedempt' : 'Audio gepauzeerd'}
+            </span>
           </div>
           {choose && (
             <div className={s.roomPicker} aria-label="Cameraruimte">
@@ -317,6 +381,16 @@ export function CameraSession({
               )}
             </div>
           )}
+          {!!guidance.length && (
+            <details className={s.guidance}>
+              <summary>{guidance[0]}</summary>
+              <ul>
+                {guidance.map((prompt, index) => (
+                  <li key={index}>{prompt}</li>
+                ))}
+              </ul>
+            </details>
+          )}
           <div className={s.bottomBar}>
             <div className={s.thumbnail}>
               {thumb && <img src={thumb} alt="Laatste opgeslagen foto" />}
@@ -328,6 +402,27 @@ export function CameraSession({
               onClick={() => void takePhoto()}
             >
               <Camera size={30} />
+            </button>
+            <button
+              className={s.microphone}
+              disabled={busy || !ready}
+              aria-label={muted ? 'Microfoon inschakelen' : 'Microfoon dempen'}
+              aria-pressed={muted}
+              onClick={async () => {
+                setBusy(true);
+                setAudioError('');
+                try {
+                  await audio.current?.setMuted(!muted);
+                  setMuted(!muted);
+                } catch (e) {
+                  setAudioError(String(e));
+                } finally {
+                  setBusy(false);
+                }
+              }}
+            >
+              {muted ? <MicOff size={24} /> : <Mic size={24} />}
+              <span>{muted ? 'Gedempt' : recording ? 'Audio aan' : 'Microfoon'}</span>
             </button>
             {nextRoom ? (
               <button
@@ -345,9 +440,34 @@ export function CameraSession({
           </div>
         </div>
         <div className={s.footer}>
-          <Button variant="ghost" disabled={busy || !ready} onClick={() => input.current?.click()}>
-            Toestelcamera / foto toevoegen
-          </Button>
+          {!live && (
+            <Button
+              variant="ghost"
+              disabled={busy || !ready}
+              onClick={async () => {
+                if (!nativeDevice) {
+                  input.current?.click();
+                  return;
+                }
+                setBusy(true);
+                setError('');
+                try {
+                  const additions = await nativePhotos(
+                    { scope, inspectionId: data.inspection.id, roomId, draftKey: key },
+                    true,
+                  );
+                  await store(additions);
+                  await finishNativeCapture();
+                } catch (e) {
+                  setError(String(e));
+                } finally {
+                  setBusy(false);
+                }
+              }}
+            >
+              Toestelcamera gebruiken
+            </Button>
+          )}
           <Button loading={busy} disabled={!ready} onClick={() => void close()}>
             Gereed
           </Button>
@@ -396,6 +516,11 @@ export function CameraSession({
         {notice && (
           <p role="status" className={s.notice}>
             {notice}
+          </p>
+        )}
+        {audioError && (
+          <p role="alert" className={s.error}>
+            {audioError}
           </p>
         )}
         {error && (

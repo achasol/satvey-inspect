@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button, Dialog, Field } from '../components/ui';
 import { api, json } from './api';
@@ -10,7 +10,13 @@ import p from './properties.module.css';
 const message = (e: unknown) => (e instanceof Error ? e.message : String(e));
 export const propertyDate = (value: string | null | undefined) =>
   value ? new Date(value).toLocaleString('nl-NL') : 'Nog niet opgehaald';
-export function PropertyFacts({ property }: { property: Partial<Property> }) {
+export function PropertyFacts({
+  property,
+  compact = false,
+}: {
+  property: Partial<Property>;
+  compact?: boolean;
+}) {
   const facts: [string, string | number | null | undefined][] = [
     ['Objectnummer', property.objectNumber || property.sourceObjectId],
     ['Adres', [property.address, property.postcode, property.city].filter(Boolean).join(', ')],
@@ -46,10 +52,10 @@ export function PropertyFacts({ property }: { property: Partial<Property> }) {
     ['BAG-panden', property.bagBuildingIds?.join(', ')],
     ['Opgehaald', property.fetchedAt ? propertyDate(property.fetchedAt) : null],
   ];
-  return (
+  const render = (entries: typeof facts) => (
     <dl className={p.facts}>
-      {facts
-        .filter(([, value]) => value != null && value !== '')
+      {entries
+        .filter(([, v]) => v != null && v !== '')
         .map(([label, value]) => (
           <div key={label}>
             <dt>{label}</dt>
@@ -57,6 +63,17 @@ export function PropertyFacts({ property }: { property: Partial<Property> }) {
           </div>
         ))}
     </dl>
+  );
+  const basics = ['Objectnummer', 'Adres', 'Bouwjaar'];
+  if (!compact) return render(facts);
+  return (
+    <>
+      {render(facts.filter(([label]) => basics.includes(label)))}
+      <details>
+        <summary>Meer woninggegevens</summary>
+        {render(facts.filter(([label]) => !basics.includes(label)))}
+      </details>
+    </>
   );
 }
 
@@ -90,10 +107,63 @@ export function PropertyPicker({
     }, 250);
     return () => clearTimeout(timer);
   }, [query]);
-  const { data, error, cached } = useResource<PropertyPage>(
+  const { data, error, cached, reload } = useResource<PropertyPage>(
     scope,
     `${base}/properties?q=${encodeURIComponent(search)}&page=${page}${state ? `&state=${state}` : ''}`,
   );
+  const listKey = `${scope}:${base}:${state}:${search}`;
+  const [listing, setListing] = useState<{
+    key: string;
+    pages: Record<number, Property[]>;
+    total: number;
+    pageSize: number;
+    loaded: boolean;
+  }>({ key: listKey, pages: {}, total: 0, pageSize: 25, loaded: false });
+  const sentinel = useRef<HTMLLIElement>(null),
+    results = useRef<HTMLUListElement>(null);
+  useEffect(() => {
+    setPage(1);
+    results.current?.scrollTo(0, 0);
+  }, [listKey]);
+  const received = useRef<PropertyPage | undefined>(undefined);
+  useEffect(() => {
+    if (data && data !== received.current) {
+      received.current = data;
+      setListing((old) => ({
+        key: listKey,
+        pages: { ...(old.key === listKey ? old.pages : {}), [data.page]: data.items },
+        total: data.total,
+        pageSize: data.pageSize,
+        loaded: true,
+      }));
+    }
+  }, [data, listKey]);
+  const metadata = listing.key === listKey && listing.loaded ? listing : undefined;
+
+  const items =
+    listing.key === listKey
+      ? [
+          ...new Map(
+            Object.keys(listing.pages)
+              .map(Number)
+              .sort((a, b) => a - b)
+              .flatMap((n) => listing.pages[n])
+              .map((item) => [item.id, item]),
+          ).values(),
+        ]
+      : [];
+  const more = !!data && data.page === page && page * data.pageSize < data.total;
+  useEffect(() => {
+    if (!sentinel.current || !more || error) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) setPage((n) => n + 1);
+      },
+      { root: results.current, rootMargin: '120px' },
+    );
+    observer.observe(sentinel.current);
+    return () => observer.disconnect();
+  }, [more, page, error, metadata]);
   return (
     <div className={s.stack}>
       <Field
@@ -108,14 +178,14 @@ export function PropertyPicker({
           {cached ? 'Offline: eerder geladen woningen worden getoond.' : error}
         </p>
       )}
-      {!data && !error && <p role="status">Woningen laden…</p>}
-      {data && (
+      {!metadata && !error && <p role="status">Woningen laden…</p>}
+      {metadata && (
         <>
           <p className={s.muted} role="status">
-            {data.total} {data.total === 1 ? 'woning' : 'woningen'} gevonden
+            {metadata.total} {metadata.total === 1 ? 'woning' : 'woningen'} gevonden
           </p>
-          <ul className={p.results} aria-label="Gevonden woningen">
-            {data.items.map((item) => (
+          <ul ref={results} className={p.results} aria-label="Gevonden woningen">
+            {items.map((item) => (
               <li key={item.id}>
                 <button
                   type="button"
@@ -140,34 +210,23 @@ export function PropertyPicker({
                 </button>
               </li>
             ))}
+            <li ref={sentinel} aria-hidden="true" style={{ minHeight: 1 }} />
           </ul>
-          {!data.items.length && (
+          {!items.length && (
             <p className={s.muted}>Geen woningen gevonden. Pas je zoekopdracht aan.</p>
           )}
-          {data.total > data.pageSize && (
-            <div className={s.actions}>
-              <Button
-                type="button"
-                variant="secondary"
-                size="sm"
-                disabled={page <= 1}
-                onClick={() => setPage(page - 1)}
-              >
-                Vorige
-              </Button>
-              <span>
-                Pagina {page} van {Math.ceil(data.total / data.pageSize)}
-              </span>
-              <Button
-                type="button"
-                variant="secondary"
-                size="sm"
-                disabled={page * data.pageSize >= data.total}
-                onClick={() => setPage(page + 1)}
-              >
-                Volgende
-              </Button>
-            </div>
+          {(more || (!data && items.length > 0)) && (
+            <p role="status" className={s.muted}>
+              Meer woningen laden tijdens scrollen…
+            </p>
+          )}
+          {!more && !!data && items.length > 0 && (
+            <p className={s.muted}>Alle gevonden woningen geladen.</p>
+          )}
+          {error && (
+            <Button variant="secondary" onClick={reload}>
+              Opnieuw proberen
+            </Button>
           )}
         </>
       )}

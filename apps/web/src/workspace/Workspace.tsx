@@ -1,3 +1,4 @@
+import { networkOnline } from './connectivity';
 import { useCallback, useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui';
@@ -9,6 +10,10 @@ import { errorText, ErrorNotice, Loading } from './shared';
 import { Login, Invitation } from './auth';
 import { Recovery } from './Recovery';
 import { OrganisationWorkspace } from './shell';
+import { rememberAccount, offlineAccount } from './offline';
+import { nativeDevice } from './nativeStorage';
+import { rememberSession } from './platform';
+import { MobileAuthorize } from './MobileLogin';
 
 export function Workspace() {
   const [account, setAccount] = useState<Account | null>(),
@@ -17,12 +22,20 @@ export function Workspace() {
 
   const navigate = useNavigate(),
     location = useLocation();
+  const mobileRequest =
+    new URLSearchParams(location.search).get('mobileRequest') ||
+    (!nativeDevice ? sessionStorage.getItem('satvey-mobile-request') : '');
+  useEffect(() => {
+    if (!nativeDevice && mobileRequest && /^[0-9a-f]{64}$/.test(mobileRequest))
+      sessionStorage.setItem('satvey-mobile-request', mobileRequest);
+  }, [mobileRequest]);
 
   const loadAccount = useCallback(() => {
     setError('');
 
     void api<Account>('/me')
-      .then((value) => {
+      .then(async (value) => {
+        await rememberAccount(value);
         setAccountIdentity(value.user.id);
         setAccount(value);
 
@@ -33,8 +46,23 @@ export function Workspace() {
         );
       })
 
-      .catch((e) => {
+      .catch(async (e) => {
+        if (!(e instanceof ApiError) && nativeDevice) {
+          try {
+            const saved = await offlineAccount();
+            if (saved) {
+              setAccountIdentity(saved.user.id);
+              setAccount(saved);
+              setOrgID(saved.organisations[0].id);
+              return;
+            }
+          } catch (recoveryError) {
+            setError(errorText(recoveryError));
+            return;
+          }
+        }
         if (e instanceof ApiError && e.status === 401) {
+          if (nativeDevice) await rememberSession(undefined);
           setAccountIdentity('');
           setAccount(null);
         } else setError(errorText(e));
@@ -45,6 +73,7 @@ export function Workspace() {
     loadAccount();
 
     const expired = () => {
+      if (nativeDevice) void rememberSession(undefined).catch((e) => setError(errorText(e)));
       setScope('');
       setAccountIdentity('');
 
@@ -61,6 +90,67 @@ export function Workspace() {
       window.removeEventListener('satvey-auth-changed', loadAccount);
     };
   }, [loadAccount]);
+
+  useEffect(() => {
+    if (!nativeDevice) return;
+    let checking = false;
+    const check = async () => {
+      if (checking || !account) return;
+      checking = true;
+      try {
+        let reachable = false;
+        if (networkOnline()) {
+          try {
+            const controller = new AbortController();
+            const timeout = window.setTimeout(() => controller.abort(), 10000);
+            let current: Account;
+            try {
+              current = await api<Account>('/me', { signal: controller.signal });
+            } finally {
+              clearTimeout(timeout);
+            }
+            if (
+              current.user.id !== account.user.id ||
+              !current.organisations.some((o) => o.id === orgID)
+            )
+              throw new ApiError(
+                403,
+                'Je toegang tot deze organisatie is gewijzigd. Meld je opnieuw aan.',
+              );
+            await rememberAccount(current);
+            reachable = true;
+          } catch (e) {
+            if (e instanceof ApiError) throw e;
+          }
+        }
+        if (!reachable) {
+          const available = await offlineAccount();
+          if (!available?.organisations.some((o) => o.id === orgID))
+            throw new Error(
+              'Offline toegang voor deze organisatie is verlopen. Maak verbinding; je lokale werk blijft bewaard.',
+            );
+        }
+      } catch (e) {
+        setScope('');
+        setAccountIdentity('');
+        setAccount(null);
+        setError(errorText(e));
+      } finally {
+        checking = false;
+      }
+    };
+    const failure = (event: Event) => setError((event as CustomEvent<string>).detail);
+    const timer = window.setInterval(() => void check(), 30000);
+    window.addEventListener('satvey-access-check', check);
+    window.addEventListener('offline', check);
+    window.addEventListener('satvey-platform-error', failure);
+    return () => {
+      clearInterval(timer);
+      window.removeEventListener('satvey-access-check', check);
+      window.removeEventListener('offline', check);
+      window.removeEventListener('satvey-platform-error', failure);
+    };
+  }, [account, orgID]);
 
   useEffect(() => {
     document.documentElement.lang = 'nl';
@@ -94,6 +184,9 @@ export function Workspace() {
   if (account === undefined) return <Loading />;
 
   if (!account) return <Login onLogin={loadAccount} />;
+
+  if (!nativeDevice && mobileRequest && /^[0-9a-f]{64}$/.test(mobileRequest))
+    return <MobileAuthorize account={account} requestId={mobileRequest} />;
 
   const org = account.organisations.find((o) => o.id === orgID);
 

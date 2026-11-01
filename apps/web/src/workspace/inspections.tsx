@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, ChevronRight, House, Plus, Trash2 } from 'lucide-react';
+import { ArrowLeft, ArrowRight, ChevronRight, House, Plus } from 'lucide-react';
 import { Badge, Button, Dialog, Field } from '../components/ui';
-import { api, ApiError, json, uuid } from './api';
-import type { InspectionFormat, Dossier, Inspection, Property } from './api';
-import { forgetInspection } from './outbox';
+import { api, json, uuid } from './api';
+import type { InspectionFormat, Dossier, Inspection, Organisation, Property } from './api';
+import { ArchiveInspection as DeleteInspection } from './DossierActions';
 import { useResource } from './useResource';
 import { PropertyFacts, PropertyPicker } from './Properties';
 import s from './workspace.module.css';
@@ -40,21 +40,30 @@ export function InspectionList({
   scope,
 
   canWrite,
+  org,
 }: {
   base: string;
 
   scope: string;
 
   canWrite: boolean;
+  org: Organisation;
 }) {
   const [create, setCreate] = useState(false),
     [query, setQuery] = useState(''),
-    [page, setPage] = useState(0);
-  const { data, error, cached } = useResource<Inspection[]>(
+    [page, setPage] = useState(0),
+    [view, setView] = useState('all');
+  const {
+    data: inspectionPage,
+    error,
+    cached,
+  } = useResource<{ items: Inspection[]; total: number; open: number }>(
     scope,
-    `${base}/inspections?limit=50&offset=${page * 50}&q=${encodeURIComponent(query)}`,
+    `${base}/inspection-page?limit=50&offset=${page * 50}&q=${encodeURIComponent(query)}&view=${view}`,
   );
 
+  const data = inspectionPage?.items,
+    archived = view === 'archived';
   return (
     <>
       <div className={s.pageHeading}>
@@ -62,7 +71,7 @@ export function InspectionList({
           <h1>Inspecties</h1>
 
           <p className={s.muted}>
-            {data?.filter((i) => i.status === 'draft').length || 0} openstaand op deze pagina
+            {inspectionPage?.open || 0} openstaand - {inspectionPage?.total || 0} gevonden
           </p>
         </div>
 
@@ -75,25 +84,55 @@ export function InspectionList({
 
       {error && <ErrorNotice>{cached ? 'Offline: laatst geladen inspecties.' : error}</ErrorNotice>}
 
-      <div className={s.search}>
-        <Field
-          label="Inspecties zoeken"
-          placeholder="Zoek op adres of plaats"
-          value={query}
-          onChange={(e) => {
-            setQuery(e.target.value);
+      <div className={s.listToolbar}>
+        <Select
+          label="Dossiers"
+          value={view}
+          onChange={(v) => {
+            setView(v);
             setPage(0);
           }}
-        />
+        >
+          {Object.entries({
+            all: 'Alle actieve dossiers',
+            mine: 'Mijn inspecties',
+            today: 'Vandaag',
+            overdue: 'Te laat',
+            unassigned: 'Niet toegewezen',
+            review: 'Kwaliteitscontrole',
+            delivery: 'Overdrachtsproblemen',
+            archived: 'Gearchiveerd',
+          }).map(([value, label]) => (
+            <option key={value} value={value}>
+              {label}
+            </option>
+          ))}
+        </Select>
+        <div className={s.search}>
+          <Field
+            label="Inspecties zoeken"
+            placeholder="Adres, postcode, objectnummer of plaats"
+            value={query}
+            onChange={(e) => {
+              setQuery(e.target.value);
+              setPage(0);
+            }}
+          />
+        </div>
       </div>
-
       {!data ? (
         <Loading />
       ) : !data.length ? (
         <section className={s.empty}>
           <House size={34} />
 
-          <h2>Nog geen inspecties</h2>
+          <h2>
+            {query
+              ? 'Geen resultaten'
+              : archived
+                ? 'Geen gearchiveerde dossiers'
+                : 'Nog geen inspecties'}
+          </h2>
 
           {canWrite && <Button onClick={() => setCreate(true)}>Eerste inspectie toevoegen</Button>}
         </section>
@@ -131,7 +170,14 @@ export function InspectionList({
               </Link>
               {canWrite && (
                 <div className={s.inspectionDeleteAction}>
-                  <DeleteInspection base={base} scope={scope} inspection={i} iconOnly />
+                  <DeleteInspection
+                    base={base}
+                    scope={scope}
+                    inspection={i}
+                    iconOnly
+                    canManage={org.privileges.includes('inspections.archive')}
+                    canPurge={org.privileges.includes('inspections.purge')}
+                  />
                 </div>
               )}
             </div>
@@ -146,7 +192,7 @@ export function InspectionList({
         <span>Pagina {page + 1}</span>
         <Button
           variant="secondary"
-          disabled={!data || data.length < 50}
+          disabled={!inspectionPage || (page + 1) * 50 >= inspectionPage.total}
           onClick={() => setPage((p) => p + 1)}
         >
           Volgende pagina
@@ -157,92 +203,7 @@ export function InspectionList({
   );
 }
 
-export function DeleteInspection({
-  base,
-  scope,
-  inspection,
-  iconOnly = false,
-  onDeleted,
-}: {
-  base: string;
-  scope: string;
-  inspection: Inspection;
-  iconOnly?: boolean;
-  onDeleted?: () => void;
-}) {
-  const [open, setOpen] = useState(false),
-    [busy, setBusy] = useState(false),
-    [error, setError] = useState('');
-  async function remove() {
-    setBusy(true);
-    setError('');
-    const path = `${base}/inspections/${inspection.id}`;
-    try {
-      if (!navigator.onLine)
-        throw new Error('Maak verbinding met internet om de inspectie te verwijderen.');
-      let observationIds: string[] = [];
-      try {
-        const dossier = await api<Dossier>(path);
-        observationIds = dossier.observations.map((o) => o.id);
-        await api(path, { method: 'DELETE' });
-      } catch (e) {
-        // A retry after a lost response may find an already deleted dossier.
-        if (!(e instanceof ApiError) || e.status !== 404) throw e;
-      }
-      await forgetInspection(scope, path, inspection.id, observationIds);
-      setOpen(false);
-      onDeleted?.();
-      announceRefresh();
-    } catch (e) {
-      setError(errorText(e));
-    } finally {
-      setBusy(false);
-    }
-  }
-  return (
-    <>
-      <Button
-        variant="ghost"
-        size="sm"
-        icon={<Trash2 size={17} />}
-        aria-label={iconOnly ? `Inspectie verwijderen: ${inspection.address}` : undefined}
-        title={iconOnly ? 'Inspectie verwijderen' : undefined}
-        onClick={() => {
-          setError('');
-          setOpen(true);
-        }}
-      >
-        {!iconOnly && 'Inspectie verwijderen'}
-      </Button>
-      <Dialog
-        open={open}
-        onOpenChange={(next) => {
-          if (!busy) setOpen(next);
-        }}
-        title="Inspectie verwijderen"
-        description={`${kindLabel(inspection.kind)} · ${inspection.address}`}
-        closeLabel="Sluiten"
-      >
-        <div className={s.stack}>
-          <p>
-            Deze inspectie, alle opnamen, beoordelingen en het eventuele rapport worden definitief
-            verwijderd. Ook lokale concepten op dit apparaat worden verwijderd. De woning blijft
-            beschikbaar voor nieuwe inspecties.
-          </p>
-          {error && <ErrorNotice>{error}</ErrorNotice>}
-          <div className={s.actions}>
-            <Button variant="secondary" disabled={busy} onClick={() => setOpen(false)}>
-              Annuleren
-            </Button>
-            <Button variant="destructive" loading={busy} onClick={() => void remove()}>
-              Definitief verwijderen
-            </Button>
-          </div>
-        </div>
-      </Dialog>
-    </>
-  );
-}
+export { ArchiveInspection as DeleteInspection } from './DossierActions';
 
 export function NewInspection({
   base,
@@ -307,7 +268,7 @@ export function NewInspection({
       return;
     }
     if (!selectedFormat) {
-      setError('Kies een gepubliceerd inspectieformat.');
+      setError('Kies een gepubliceerd inspectiesjabloon.');
       return;
     }
     setBusy(true);
@@ -340,7 +301,7 @@ export function NewInspection({
         if (!open && !busy) onClose();
       }}
       title="Inspectie toevoegen"
-      description={`Stap ${step} van 2 ? ${step === 1 ? 'Woning kiezen' : 'Format kiezen'}`}
+      description={`Stap ${step} van 2 ? ${step === 1 ? 'Woning kiezen' : 'Inspectiesjabloon kiezen'}`}
       closeLabel="Sluiten"
       fullOnMobile
     >
@@ -354,7 +315,7 @@ export function NewInspection({
           </li>
         </ol>
         <h3 ref={stepHeading} tabIndex={-1}>
-          {step === 1 ? 'Woning kiezen' : 'Woning en inspectieformat'}
+          {step === 1 ? 'Woning kiezen' : 'Woning en inspectiesjabloon'}
         </h3>
         {step === 1 ? (
           <>
@@ -376,7 +337,7 @@ export function NewInspection({
                     setChosenProperty(undefined);
                   }}
                 >
-                  Voorlopige woning aanmaken
+                  Woning niet gevonden? Voorlopige woning aanmaken
                 </Button>
               </>
             ) : (
@@ -436,6 +397,7 @@ export function NewInspection({
             <section aria-label="Gekozen woning">
               <h3>Gekozen woning</h3>
               <PropertyFacts
+                compact
                 property={newProperty ? { address, postcode, city } : chosenProperty!}
               />
               {(newProperty || chosenProperty?.linkState === 'provisional') && (
@@ -444,7 +406,7 @@ export function NewInspection({
                 </p>
               )}
             </section>
-            <Select label="Inspectieformat" value={formatVersionId} onChange={setFormatVersionId}>
+            <Select label="Inspectiesjabloon" value={formatVersionId} onChange={setFormatVersionId}>
               <option value="">Kies een gepubliceerd format</option>
               {(['pre', 'final'] as const).map((kind) => (
                 <optgroup key={kind} label={kindLabel(kind)}>
@@ -459,21 +421,24 @@ export function NewInspection({
               ))}
             </Select>
             {selectedFormat && <p className={s.muted}>{kindLabel(selectedFormat.kind)}</p>}
-            {!formatReady && <p role="status">Inspectieformats laden?</p>}
+            {!formatReady && <p role="status">Inspectiesjablonen laden?</p>}
             {formatError && <ErrorNotice>{formatError}</ErrorNotice>}
             {formatReady && !formatError && !formats.length && (
               <p className={s.warning}>
-                Laat kwaliteitsbeheer eerst een inspectieformat publiceren.{' '}
+                Laat kwaliteitsbeheer eerst een inspectiesjabloon publiceren.{' '}
                 <Link to="/app/formats" onClick={onClose}>
-                  Inspectieformats openen
+                  Inspectiesjablonen openen
                 </Link>
               </p>
             )}
             <details>
-              <summary>Afspraak toevoegen (optioneel)</summary>
+              <summary>Gepland bezoek (optioneel)</summary>
+              <p className={s.muted}>
+                Leg het geplande bezoek vast. Er wordt geen uitnodiging verstuurd.
+              </p>
               <div style={{ paddingTop: 14 }}>
                 <Field
-                  label="Afspraak (optioneel)"
+                  label="Gepland bezoek"
                   type="datetime-local"
                   value={scheduled}
                   onChange={(e) => setScheduled(e.target.value)}
@@ -496,7 +461,7 @@ export function NewInspection({
                 setStep(1);
               }}
             >
-              <ArrowLeft size={16} /> Vorige stap
+              <ArrowLeft size={16} /> Vorige
             </Button>
           )}
           {step === 1 ? (
@@ -512,7 +477,7 @@ export function NewInspection({
               loading={busy}
               disabled={!formatReady || !selectedFormat || !propertyReady}
             >
-              Aanmaken en opnemen <ArrowRight size={16} />
+              Aanmaken <ArrowRight size={16} />
             </Button>
           )}
         </div>
@@ -521,107 +486,121 @@ export function NewInspection({
   );
 }
 
-export function AddRoom({ path, data }: { path: string; data: Dossier }) {
-  const available =
-    data.format?.scopes.filter(
-      (c) => !c.property && (c.repeatable || !data.rooms.some((r) => r.categoryId === c.id)),
-    ) || [];
+export function AddRoom({
+  path,
+  data,
+  onAdded,
+}: {
+  path: string;
+  data: Dossier;
+  onAdded?: (id: string) => void;
+}) {
+  const available = data.format?.scopes.filter((category) => !category.property) || [];
   const [open, setOpen] = useState(false),
     [categoryId, setCategoryId] = useState(''),
-    [customName, setCustomName] = useState(''),
+    [name, setName] = useState(''),
+    [nameEdited, setNameEdited] = useState(false),
     [error, setError] = useState(''),
     [busy, setBusy] = useState(false);
-  const category = available.find((c) => c.id === categoryId),
-    count = data.rooms.filter((r) => r.categoryId === categoryId).length;
-  const suggestedName = category ? (count ? `${category.name} ${count + 1}` : category.name) : '',
-    name = customName.trim() || suggestedName;
+  const category = available.find((category) => category.id === categoryId);
+  function suggestedName(id: string) {
+    const category = available.find((category) => category.id === id);
+    if (!category) return '';
+    const base = category.name.replace(/\s+\d+$/, '').trim();
+    let number = data.rooms.filter((room) => room.categoryId === id).length + 1;
+    const used = new Set(data.rooms.map((room) => room.name.trim().toLocaleLowerCase('nl-NL')));
+    while (used.has(`${base} ${number}`.toLocaleLowerCase('nl-NL'))) number++;
+    return `${base} ${number}`;
+  }
   return (
     <>
       <Button
         variant="ghost"
         size="sm"
         icon={<Plus size={15} />}
+        disabled={!!data.format && !available.length}
         onClick={() => {
-          setCategoryId(available.length === 1 ? available[0].id : '');
-          setCustomName('');
-          setOpen((v) => !v);
+          const initial = available[0]?.id || '';
+          setCategoryId(initial);
+          setName(suggestedName(initial));
+          setNameEdited(false);
+          setError('');
+          setOpen(true);
         }}
       >
         Ruimte toevoegen
       </Button>
-      {open && (
+      <Dialog
+        open={open}
+        onOpenChange={(value) => {
+          if (!busy) setOpen(value);
+        }}
+        title="Ruimte toevoegen"
+        description="Kies het ruimtetype en geef de ruimte een naam."
+        closeLabel="Sluiten"
+      >
         <form
           className={s.stack}
-          onSubmit={async (e) => {
-            e.preventDefault();
+          onSubmit={async (event) => {
+            event.preventDefault();
+            if (!name.trim() || (data.format && !category)) return;
             setError('');
             setBusy(true);
             try {
-              await api(`${path}/rooms`, json('POST', { id: uuid(), name, categoryId }));
-              announceRefresh();
+              const id = uuid();
+              await api(`${path}/rooms`, json('POST', { id, name: name.trim(), categoryId }));
               setOpen(false);
-              setCustomName('');
-            } catch (e) {
-              setError(errorText(e));
+              onAdded?.(id);
+              announceRefresh();
+            } catch (error) {
+              setError(errorText(error));
             } finally {
               setBusy(false);
             }
           }}
         >
-          {data.format ? (
-            available.length > 1 ? (
-              <Select
-                label="Ruimtecategorie"
-                value={categoryId}
-                onChange={(v) => {
-                  setCategoryId(v);
-                  setCustomName('');
-                }}
-              >
-                <option value="">Kies een categorie</option>
-                {available.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-              </Select>
-            ) : available.length === 1 ? (
-              <p>{suggestedName}</p>
-            ) : (
-              <p className={s.muted}>Alle beschikbare ruimtes zijn toegevoegd.</p>
-            )
-          ) : null}
-          {data.format ? (
-            <details>
-              <summary>Naam aanpassen</summary>
-              <Field
-                label="Ruimtenaam"
-                maxLength={100}
-                placeholder={suggestedName}
-                value={customName}
-                onChange={(e) => setCustomName(e.target.value)}
-              />
-            </details>
-          ) : (
-            <Field
-              label="Ruimtenaam"
-              required
-              maxLength={100}
-              value={customName}
-              onChange={(e) => setCustomName(e.target.value)}
-            />
+          {data.format && (
+            <Select
+              label="Ruimtetype"
+              value={categoryId}
+              onChange={(value) => {
+                setCategoryId(value);
+                if (!nameEdited) setName(suggestedName(value));
+              }}
+            >
+              {available.map((category) => (
+                <option key={category.id} value={category.id}>
+                  {category.name}
+                </option>
+              ))}
+            </Select>
           )}
+          <Field
+            label="Ruimtenaam"
+            required
+            maxLength={100}
+            value={name}
+            disabled={busy}
+            onChange={(event) => {
+              setName(event.target.value);
+              setNameEdited(true);
+            }}
+          />
           {error && <ErrorNotice>{error}</ErrorNotice>}
-          <Button
-            size="sm"
-            type="submit"
-            loading={busy}
-            disabled={!name || (!!data.format && !category)}
-          >
-            {name ? `${name} toevoegen` : 'Toevoegen'}
-          </Button>
+          <div className={s.actions}>
+            <Button variant="secondary" disabled={busy} onClick={() => setOpen(false)}>
+              Annuleren
+            </Button>
+            <Button
+              type="submit"
+              loading={busy}
+              disabled={!name.trim() || (!!data.format && !category)}
+            >
+              Toevoegen
+            </Button>
+          </div>
         </form>
-      )}
+      </Dialog>
     </>
   );
 }

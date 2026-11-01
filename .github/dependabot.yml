@@ -6,11 +6,17 @@ updates:
   - package-ecosystem: gomod
     directory: /apps/api
     schedule: { interval: weekly }
+  - package-ecosystem: gomod
+    directory: /tools/vera-receiver
+    schedule: { interval: weekly }
   - package-ecosystem: docker
     directory: /
     schedule: { interval: weekly }
   - package-ecosystem: docker
     directory: /apps/api
+    schedule: { interval: weekly }
+  - package-ecosystem: docker
+    directory: /tools/vera-receiver
     schedule: { interval: weekly }
   - package-ecosystem: github-actions
     directory: /

@@ -1,0 +1,1520 @@
+{
+  "purpose": "Record user visual feedback only; implementation deferred.",
+  "startedOn": "2026-11-01",
+  "baseUrl": "http://localhost:5174",
+  "browser": "Chrome MCP",
+  "captureWorkflowNote": "Activate each target tab with select_page(pageId, bringToFront:true) before take_screenshot. Background mobile screenshots have repeatedly stalled; foreground capture succeeded. Preserve this workflow on subsequent review turns.",
+  "pages": {
+    "mobile": 2,
+    "tablet": 3
+  },
+  "viewports": {
+    "mobile": {
+      "width": 390,
+      "height": 844,
+      "touch": true
+    },
+    "tablet": {
+      "width": 1194,
+      "height": 834,
+      "touch": true,
+      "orientation": "landscape"
+    }
+  },
+  "scope": [
+    "Login, password entry, recovery, invitation and mobile authorization",
+    "Inspection list, filters, navigation and new inspection",
+    "Inspection dossier, visit planning, agreements, history and actions",
+    "Capture, camera, gallery, evidence editing and local work",
+    "Review, findings, evidence annotation and quality approval",
+    "Signatures, report preview, delivery and handover",
+    "Property history, follow-up and correction flows",
+    "Quality frameworks, elements and framework review",
+    "Inspection templates, authoring and template review",
+    "Settings: account, pilot metrics, members, roles, SSO, properties, VERA and data management",
+    "Support, privacy and account deletion",
+    "Relevant dialogs, empty/error states and native-only screens where available"
+  ],
+  "currentScreen": null,
+  "reviewStatus": "complete_by_user_confirmation",
+  "completion": {
+    "source": "user",
+    "verbatim": "Beide zijn al goedkgekeurd je bent klaar",
+    "decision": "Review finished. Account deletion information and password recovery are approved; do not reopen or ask for further feedback. All recorded changes remain deferred for later implementation.",
+    "completedOn": "2026-11-01",
+    "implementationPerformed": false,
+    "artifactBase": ".cache/visual-review",
+    "scopeNote": "This closes the agreed visual review. Remaining settings were explicitly skipped by the user; native device-only behavior and unavailable token states are not claimed as tested."
+  },
+  "remainingReviewPlan": {
+    "source": "assistant_coverage_summary_in_response_to_user_status_question",
+    "remainingPages": [],
+    "status": "closed_user_confirmed_both_pages_already_approved",
+    "scopeNote": "Finish the visual review after these two remaining ordinary pages. Settings intentionally excluded by user. Native device-only behavior and unavailable invitation/reset-token states are not claimed as visually reviewed; duplicate dialogs follow previously recorded global decisions."
+  },
+  "settingsReviewScopeDecision": {
+    "source": "user",
+    "verbatim": "Rollen en rechten is prima, voor al deze andere tabs trouwens is desktop primair dus wij kunnen de design check stopzetten op alles in instellingen",
+    "decision": "Roles and permissions UI approved. Desktop is primary for the remaining settings tabs; stop visual design review of all remaining settings screens. Preserve previously recorded settings feedback and requirements.",
+    "status": "settings_visual_review_closed_by_user",
+    "unreviewedSettings": ["Role editor", "SSO", "Property connection", "VERA configuration", "Pilot and data management", "Additional account and report-branding settings"],
+    "scopeNote": "Unreviewed settings are intentionally skipped, not marked approved. The wider review outside settings remains in scope; implementation is still deferred."
+  },
+  "mobileDialogPresentationDecision": {
+    "source": "user",
+    "decision": "On mobile, present these popup forms as full-page overlays. The member invitation form is approved as shown on tablet.",
+    "status": "recorded_for_later_implementation",
+    "scopeNote": "Applies to mobile popup/form presentation generally; does not override earlier explicit requirements to move visit planning and agreements into dossier tabs/cards. No UI changes implemented during review."
+  },
+  "analyticsScopeDecision": {
+    "source": "user",
+    "decision": "Remove Pilotoverzicht/Pilotmetingen from settings. Add a separate Analytics tab outside settings for administrators, with well-designed charts and data on inspector performance and property issues, based on automatically collected information.",
+    "status": "recorded_for_later_implementation",
+    "scopeNote": "The current pilot dashboard presentation is rejected. Exact charts, definitions and filters remain to design; manual time input was already rejected under VR-040/041. No analytics feature implemented during this walkthrough."
+  },
+  "settingsMobileNavigationDecision": {
+    "source": "user",
+    "decision": "Use a dropdown for settings tabs on mobile instead of the current multi-row tab grid. This extends the previously requested mobile dropdown pattern to the settings module.",
+    "status": "recorded_for_later_implementation"
+  },
+  "inspectionTemplateDeviceScope": {
+    "source": "user",
+    "decision": "Hide the inspection-template editing view/actions on mobile. Keep the previously approved template list; tablet editing remains supported. A lightweight mobile reading/preview design is a separate later presentation choice.",
+    "status": "recorded_for_later_implementation"
+  },
+  "scoringAndResponsibilityDecision": {
+    "source": "user",
+    "status": "research_recorded_responsibility_split_confirmed",
+    "requirements": "Extend quality criteria with an intensity/score scale, corporation-versus-resident responsibility at applicable levels, and reference attachments for every score. Current detail UI approved.",
+    "responsibilityDecision": "User confirmed both separately: one field/rule for who arranges the repair and another for who carries the cost. Each may identify corporation or resident independently.",
+    "researchFile": "framework-scoring-research.json",
+    "scopeNote": "No scoring algorithm, responsibility allocation, resident charges or model behavior has been implemented during the feedback walkthrough."
+  },
+  "qualityFrameworkDeviceScope": {
+    "source": "user",
+    "decision": "Quality-framework editing must work on tablet. Supporting the framework editor on mobile is not required. Keep this scoped to framework editing rather than removing unrelated mobile inspection editing.",
+    "status": "recorded_for_later_implementation"
+  },
+  "editingAndAuditFeedback": {
+    "source": "user",
+    "expectation": "Edits should be allowed with a clear audit log. User reiterated this when shown the separate correction form; do not require an inspector to create a separate correction dossier just to make edits. User initially interpreted Bewaarblokkade as an editing restriction.",
+    "latestUserClarification": "Deze correcties & bewaarblokkade heb ik reeds feedbacjk op gegeven, ik wil wijzigingen toelaten met audit log. Layout kan beter op mobiel als full overlay",
+    "reviewInstruction": "Do not repeatedly ask for feedback on correction/retention UI already discussed. Use a full-page overlay for mobile dialogs per the existing global decision.",
+    "explanationProvided": "Current retention hold protects against deletion/retention cleanup, not ordinary editing. Retention holds and edit/version policies are separate mechanisms.",
+    "openDecision": "Whether to retain a clearly named administrator-only deletion-protection option or remove it has not yet been decided. Do not infer removal from the user's initial misunderstanding.",
+    "reportVersionNote": "How later edits interact with already issued reports, signatures and historical snapshots remains a later design decision; no policy changes were implemented during this review."
+  },
+  "timeMeasurementScopeDecision": {
+    "source": "user",
+    "status": "recorded_for_later_implementation",
+    "decision": "Remove the inspector's manual time-entry module and all its inputs. Collect time automatically from the inspection workflow, activity context and capture events; inspectors should never be expected to fill in minutes by activity.",
+    "assistantImplementationNotes": [
+      "Use activity and capture events with idle/background handling rather than assuming an open page equals active labour.",
+      "Only estimate activities the app can observe; do not fabricate time spent in external systems or receiving support.",
+      "Exact idle thresholds, event attribution and reporting presentation remain later implementation decisions, not yet agreed with the user."
+    ],
+    "supersedes": "Earlier manually entered pilot capture/review/report/reentry/support minute measurements."
+  },
+  "qualityReviewScopeDecision": {
+    "source": "user",
+    "status": "recorded_for_later_implementation",
+    "decision": "Remove inspector-facing quality-review requests and the associated button/form. Administrators and quality reviewers handle oversight independently in the background, without requiring an inspector to request it.",
+    "scopeNote": "This changes the administrative peer-review workflow. It does not request removing the inspector's own review of captured findings and room summaries. Exact administrator/reviewer monitoring policy remains to design later."
+  },
+  "integrationScopeDecision": {
+    "source": "user",
+    "status": "recorded_for_later_implementation",
+    "vera": "Within Satvey's intended scope, VERA is automatic internal synchronization of inspection status/data to the corporation's ERP and other VERA-speaking systems. It must not require a separate inspector approval or a maintenance-proposal handover workflow.",
+    "dico": "Actual sharing of maintenance work with external chain partners belongs to a separate DICO workflow. Explicitly deferred; do not spend implementation time on that complex process in the current scope.",
+    "designImplication": "Replace inspector-facing handover approval with unobtrusive synchronization status. Organisation integration setup belongs in settings; exceptional synchronization failures can have a contextual retry/recovery path. Exact synchronization events and payloads remain implementation-design details, not yet specified by the user.",
+    "supersedes": "Earlier combined VERA delivery and maintenance-proposal handover design. Do not treat a future DICO workflow as a simple rename of the VERA transport.",
+    "references": [
+      {
+        "title": "Aedes - Datastandaarden in de corporatiesector",
+        "url": "https://aedes.nl/datastandaarden/datastandaarden-belangrijk-voor-woningcorporaties"
+      },
+      {
+        "title": "Ketenstandaard - DICO onderhoudsberichten",
+        "url": "https://ketenstandaard.nl/dico-facts/welke-mogelijkheden-biedt-dico/onderhoudsberichten/"
+      }
+    ]
+  },
+  "settingsFeedback": [
+    {
+      "source": "user",
+      "verbatim": "Los van deze pagina feedback mag je ook noteren onder instellingen dat ik personalisatie mogelijkheden wil per organisatie om een andere kleurentint te kiezen en hun logo te kunnen uploaden. Wij gebruiken satvey design system maar passen de tintent op een logische manier aan voor de eindklant indien wenselijk",
+      "target": "Organisation settings and app-wide organisation branding",
+      "requests": [
+        {
+          "id": "VR-027",
+          "appliesTo": ["all_displays", "per_organisation"],
+          "request": "Add optional per-organisation colour-tint personalisation in settings. Retain the Satvey design system and apply the chosen tint consistently and logically for that customer.",
+          "status": "recorded_for_later"
+        },
+        {
+          "id": "VR-028",
+          "appliesTo": ["all_displays", "per_organisation"],
+          "request": "Allow each organisation to upload its own logo in settings. Integrate it with the retained Satvey design system rather than creating a separate ad hoc design for each customer.",
+          "status": "recorded_for_later"
+        }
+      ],
+      "assistantRecommendations": [
+        "Map organisation tint through shared design tokens, preserving readability, control states and semantic status colours.",
+        "Apply the organisation identity coherently across app and report; exact logo placement and brand coexistence to decide in implementation.",
+        "Existing report identity/logo functionality should be evaluated and extended, not duplicated blindly."
+      ]
+    }
+  ],
+  "screens": [
+    {
+      "id": "01-login-email",
+      "title": "Login - email entry",
+      "route": "/app",
+      "state": "Logged out; initial email step",
+      "status": "reviewed_no_changes",
+      "screenshots": {
+        "mobile": "screenshots/01-login-email-mobile.png",
+        "tablet": "screenshots/01-login-email-tablet.png"
+      },
+      "feedback": [
+        {
+          "source": "user",
+          "verbatim": "Login is alright continue",
+          "appliesTo": [
+            "mobile",
+            "tablet"
+          ],
+          "decision": "No visual changes requested."
+        }
+      ]
+    },
+    {
+      "id": "02-login-password",
+      "title": "Login - password entry",
+      "route": "/app",
+      "state": "Email discovery completed; password field visible",
+      "status": "reviewed_no_changes",
+      "screenshots": {
+        "mobile": "screenshots/02-login-password-mobile.png",
+        "tablet": "screenshots/02-login-password-tablet.png"
+      },
+      "feedback": [
+        {
+          "source": "user",
+          "verbatim": "This is good as well please make the tablet into landscape mode",
+          "appliesTo": [
+            "mobile",
+            "tablet"
+          ],
+          "decision": "Password entry approved. Review tablet in landscape from now on; no app implementation requested."
+        }
+      ],
+      "capturedViewports": {
+        "mobile": {
+          "width": 390,
+          "height": 844
+        },
+        "tablet": {
+          "width": 834,
+          "height": 1194
+        }
+      }
+    },
+    {
+      "id": "03-inspection-list",
+      "title": "Inspection list",
+      "route": "/app",
+      "state": "Logged in as fictional demo administrator; all active dossiers; initial viewport",
+      "status": "reviewed_changes_requested",
+      "screenshots": {
+        "mobile": "screenshots/03-inspection-list-mobile.png",
+        "tablet": "screenshots/03-inspection-list-tablet.png"
+      },
+      "capturedViewports": {
+        "mobile": {
+          "width": 390,
+          "height": 844
+        },
+        "tablet": {
+          "width": 1194,
+          "height": 834,
+          "orientation": "landscape"
+        }
+      },
+      "feedback": [
+        {
+          "source": "user",
+          "verbatim": "Alright for mobile please make the menu button open a sidebar. Also the layout of the dossier filter searchbar and toevoegen knop on mobile needs to be improved it looks bad. Same for tablet view we can put dossiers filter and searchbar on the same line not stacked there please.",
+          "requests": [
+            {
+              "id": "VR-001",
+              "appliesTo": [
+                "mobile"
+              ],
+              "request": "Make the Menu button open a sidebar.",
+              "status": "recorded_for_later"
+            },
+            {
+              "id": "VR-002",
+              "appliesTo": [
+                "mobile"
+              ],
+              "request": "Improve the arrangement of the dossier filter, search bar and Inspectie toevoegen button. Current layout looks bad; exact new arrangement not yet specified.",
+              "status": "recorded_for_later"
+            },
+            {
+              "id": "VR-003",
+              "appliesTo": [
+                "tablet"
+              ],
+              "request": "Place the Dossiers filter and search bar on the same horizontal row instead of stacking them.",
+              "status": "recorded_for_later"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "04-add-inspection",
+      "title": "Add inspection dialog",
+      "route": "/app",
+      "state": "Inspectie toevoegen dialog opened; no form submitted or dossier created",
+      "status": "reviewed_changes_requested",
+      "screenshots": {
+        "mobile": "screenshots/04-add-inspection-mobile.png",
+        "tablet": "screenshots/04-add-inspection-tablet.png"
+      },
+      "capturedViewports": {
+        "mobile": {
+          "width": 390,
+          "height": 844
+        },
+        "tablet": {
+          "width": 1194,
+          "height": 834,
+          "orientation": "landscape"
+        }
+      },
+      "feedback": [
+        {
+          "source": "user",
+          "verbatim": "The voorlopige woning aanmaken knop zit niet op een logische plek, verder is volgende vorige pagination niet handig ik heb liever dat er endless scroll is op de properties zonder expliciet volgende/vorige. Dit geldt voor alle displays.",
+          "requests": [
+            {
+              "id": "VR-004",
+              "appliesTo": [
+                "all_displays"
+              ],
+              "request": "Move Voorlopige woning aanmaken to a more logical location. Exact placement to decide during implementation.",
+              "status": "recorded_for_later"
+            },
+            {
+              "id": "VR-005",
+              "appliesTo": [
+                "all_displays"
+              ],
+              "request": "Replace explicit previous/next pagination in the property picker with infinite scrolling. This request concerns property-list pagination, not wizard step navigation.",
+              "status": "recorded_for_later"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "05-add-inspection-template",
+      "title": "Add inspection - selected property and inspection template",
+      "route": "/app",
+      "state": "Step 2; Lakenstraat 24 demo property selected; no inspection created",
+      "status": "reviewed_changes_requested",
+      "screenshots": {
+        "mobile": "screenshots/05-add-inspection-template-mobile.png",
+        "tablet": "screenshots/05-add-inspection-template-tablet.png",
+        "mobileBottom": "screenshots/05-add-inspection-template-mobile-bottom.png",
+        "tabletBottom": "screenshots/05-add-inspection-template-tablet-bottom.png"
+      },
+      "capturedViewports": {
+        "mobile": {
+          "width": 390,
+          "height": 844
+        },
+        "tablet": {
+          "width": 1194,
+          "height": 834,
+          "orientation": "landscape"
+        }
+      },
+      "feedback": [
+        {
+          "source": "user",
+          "verbatim": "Gekozen woning eigenschappen verkleinen laat bijvoorbeeld alleen het objectnumer adres & bouwjaar zien met expansie optie geldt voor zowel mobiel als tablet. Op mobiel zie je dat de knoppen vorige stap ^& aanmaken en opnemen niet passen, pas de tekst aan naar \"vorige\" & \"aanmaken\" voor de knoppen op alle displays zodat het gewoon past.",
+          "requests": [
+            {
+              "id": "VR-006",
+              "appliesTo": ["mobile", "tablet"],
+              "request": "Compact the selected-property details: initially show only object number, address and construction year, with an expansion control for the remaining properties.",
+              "status": "recorded_for_later"
+            },
+            {
+              "id": "VR-007",
+              "appliesTo": ["all_displays"],
+              "request": "Shorten wizard button labels from Vorige stap to Vorige and from Aanmaken en opnemen to Aanmaken. Ensure the buttons fit on mobile.",
+              "status": "recorded_for_later"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "06-add-inspection-appointment",
+      "title": "Add inspection - optional appointment fields",
+      "route": "/app",
+      "state": "Step 2; Afspraak toevoegen expanded; no appointment saved and no inspection created",
+      "status": "reviewed_visual_approved_clarity_issue",
+      "screenshots": {
+        "mobile": "screenshots/06-add-inspection-appointment-mobile.png",
+        "tablet": "screenshots/06-add-inspection-appointment-tablet.png"
+      },
+      "capturedViewports": {
+        "mobile": { "width": 390, "height": 844 },
+        "tablet": { "width": 1194, "height": 834, "orientation": "landscape" }
+      },
+      "feedback": [
+        {
+          "source": "user",
+          "verbatim": "Is prima maar ik snap de functie van dit veld niet helemaal? is dit om een inspecite in te plannen?",
+          "appliesTo": ["mobile", "tablet"],
+          "decision": "Visual appearance approved. User needed explanation of what the appointment field does.",
+          "requests": [
+            {
+              "id": "VR-008",
+              "appliesTo": ["mobile", "tablet"],
+              "request": "Clarify the purpose of the optional appointment field. User did not understand that it records the planned inspection date and time. Exact wording not yet agreed.",
+              "status": "recorded_for_later",
+              "type": "observed_user_confusion"
+            }
+          ],
+          "explanationProvided": "Records the planned inspection datetime, displayed in inspection lists and editable in Bezoek en planning. Optional; empty means Niet ingepland. Does not send resident or calendar invitations."
+        }
+      ]
+    },
+    {
+      "id": "07-inspection-overview",
+      "title": "Inspection dossier - overview and navigation",
+      "route": "/app/inspections/f33d3d7d-4d9e-4e51-b353-3e1a730d4c15/capture",
+      "state": "Existing Lakenstraat demo draft opened; top of capture page; no dossier created or edited",
+      "status": "reviewed_redesign_requested",
+      "screenshots": {
+        "mobile": "screenshots/07-inspection-overview-mobile.png",
+        "tablet": "screenshots/07-inspection-overview-tablet.png"
+      },
+      "capturedViewports": {
+        "mobile": { "width": 390, "height": 844 },
+        "tablet": { "width": 1194, "height": 834, "orientation": "landscape" }
+      },
+      "feedback": [
+        {
+          "source": "user",
+          "verbatim": "Dit inspectiedossier heeft veel werk nodig al die knoppen zoals bezoek & planning afspraken etc zijn denk beter tabjes of blokjes op een tabje. De informatie over de titel met tekst mag wat mij betreft weg op basics na dus minder tekst. Verder wil ik toe naar een weergave waarbij een inspecteur inspectie starten kan klikken dan zijn camera altijd open heeft, een knopje heeft om audio op te nemen (icon) en via een floating info box suggesties ziet waar op te letten, de kamer selector moet blijven zoals bij huidige foto maken. Fotos toevoegen mag wat mij betreft weg bij de knop opties. Op mobiel is de layout ook erg slecht. Voor deze pagina mag je op het web onderzoek doen hoe wij dit het beste kunnen invullen voor zowel mobiel als tablet. Het idee is dat een inspecteur zo gemakkelijk mogelijk door een object kan lopen kan inspecteren en daarmee basta",
+          "requests": [
+            {
+              "id": "VR-009",
+              "appliesTo": ["mobile", "tablet"],
+              "request": "Reorganize the many dossier buttons such as Bezoek en planning and Afspraken into tabs or grouped blocks within a tab. Keep administration out of the active inspection flow.",
+              "status": "recorded_for_later"
+            },
+            {
+              "id": "VR-010",
+              "appliesTo": ["mobile", "tablet"],
+              "request": "Reduce dossier heading information to basics; remove the excess title-adjacent explanatory text from the primary view.",
+              "status": "recorded_for_later"
+            },
+            {
+              "id": "VR-011",
+              "appliesTo": ["mobile", "tablet"],
+              "request": "Provide an Inspectie starten action that enters a continuous camera experience for walking through the property, without closing and reopening the camera between photos or rooms.",
+              "status": "recorded_for_later"
+            },
+            {
+              "id": "VR-012",
+              "appliesTo": ["mobile", "tablet"],
+              "request": "Add an audio recording/mute icon within the active camera experience. Behavior was subsequently specified in VR-017.",
+              "status": "recorded_for_later"
+            },
+            {
+              "id": "VR-013",
+              "appliesTo": ["mobile", "tablet"],
+              "request": "Show suggestions of what to inspect in a floating information box during capture.",
+              "status": "recorded_for_later"
+            },
+            {
+              "id": "VR-014",
+              "appliesTo": ["mobile", "tablet"],
+              "request": "Preserve the room selector from the existing Foto maken camera experience.",
+              "status": "recorded_for_later"
+            },
+            {
+              "id": "VR-015",
+              "appliesTo": ["mobile", "tablet"],
+              "request": "Remove Fotos toevoegen from the primary capture button options. This does not request deletion of existing evidence.",
+              "status": "recorded_for_later"
+            },
+            {
+              "id": "VR-016",
+              "appliesTo": ["mobile", "tablet"],
+              "request": "Redesign this screen for a low-friction property walkthrough, with particular attention to the poor current mobile layout. Research appropriate mobile and landscape-tablet patterns before implementation.",
+              "status": "research_recorded_implementation_deferred"
+            }
+          ]
+        }
+      ],
+      "researchFile": "inspection-capture-research.json",
+      "audioDecision": {
+        "source": "user",
+        "verbatim": "audio opname aan zolang iemand niet op de mute knop drukt, als op mute wordt gedrukt daarna een nieuwe opname. Aan de achterkant ook nieuwe opname per kamer om context scheiden makkelijker te maken, maar geen interactie nodig van inspecteur",
+        "id": "VR-017",
+        "appliesTo": ["mobile", "tablet"],
+        "request": "Audio is on by default during the active inspection session until muted. Muting ends the current recording; unmuting starts a new recording. Room changes automatically split recordings into separately attributed room segments without any inspector action. Preserve the current mute state across room changes.",
+        "status": "recorded_for_later"
+      }
+    },
+    {
+      "id": "08-inspection-review",
+      "title": "Inspection review - example findings and room assessment",
+      "route": "/app/inspections/a7623b44-854c-46da-8268-6d5541e18a85/review",
+      "state": "Existing Singelhof demo draft with six media items and four observations; no edits submitted. Review area scrolled into view to avoid repeating the already reviewed dossier header.",
+      "status": "reviewed_changes_requested",
+      "screenshots": {
+        "mobile": "screenshots/08-inspection-review-mobile.png",
+        "tablet": "screenshots/08-inspection-review-tablet.png"
+      },
+      "capturedViewports": {
+        "mobile": { "width": 390, "height": 844 },
+        "tablet": { "width": 1194, "height": 834, "orientation": "landscape" }
+      },
+      "feedback": [
+        {
+          "source": "user",
+          "verbatim": "De knop bronbestanden naar andere ruimte verplaatsen is zeer slecht geplaatst dit kan beter wellicht alleen als klein pennetje laten zien bij openen van een foto. Verder is optionele label ook inning in mijn optiek dit hoeft geen uitklapbaar iets te zijn. Haal de n knop volgend open punt weg en de checkbox alleen nog te beoordelen kwa design is dit niet goed. Ook de ruimtesamenvatting kwa layout is raar er is geen margin ten opzichte van bovenstaande bevindingen en het is niet duidelijk voor mij op het eerste oog, ik zie Foto 1 staan maar helemaal geen foto gerendered.",
+          "requests": [
+            {
+              "id": "VR-018",
+              "appliesTo": ["mobile", "tablet"],
+              "request": "Remove the prominent Bronbestanden naar andere ruimte verplaatsen control from its current position. Prefer a small pencil/edit control when opening a photo; precise contextual placement to decide during implementation.",
+              "status": "recorded_for_later"
+            },
+            {
+              "id": "VR-019",
+              "appliesTo": ["mobile", "tablet"],
+              "request": "Show Label (optioneel) as an ordinary inline field rather than an expandable disclosure.",
+              "status": "recorded_for_later"
+            },
+            {
+              "id": "VR-020",
+              "appliesTo": ["mobile", "tablet"],
+              "request": "Remove the Volgend open punt button and Alleen nog te beoordelen checkbox from the review UI.",
+              "status": "recorded_for_later"
+            },
+            {
+              "id": "VR-021",
+              "appliesTo": ["mobile", "tablet"],
+              "request": "Give Ruimtesamenvatting proper separation/margin from preceding findings and improve its visual hierarchy so its purpose and content are clear at a glance.",
+              "status": "recorded_for_later"
+            },
+            {
+              "id": "VR-022",
+              "appliesTo": ["mobile", "tablet"],
+              "request": "Make source photos visually recognizable in the room summary instead of only displaying Foto 1 text. Provide a visible image/thumbnail with a clear relationship to the summarized finding.",
+              "verification": "The current accessibility tree exposes Foto 1 as a media link in the room summary; FormatReview.tsx renders that text link without an image preview. This is not established as a failed media request.",
+              "status": "recorded_for_later"
+            }
+          ]
+        },
+        {
+          "source": "user",
+          "verbatim": "Ook de knop ruimte goedkeuren moet anders heten aangezien dit kan impliceren dat een ruimte geen issues heeft maar het gaat om de bevindingen en samenvatting",
+          "requests": [
+            {
+              "id": "VR-023",
+              "appliesTo": ["mobile", "tablet"],
+              "request": "Rename Ruimte goedkeuren so it clearly confirms the findings and room summary, without implying that the physical room is free of issues.",
+              "assistantSuggestedLabel": "Beoordeling bevestigen",
+              "labelStatus": "suggested_not_yet_explicitly_approved",
+              "status": "recorded_for_later"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "09-photo-viewer",
+      "title": "Photo viewer and annotation controls",
+      "route": "/app/inspections/a7623b44-854c-46da-8268-6d5541e18a85/review",
+      "state": "Existing bathroom demo photo opened from review; annotations not changed or saved",
+      "status": "reviewed_no_changes",
+      "screenshots": {
+        "mobile": "screenshots/09-photo-viewer-mobile.png",
+        "tablet": "screenshots/09-photo-viewer-tablet.png"
+      },
+      "capturedViewports": {
+        "mobile": { "width": 390, "height": 844 },
+        "tablet": { "width": 1194, "height": 834, "orientation": "landscape" }
+      },
+      "feedback": [
+        {
+          "source": "user",
+          "verbatim": "Deze is top",
+          "appliesTo": ["mobile", "tablet"],
+          "decision": "Photo viewer and annotation layout approved; no additional changes requested. Earlier contextual room-move request VR-018 remains recorded."
+        }
+      ]
+    },
+    {
+      "id": "10-draft-report",
+      "title": "Draft report - actions and report preview",
+      "route": "/app/inspections/a7623b44-854c-46da-8268-6d5541e18a85/report",
+      "state": "Existing Singelhof demo draft with example findings; report area scrolled into view. No report finalized, downloaded or sent.",
+      "status": "reviewed_redesign_requested",
+      "screenshots": {
+        "mobile": "screenshots/10-draft-report-mobile.png",
+        "tablet": "screenshots/10-draft-report-tablet.png"
+      },
+      "capturedViewports": {
+        "mobile": { "width": 390, "height": 844 },
+        "tablet": { "width": 1194, "height": 834, "orientation": "landscape" }
+      },
+      "feedback": [
+        {
+          "source": "user",
+          "verbatim": "Het rapport bevat in dit geval tekst die als een muur op je afkomt, verder zijn de plaatjes er niet in verwerkt. Hier is werk nodig bekijk top-notch inspectie rapporten online en zorg dat ons standaard format meer daarop gaat lijken, nu is het vooral een grote muur tekst waar ik niet veel over kan zeggen behalve dat dit veel beter moet",
+          "requests": [
+            {
+              "id": "VR-024",
+              "appliesTo": ["all_displays", "standard_report_format"],
+              "request": "Redesign the standard report to be scan-friendly and professional, with clear hierarchy, concise sections, whitespace and a useful summary instead of a wall of text.",
+              "status": "recorded_for_later"
+            },
+            {
+              "id": "VR-025",
+              "appliesTo": ["all_displays", "standard_report_format"],
+              "request": "Integrate photos directly with their associated room, finding and action in the report rather than leaving them separate from the text.",
+              "verification": "Current report.tsx renders FormatReportResults with showPhotos=false and collects source images in a separate details section below the text. This explains the app-preview separation; the exported PDF has not been declared image-free.",
+              "status": "recorded_for_later"
+            },
+            {
+              "id": "VR-026",
+              "appliesTo": ["all_displays", "standard_report_format"],
+              "request": "Research strong public inspection report examples and use them to guide the later redesign of Satvey's default report format.",
+              "status": "research_recorded_implementation_deferred"
+            }
+          ]
+        }
+      ],
+      "researchFile": "report-design-research.json"
+    },
+    {
+      "id": "11-handover",
+      "title": "Handover - destination and finding selection",
+      "route": "/app/inspections/d34bea75-02d5-4bf0-878e-5ef1ae2beeb2/handover",
+      "state": "Existing finalized Rijnkade demo report; handover not approved or sent. Initial handover section scrolled into view. No selections or destinations changed.",
+      "status": "reviewed_workflow_correction_and_changes_requested",
+      "screenshots": {
+        "mobile": "screenshots/11-handover-mobile.png",
+        "tablet": "screenshots/11-handover-tablet.png"
+      },
+      "capturedViewports": {
+        "mobile": { "width": 390, "height": 844 },
+        "tablet": { "width": 1194, "height": 834, "orientation": "landscape" }
+      },
+      "feedback": [
+        {
+          "source": "user",
+          "verbatim": "Wat ik niet snap hier is VERA overdracht is intern binnen de cooporatie dus warom is er goedkeuring? Dit gaat puur om het synchorniseren van status naar interne ERP/andere systemen die VERA spreken dus ik heb liever dat dit meer automatisch gebeurt. De echte overdracht moet gebruik maken van DICO en gaat om ketenpartners waarin onderhoudswerkzaamheden worden gedeeld met een ketenpartner dit is een veel complexer proces waar wij nu nog geen echte tijd in gaan stoppen. Qua layout zie ik op mobiel dat de input titels veelste lang zij nwat zorgt voor lelijke formatting, specifiek ontvangend systeem en externe zaak ID blijven naar elkaar staan op mobiel. Verder is de padding van handmatige overdracht registeren niet goed aan de onderkant. De checkbox alleen bevindingen en niet acceptable beoordelingen ziet niet oed op de plek waar hij nu zit",
+          "requests": [
+            {
+              "id": "VR-029",
+              "appliesTo": ["all_displays", "integration_workflow"],
+              "request": "Make VERA status synchronization to internal corporation ERP/other systems automatic, without a separate inspector approval step. Separate it from maintenance work handover.",
+              "status": "recorded_for_later"
+            },
+            {
+              "id": "VR-030",
+              "appliesTo": ["all_displays", "scope"],
+              "request": "Treat true external chain-partner maintenance-work handover as DICO. Defer that complex workflow; do not implement it in the current scope.",
+              "status": "deferred_by_user"
+            },
+            {
+              "id": "VR-031",
+              "appliesTo": ["mobile"],
+              "request": "Shorten input labels and stack the receiving-system and external-case-ID fields on mobile; their current side-by-side layout and long labels wrap badly.",
+              "status": "recorded_for_later"
+            },
+            {
+              "id": "VR-032",
+              "appliesTo": ["mobile", "tablet"],
+              "request": "Correct the bottom padding of Handmatige overdracht registreren. User did not specify an exact padding value.",
+              "status": "recorded_for_later"
+            },
+            {
+              "id": "VR-033",
+              "appliesTo": ["mobile", "tablet"],
+              "request": "Reconsider the placement/presentation of Alleen bevindingen en niet-acceptabele beoordelingen; it looks wrong in its current location. Reassess whether this maintenance selection filter belongs in the redesigned automatic VERA workflow at all.",
+              "status": "recorded_for_later"
+            }
+          ]
+        }
+      ],
+      "unreviewedSubflows": "Maintenance proposal generation and approval screens intentionally not exercised further because user deferred the external DICO work-handover scope."
+    },
+    {
+      "id": "12-visit-planning",
+      "title": "Visit and planning details",
+      "route": "/app/inspections/a7623b44-854c-46da-8268-6d5541e18a85/review",
+      "state": "Existing Singelhof draft; Bezoek en planning dialog open; no fields changed or saved. Grouping this under a Dossier tab is already requested in VR-009.",
+      "status": "reviewed_changes_requested_fields_approved",
+      "screenshots": {
+        "mobile": "screenshots/12-visit-planning-mobile.png",
+        "tablet": "screenshots/12-visit-planning-tablet.png"
+      },
+      "capturedViewports": {
+        "mobile": { "width": 390, "height": 844 },
+        "tablet": { "width": 1194, "height": 834, "orientation": "landscape" }
+      },
+      "feedback": [
+        {
+          "source": "user",
+          "verbatim": "Bezoek en planning moet geen pop-up zijn maar een kaartje of tab op deze pagina, verder prima velden maar alle borders in de huidige pop-up zijn raar",
+          "appliesTo": ["mobile", "tablet"],
+          "decision": "Existing planning fields approved; change the presentation and placement.",
+          "requests": [
+            {
+              "id": "VR-034",
+              "appliesTo": ["mobile", "tablet"],
+              "request": "Present Bezoek en planning as a card or tab within the inspection dossier page instead of a modal popup. Align with earlier dossier organisation request VR-009.",
+              "status": "recorded_for_later"
+            },
+            {
+              "id": "VR-035",
+              "appliesTo": ["mobile", "tablet"],
+              "request": "Remove or redesign the odd excessive/nested borders around the planning form groups. Keep the approved fields with clean grouping and spacing.",
+              "status": "recorded_for_later"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "13-agreements",
+      "title": "Agreements - list and adding an agreement",
+      "route": "/app/inspections/a7623b44-854c-46da-8268-6d5541e18a85/review",
+      "state": "Existing demo dossier; Afspraken dialog opened, no agreement saved. Earlier request VR-009 already groups agreements under the dossier tab.",
+      "status": "reviewed_changes_requested",
+      "screenshots": {
+        "mobile": "screenshots/13-agreements-mobile.png",
+        "tablet": "screenshots/13-agreements-tablet.png"
+      },
+      "capturedViewports": {
+        "mobile": { "width": 390, "height": 844 },
+        "tablet": { "width": 1194, "height": 834, "orientation": "landscape" }
+      },
+      "feedback": [
+        {
+          "source": "user",
+          "verbatim": "Afspraken en opvolging idem geen pop-up en ook bronfotos laten zien als miniatuur zodat duidelijk is wat is selecteer zonder lelijke checkbox.",
+          "requests": [
+            {
+              "id": "VR-036",
+              "appliesTo": ["mobile", "tablet"],
+              "request": "Present Afspraken en opvolging as an inline dossier card or tab instead of a popup, following the same decision as visit planning.",
+              "status": "recorded_for_later"
+            },
+            {
+              "id": "VR-037",
+              "appliesTo": ["mobile", "tablet"],
+              "request": "Show source photos as selectable thumbnails so the inspector can recognize the evidence being selected. Replace the visible filename-and-checkbox list with a clean visual selected state; exact styling not yet specified.",
+              "status": "recorded_for_later"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "14-quality-review",
+      "title": "Quality review - reviewer and review state",
+      "route": "/app/inspections/a7623b44-854c-46da-8268-6d5541e18a85/review",
+      "state": "Existing Singelhof draft; Kwaliteitscontrole opened; no reviewer assigned, review requested or decision saved during this walkthrough.",
+      "status": "reviewed_remove_from_inspector_workflow",
+      "screenshots": {
+        "mobile": "screenshots/14-quality-review-mobile.png",
+        "tablet": "screenshots/14-quality-review-tablet.png"
+      },
+      "capturedViewports": {
+        "mobile": { "width": 390, "height": 844 },
+        "tablet": { "width": 1194, "height": 834, "orientation": "landscape" }
+      },
+      "feedback": [
+        {
+          "source": "user",
+          "verbatim": "Wat is dit kwaliteitscontroel punt is dit iets wat inspectuer aanvraagt op zijn werk? Zo ja weghalen onzin dat dit een knop heeft dit kan op de ahctergrond door beheerders & kwaliteitscontroleurs gebeuren hoeft geen aanvraag of knop voor te zijn",
+          "explanationProvided": "The existing screen lets an inspector request a peer review of their dossier.",
+          "requests": [
+            {
+              "id": "VR-038",
+              "appliesTo": ["mobile", "tablet", "inspector_workflow"],
+              "request": "Remove the Kwaliteitscontrole request button and request form from the inspector workflow. Inspectors should not have to ask for review of their work.",
+              "status": "recorded_for_later"
+            },
+            {
+              "id": "VR-039",
+              "appliesTo": ["administrators", "quality_reviewers"],
+              "request": "Let administrators and quality reviewers handle quality oversight independently in the background, without an inspector-initiated request.",
+              "status": "recorded_for_later"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "15-time-measurement",
+      "title": "Pilot time measurement",
+      "route": "/app/inspections/a7623b44-854c-46da-8268-6d5541e18a85/review",
+      "state": "Existing Singelhof draft; Tijdmeting opened for visual review only. No measurement started, stopped or saved during the walkthrough.",
+      "status": "reviewed_replace_with_automatic_measurement",
+      "screenshots": {
+        "mobile": "screenshots/15-time-measurement-mobile.png",
+        "tablet": "screenshots/15-time-measurement-tablet.png"
+      },
+      "capturedViewports": {
+        "mobile": { "width": 390, "height": 844 },
+        "tablet": { "width": 1194, "height": 834, "orientation": "landscape" }
+      },
+      "feedback": [
+        {
+          "source": "user",
+          "verbatim": "Deze tijdmeting module is heel erg slecht, wij kunnen tijd automatisch tellen door te kijken waar de inspectuer bezig is en wanneer hij/zij fotos neemt haal al deze inputs weg geen verwachting dat een inspectur dit zelf gaat zitten invullen",
+          "requests": [
+            {
+              "id": "VR-040",
+              "appliesTo": ["all_displays", "inspector_workflow"],
+              "request": "Remove all manual time-entry inputs and the expectation that an inspector records minutes manually.",
+              "status": "recorded_for_later"
+            },
+            {
+              "id": "VR-041",
+              "appliesTo": ["all_displays", "automatic_measurement"],
+              "request": "Measure inspection time automatically using the workflow area in which the inspector is active and events such as taking photos. Do not require inspector interaction to maintain these measurements.",
+              "status": "recorded_for_later"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "16-dossier-history",
+      "title": "Dossier history and retention hold",
+      "route": "/app/inspections/a7623b44-854c-46da-8268-6d5541e18a85/review",
+      "state": "Existing older Singelhof draft; Dossierhistorie opened with no recorded events. Demo administrator sees retention-hold controls. No archive, hold, correction or purge action performed. Populated timeline not yet visually reviewed.",
+      "status": "reviewed_visual_approved_function_unclear",
+      "screenshots": {
+        "mobile": "screenshots/16-dossier-history-mobile.png",
+        "tablet": "screenshots/16-dossier-history-tablet.png"
+      },
+      "capturedViewports": {
+        "mobile": { "width": 390, "height": 844 },
+        "tablet": { "width": 1194, "height": 834, "orientation": "landscape" }
+      },
+      "feedback": [
+        {
+          "source": "user",
+          "verbatim": "Ik snap bewaarblokkade niet, wij laten edits gewoon toe met een duidelijk audit log. UI is prima maar functie dus raar",
+          "appliesTo": ["mobile", "tablet"],
+          "decision": "Visual presentation approved. User questioned the retention-hold function and stated that editing should be allowed with a clear audit log.",
+          "requests": [
+            {
+              "id": "VR-042",
+              "appliesTo": ["all_displays", "editing_and_audit"],
+              "request": "Allow edits with a clear audit log rather than introducing an unexplained editing blockade.",
+              "status": "recorded_for_later"
+            },
+            {
+              "id": "VR-043",
+              "appliesTo": ["mobile", "tablet", "administrator_controls"],
+              "request": "Resolve the confusing purpose/naming of Bewaarblokkade. User interpreted it as blocking edits. It actually blocks deletion/retention cleanup; removal or retention under clearer administrator controls is not yet decided.",
+              "status": "clarification_pending"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "17-property-history",
+      "title": "Property history",
+      "route": "/app/properties/7b513c6e-db1a-4f46-929b-d8eb9e6604cb",
+      "state": "Existing Singelhof demo property history opened; no visit created or changed. Available history depends on existing demo records.",
+      "status": "reviewed_changes_requested_purpose_clarified",
+      "screenshots": {
+        "mobile": "screenshots/17-property-history-mobile.png",
+        "tablet": "screenshots/17-property-history-tablet.png"
+      },
+      "capturedViewports": {
+        "mobile": { "width": 390, "height": 844 },
+        "tablet": { "width": 1194, "height": 834, "orientation": "landscape" }
+      },
+      "feedback": [
+        {
+          "source": "user",
+          "verbatim": "Kan dit niet een tabel, beter weergeven worden wat is het het doel van woninghistorie.",
+          "explanationProvided": "Property history lists inspections of the same property, for example pre-inspection and final inspection, so earlier visits and their reports can be found. The audit log instead tracks changes within a dossier. Current UI provides visit links, not an interactive side-by-side comparison tool.",
+          "requests": [
+            {
+              "id": "VR-044",
+              "appliesTo": ["mobile", "tablet"],
+              "request": "Replace the current property-history cards with a clearer table/list presentation.",
+              "assistantSuggestedColumns": ["Date", "Inspection type", "Inspector", "Status", "Report link"],
+              "columnStatus": "suggested_not_yet_explicitly_approved",
+              "status": "recorded_for_later"
+            },
+            {
+              "id": "VR-045",
+              "appliesTo": ["mobile", "tablet"],
+              "request": "Make the purpose and property context of Woninghistorie clear. User did not understand what the screen is for from the current single-card layout.",
+              "status": "recorded_for_later"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "18-quality-frameworks",
+      "title": "Quality framework list",
+      "route": "/app/norms",
+      "state": "Administrator view of existing quality frameworks, including legacy E2E fixture names; no framework created, changed or published.",
+      "status": "reviewed_list_approved_mobile_navigation_change",
+      "screenshots": {
+        "mobile": "screenshots/18-quality-frameworks-mobile.jpg",
+        "tablet": "screenshots/18-quality-frameworks-tablet.jpg"
+      },
+      "capturedViewports": {
+        "mobile": { "width": 390, "height": 844 },
+        "tablet": { "width": 1194, "height": 834, "orientation": "landscape" }
+      },
+      "feedback": [
+        {
+          "source": "user",
+          "verbatim": "Kwaliteitskaders is goed op mobiel is er een issue met renderen van tabs naast elkaar een dropdown met de tabjes is beter denk ik. Verder is het editen van kwaliteitskaders niet per se iets wat wij op mobiel hoeven te ondersteunen wel op tablet",
+          "decision": "Framework list approved apart from mobile tab navigation. Framework editing is required on tablet and not required on mobile.",
+          "requests": [
+            {
+              "id": "VR-046",
+              "appliesTo": ["mobile"],
+              "request": "Replace the horizontally arranged quality-framework module tabs with a dropdown selector on mobile; current tabs render poorly side by side.",
+              "status": "recorded_for_later"
+            },
+            {
+              "id": "VR-047",
+              "appliesTo": ["mobile", "tablet", "framework_editor"],
+              "request": "Support quality-framework editing on tablet. Mobile framework editing is not required; do not prioritise fitting the full editor onto a phone.",
+              "status": "recorded_for_later"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "19-quality-framework-detail",
+      "title": "Published quality framework details",
+      "route": "/app/norms?version=4e2f219f-a899-46d0-89d9-94323e3be3a6",
+      "state": "Existing De Sleutels demo published framework opened for viewing; no new version created or criteria changed. Mobile full-editor support is out of the required scope per VR-047.",
+      "status": "reviewed_visual_approved_scoring_extension_requested",
+      "screenshots": {
+        "mobile": "screenshots/19-quality-framework-detail-mobile.jpg",
+        "tablet": "screenshots/19-quality-framework-detail-tablet.jpg"
+      },
+      "capturedViewports": {
+        "mobile": { "width": 390, "height": 844 },
+        "tablet": { "width": 1194, "height": 834, "orientation": "landscape" }
+      },
+      "feedback": [
+        {
+          "source": "user",
+          "verbatim": "Bij kwaliteitskaders moet ook een nieuw iets komen  met duidelijk verantwoordelijkheid: coorporatie, bewoner en bij welke intensiteit. Kijk naar NEN en andere normen of er een puntenschaal bestaat en ook mogelijkheid om referentiebestanden toe te voegen voor iedere score. UI is oke",
+          "decision": "Existing framework-detail UI approved. Add richer assessment scales, responsibility mapping and score-specific references later.",
+          "requests": [
+            {
+              "id": "VR-048",
+              "appliesTo": ["quality_frameworks", "tablet_editor"],
+              "request": "Add a defined intensity/score scale to quality criteria instead of only the current acceptable/unacceptable descriptions.",
+              "status": "recorded_for_later"
+            },
+            {
+              "id": "VR-049",
+              "appliesTo": ["quality_frameworks", "per_organisation"],
+              "request": "Specify corporation/resident responsibility and the intensity/score levels at which it applies, using separate fields/rules for arranging the repair and carrying the cost. User confirmed that both must be recorded independently.",
+              "status": "recorded_for_later"
+            },
+            {
+              "id": "VR-050",
+              "appliesTo": ["quality_frameworks", "tablet_editor"],
+              "request": "Allow reference files to be attached separately to every defined score/level, so assessors have clear examples for each rating.",
+              "status": "recorded_for_later"
+            },
+            {
+              "id": "VR-051",
+              "appliesTo": ["quality_frameworks", "research"],
+              "request": "Research NEN and other relevant standards for existing rating scales and use that evidence in the later scoring design.",
+              "status": "research_recorded_implementation_deferred"
+            }
+          ]
+        }
+      ],
+      "researchFile": "framework-scoring-research.json"
+    },
+    {
+      "id": "20-quality-framework-editor",
+      "title": "Quality framework editor - tablet",
+      "route": "/app/norms?version=07bdb1e9-2514-4ca2-b735-05ec2508d3e2",
+      "state": "Existing draft framework opened on tablet only; no new version created, field edited or framework published. Mobile remains on the published read view because mobile editor support is not required.",
+      "status": "reviewed_no_visual_changes",
+      "screenshots": {
+        "tablet": "screenshots/20-quality-framework-editor-tablet.jpg",
+        "tabletReferences": "screenshots/20-quality-framework-editor-references-tablet.jpg"
+      },
+      "capturedViewports": {
+        "tablet": { "width": 1194, "height": 834, "orientation": "landscape" }
+      },
+      "feedback": [
+        {
+          "source": "user",
+          "verbatim": "Beide apart voor verantwoordelijkheid vastleggen, editor is prima kwa UI",
+          "appliesTo": ["tablet", "quality_frameworks"],
+          "decision": "Tablet editor UI approved. Responsibility means both repair-arrangement responsibility and cost responsibility, recorded independently; resolves VR-049."
+        }
+      ]
+    },
+    {
+      "id": "21-rooms-elements",
+      "title": "Room definitions and elements",
+      "route": "/app/norms?tab=elements",
+      "state": "Existing room/element configuration opened for visual inspection; no definitions created, changed or deleted. Existing mobile module-tab dropdown request VR-046 remains applicable.",
+      "status": "reviewed_visual_approved_mobile_changes_research_requested",
+      "screenshots": {
+        "mobile": "screenshots/21-rooms-elements-mobile.jpg",
+        "tablet": "screenshots/21-rooms-elements-tablet.jpg"
+      },
+      "capturedViewports": {
+        "mobile": { "width": 390, "height": 844 },
+        "tablet": { "width": 1194, "height": 834, "orientation": "landscape" }
+      },
+      "feedback": [
+        {
+          "source": "user",
+          "verbatim": "Ik wil dat je onderzoek doetnaar ruimtes & elementen en of dit concept waarde toevoegt aan de applicatie, de UI is prima behalve op mobiel waar de 2 filters naast elkaar er lelijk uit zien en de knop raar is en ook de tabjes weer beter dropdown zouden kunnen gebruiken",
+          "decision": "Overall rooms/elements UI approved except mobile filters, button layout and module tabs. Research the actual product value of the concept before later implementation decisions.",
+          "reaffirmedRequestIds": ["VR-046"],
+          "requests": [
+            {
+              "id": "VR-052",
+              "appliesTo": ["rooms_and_elements", "research"],
+              "request": "Research whether rooms and elements add real value to Satvey, considering current implementation and external inspection products/standards.",
+              "status": "research_recorded_implementation_deferred"
+            },
+            {
+              "id": "VR-053",
+              "appliesTo": ["mobile"],
+              "request": "Improve the two adjacent search/room-filter controls on the mobile rooms/elements page; they look cramped and poorly arranged side by side.",
+              "status": "recorded_for_later"
+            },
+            {
+              "id": "VR-054",
+              "appliesTo": ["mobile"],
+              "request": "Improve the mobile button placement/presentation on this page. User called the button odd without specifying an exact replacement layout; review the primary Element toevoegen action and its relationship to the filters.",
+              "status": "recorded_for_later"
+            }
+          ]
+        }
+      ],
+      "researchFile": "rooms-elements-research.json"
+    },
+    {
+      "id": "22-element-editor",
+      "title": "Element editor - tablet",
+      "route": "/app/norms?tab=elements",
+      "state": "Existing Deur element editor opened on tablet for visual review; no fields changed, saved or archived. Mobile remains on the catalog list. Mobile element-editor view not reviewed in this step.",
+      "status": "reviewed_no_changes",
+      "screenshots": {
+        "tablet": "screenshots/22-element-editor-tablet.jpg",
+        "tabletBottom": "screenshots/22-element-editor-bottom-tablet.jpg"
+      },
+      "capturedViewports": {
+        "tablet": { "width": 1194, "height": 834, "orientation": "landscape" }
+      },
+      "feedback": [
+        {
+          "source": "user",
+          "verbatim": "UI is goed",
+          "appliesTo": ["tablet"],
+          "decision": "Element-editor UI approved. This does not imply acceptance of every preceding research recommendation."
+        }
+      ]
+    },
+    {
+      "id": "23-assessment-overview",
+      "title": "Assessment overview",
+      "route": "/app/norms?tab=benchmark",
+      "state": "Administrator assessment overview; De Sleutels demo framework version selected to show existing populated results. Results area scrolled into view. No settings or assessments changed; only the local view selection changed. Previously requested mobile dropdown for module tabs remains applicable.",
+      "status": "reviewed_approved_hide_on_mobile",
+      "screenshots": {
+        "mobile": "screenshots/23-assessment-overview-mobile.jpg",
+        "tablet": "screenshots/23-assessment-overview-tablet.jpg"
+      },
+      "capturedViewports": {
+        "mobile": { "width": 390, "height": 844 },
+        "tablet": { "width": 1194, "height": 834, "orientation": "landscape" }
+      },
+      "feedback": [
+        {
+          "source": "user",
+          "verbatim": "prima, je mag deze tab verbergen op mobiel",
+          "decision": "Assessment overview approved. Hide its tab on mobile; keep the tablet view.",
+          "requests": [
+            {
+              "id": "VR-055",
+              "appliesTo": ["mobile"],
+              "request": "Hide the Beoordelingsoverzicht tab on mobile. This is a presentation change, not a request to remove the feature or its permissions globally.",
+              "status": "recorded_for_later"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "24-inspection-templates",
+      "title": "Inspection template list",
+      "route": "/app/formats",
+      "state": "Administrator view of existing inspection templates; no template created, changed or published. Existing E2E fixture names may appear.",
+      "status": "reviewed_no_changes",
+      "screenshots": {
+        "mobile": "screenshots/24-inspection-templates-mobile.jpg",
+        "tablet": "screenshots/24-inspection-templates-tablet.jpg"
+      },
+      "capturedViewports": {
+        "mobile": { "width": 390, "height": 844 },
+        "tablet": { "width": 1194, "height": 834, "orientation": "landscape" }
+      },
+      "feedback": [
+        {
+          "source": "user",
+          "verbatim": "UI is prima",
+          "appliesTo": ["mobile", "tablet"],
+          "decision": "Inspection-template list UI approved; no changes requested."
+        }
+      ]
+    },
+    {
+      "id": "25-inspection-template-detail",
+      "title": "Published inspection template details",
+      "route": "/app/formats?version=3c82f19a-1208-436d-8f85-3c6c4e079614",
+      "state": "Existing published De Sleutels pre-inspection template opened on mobile and tablet; no draft version created, questions edited or publication performed.",
+      "status": "reviewed_css_issue_hide_mobile_editor",
+      "screenshots": {
+        "mobile": "screenshots/25-inspection-template-detail-mobile.jpg",
+        "tablet": "screenshots/25-inspection-template-detail-tablet.jpg"
+      },
+      "capturedViewports": {
+        "mobile": { "width": 390, "height": 844 },
+        "tablet": { "width": 1194, "height": 834, "orientation": "landscape" }
+      },
+      "feedback": [
+        {
+          "source": "user",
+          "verbatim": "the buitenruimte knop seems to have very weirdd styling on this page inconcistent with the others possibly a css mistake we can hide this edit tab on mobile",
+          "requests": [
+            {
+              "id": "VR-056",
+              "appliesTo": ["template_room_navigation", "tablet", "mobile"],
+              "request": "Fix the Buitenruimte room button styling so it is consistent with the other room buttons.",
+              "verification": "Confirmed in source and live computed styles. formats.module.css applies room-button styles to .categories > button:not(:last-child) and selected buttons. In a published template there is no Ruimte toevoegen button, so the final room is incorrectly excluded. Buitenruimte has display:block, padding:1px 6px and a browser-default 2px outset border; other room buttons use display:flex, 12px padding and no border. Selecting the last room temporarily applies the selected style but does not correct the selector.",
+              "sourceFile": "apps/web/src/workspace/formats.module.css",
+              "status": "verified_recorded_for_later"
+            },
+            {
+              "id": "VR-057",
+              "appliesTo": ["mobile", "inspection_template_editor"],
+              "request": "Hide this inspection-template editing view/tab on mobile. Tablet editing stays in scope; do not infer removal of the previously approved template list.",
+              "status": "recorded_for_later"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "26-template-rooms-questions",
+      "title": "Inspection template - rooms and questions on tablet",
+      "route": "/app/formats?version=3c82f19a-1208-436d-8f85-3c6c4e079614",
+      "state": "Existing published demo template, Badkamer selected, scrolled to room navigation and question fields on tablet. Fields remain read-only; no template changed. Mobile editor not shown per VR-057. Confirmed Buitenruimte CSS issue VR-056 remains visible until later implementation.",
+      "status": "reviewed_no_additional_changes",
+      "screenshots": {
+        "tablet": "screenshots/26-template-rooms-questions-tablet.jpg"
+      },
+      "capturedViewports": {
+        "tablet": { "width": 1194, "height": 834, "orientation": "landscape" }
+      },
+      "feedback": [
+        {
+          "source": "user",
+          "verbatim": "nee",
+          "appliesTo": ["tablet"],
+          "decision": "No further visual changes requested for template rooms/questions. Previously recorded Buitenruimte styling fix remains required."
+        }
+      ]
+    },
+    {
+      "id": "27-template-preview",
+      "title": "Inspection template preview - tablet",
+      "route": "/app/formats?version=3c82f19a-1208-436d-8f85-3c6c4e079614",
+      "state": "Preview of existing published demo template opened on tablet; no inspection created or answers saved. Mobile template-editor flow remains excluded per VR-057.",
+      "status": "reviewed_no_changes",
+      "screenshots": {
+        "tablet": "screenshots/27-template-preview-tablet.jpg"
+      },
+      "capturedViewports": {
+        "tablet": { "width": 1194, "height": 834, "orientation": "landscape" }
+      },
+      "feedback": [
+        {
+          "source": "user",
+          "verbatim": "yes dit is goed",
+          "appliesTo": ["tablet"],
+          "decision": "Template-preview UI approved; no changes requested."
+        }
+      ]
+    },
+    {
+      "id": "28-settings-account",
+      "title": "Settings - account",
+      "route": "/app/settings",
+      "state": "Existing demo account settings opened on mobile and tablet. No password, identity, privacy or organisation settings changed. Earlier organisation tint/logo requirements VR-027 and VR-028 remain recorded for future settings work.",
+      "status": "reviewed_changes_requested",
+      "screenshots": {
+        "mobile": "screenshots/28-settings-account-mobile.jpg",
+        "tablet": "screenshots/28-settings-account-tablet.jpg"
+      },
+      "capturedViewports": {
+        "mobile": { "width": 390, "height": 844 },
+        "tablet": { "width": 1194, "height": 834, "orientation": "landscape" }
+      },
+      "feedback": [
+        {
+          "source": "user",
+          "verbatim": "Account is een rare tab, ondersteunng/privacy is raar. Op mobiel ook graag dropdown UI voor tabjes huidige weergave is niet geweldig voor tabjes",
+          "requests": [
+            {
+              "id": "VR-058",
+              "appliesTo": ["mobile", "tablet", "settings_account"],
+              "request": "Rethink the Account tab's purpose, content and presentation; user finds the current tab odd. Exact replacement layout or removal was not specified.",
+              "status": "recorded_for_later"
+            },
+            {
+              "id": "VR-059",
+              "appliesTo": ["mobile", "tablet", "settings_account"],
+              "request": "Rework the placement/presentation of Ondersteuning and Privacy; they look odd in the account block.",
+              "verification": "Both captured views show Ondersteuning ? Privacy, with a literal question-mark separator. Exact new placement was not specified by the user.",
+              "status": "recorded_for_later"
+            },
+            {
+              "id": "VR-060",
+              "appliesTo": ["mobile", "settings_navigation"],
+              "request": "Replace mobile settings tabs with a dropdown; the current multi-row tab arrangement is not satisfactory.",
+              "status": "recorded_for_later"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "29-pilot-metrics",
+      "title": "Settings - pilot metrics",
+      "route": "/app/settings?tab=metrics",
+      "state": "Existing pilot metrics opened on mobile and tablet; no measurement values or settings changed. Earlier automatic time-measurement requirement VR-040/041 and mobile settings dropdown VR-060 remain applicable.",
+      "status": "reviewed_replace_with_administrator_analytics",
+      "screenshots": {
+        "mobile": "screenshots/29-pilot-metrics-mobile.jpg",
+        "tablet": "screenshots/29-pilot-metrics-tablet.jpg"
+      },
+      "capturedViewports": {
+        "mobile": { "width": 390, "height": 844 },
+        "tablet": { "width": 1194, "height": 834, "orientation": "landscape" }
+      },
+      "feedback": [
+        {
+          "source": "user",
+          "verbatim": "Pilotoverzicht tab weghalen, je mag een analytics tabje toevoegen niet in instellingen voor beheerders met mooie grafieken en data op basis van automatische info dus over inspector performance and issues met panden maar huidige pilotoverzicht ziet er verschikkelijhk uit",
+          "requests": [
+            { "id": "VR-061", "request": "Remove the existing pilot dashboard tab from settings; current presentation is unacceptable.", "status": "recorded_for_later" },
+            { "id": "VR-062", "request": "Add a separate administrator Analytics tab outside settings, with clear charts about inspector performance and property issues derived from automatic app data.", "status": "recorded_for_later" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "30-settings-members",
+      "title": "Settings - members and invitations",
+      "route": "/app/settings?tab=members",
+      "state": "Existing demo organisation members list viewed on mobile and landscape tablet. No invitation sent, member role changed or membership removed.",
+      "status": "reviewed_changes_requested",
+      "screenshots": {
+        "mobile": "screenshots/30-settings-members-mobile.jpg",
+        "tablet": "screenshots/30-settings-members-tablet.jpg"
+      },
+      "capturedViewports": {
+        "mobile": { "width": 390, "height": 844 },
+        "tablet": { "width": 1194, "height": 834, "orientation": "landscape" }
+      },
+      "feedback": [
+        {
+          "source": "user",
+          "verbatim": "Ipad weerhave is goed, behalve openstaande uitnodigingen mist goede margin. Op mobiel is de layout niet goed daar moet beheerder email en rol onder elkaar en is zelfde margin/padding issue met openstaande uitnodiigngen",
+          "requests": [
+            {
+              "id": "VR-063",
+              "appliesTo": ["mobile", "tablet", "settings_members"],
+              "request": "Improve margin/padding around Openstaande uitnodigingen so it is clearly separated from the members list. Tablet layout otherwise approved.",
+              "status": "recorded_for_later"
+            },
+            {
+              "id": "VR-064",
+              "appliesTo": ["mobile", "settings_members"],
+              "request": "Stack each member's name, email and role vertically on mobile instead of the current side-by-side arrangement.",
+              "status": "recorded_for_later"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "31-member-invitation",
+      "title": "Settings - invite organisation member",
+      "route": "/app/settings?tab=members",
+      "state": "Lid uitnodigen form opened on mobile and landscape tablet for visual review. No invitation sent or organisation data changed.",
+      "status": "reviewed_tablet_approved_mobile_full_page_overlay",
+      "screenshots": {
+        "mobile": "screenshots/31-member-invitation-mobile.jpg",
+        "tablet": "screenshots/31-member-invitation-tablet.jpg"
+      },
+      "capturedViewports": {
+        "mobile": { "width": 390, "height": 844 },
+        "tablet": { "width": 1194, "height": 834, "orientation": "landscape" }
+      },
+      "feedback": [
+        {
+          "source": "user",
+          "verbatim": "op tablet top, op mobiel graag al deze pop-ups full page overlay",
+          "requests": [
+            {
+              "id": "VR-065",
+              "appliesTo": ["mobile", "popup_forms"],
+              "request": "Use full-page overlays for these popup forms on mobile. Current invitation form presentation is approved on tablet.",
+              "status": "recorded_for_later"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "32-settings-roles",
+      "title": "Settings - roles and permissions",
+      "route": "/app/settings?tab=roles",
+      "state": "Existing organisation roles and permissions viewed on mobile and landscape tablet. No role or permission changed.",
+      "status": "reviewed_no_changes_settings_review_closed",
+      "screenshots": {
+        "mobile": "screenshots/32-settings-roles-mobile.jpg",
+        "tablet": "screenshots/32-settings-roles-tablet.jpg"
+      },
+      "capturedViewports": {
+        "mobile": { "width": 390, "height": 844 },
+        "tablet": { "width": 1194, "height": 834, "orientation": "landscape" }
+      },
+      "feedback": [
+        {
+          "source": "user",
+          "verbatim": "Rollen en rechten is prima, voor al deze andere tabs trouwens is desktop primair dus wij kunnen de design check stopzetten op alles in instellingen",
+          "decision": "Roles and permissions UI approved. Stop the remaining settings visual review because desktop is primary. Earlier feedback remains valid."
+        }
+      ]
+    },
+    {
+      "id": "33-report-delivery",
+      "title": "Final report - email delivery",
+      "route": "/app/inspections/d34bea75-02d5-4bf0-878e-5ef1ae2beeb2/report",
+      "state": "Existing finalized Rijnkade demo report viewed with Rapport per e-mail versturen expanded on mobile and landscape tablet. No recipient entered, email sent, report changed or finalization performed.",
+      "status": "reviewed_no_changes",
+      "screenshots": {
+        "mobile": "screenshots/33-report-delivery-mobile.jpg",
+        "tablet": "screenshots/33-report-delivery-tablet.jpg"
+      },
+      "capturedViewports": {
+        "mobile": { "width": 390, "height": 844 },
+        "tablet": { "width": 1194, "height": 834, "orientation": "landscape" }
+      },
+      "feedback": [
+        {
+          "source": "user",
+          "verbatim": "Yes prima",
+          "appliesTo": ["mobile", "tablet"],
+          "decision": "Report email delivery block UI approved; no changes requested."
+        }
+      ]
+    },
+    {
+      "id": "34-followup-inspection",
+      "title": "Create follow-up inspection",
+      "route": "/app/inspections/d34bea75-02d5-4bf0-878e-5ef1ae2beeb2/report",
+      "state": "Follow-up inspection form opened from existing finalized Rijnkade demo dossier on mobile and landscape tablet. No new inspection created or form submitted. Previously requested full-page mobile popup treatment VR-065 remains applicable.",
+      "status": "reviewed_no_changes",
+      "screenshots": {
+        "mobile": "screenshots/34-followup-inspection-mobile.jpg",
+        "tablet": "screenshots/34-followup-inspection-tablet.jpg"
+      },
+      "capturedViewports": {
+        "mobile": { "width": 390, "height": 844 },
+        "tablet": { "width": 1194, "height": 834, "orientation": "landscape" }
+      },
+      "feedback": [
+        {
+          "source": "user",
+          "verbatim": "top",
+          "appliesTo": ["mobile", "tablet"],
+          "decision": "Follow-up inspection form UI approved; no changes requested."
+        }
+      ]
+    },
+    {
+      "id": "35-report-correction",
+      "title": "Final report correction form within dossier history",
+      "route": "/app/inspections/d34bea75-02d5-4bf0-878e-5ef1ae2beeb2/report",
+      "state": "Existing finalized Rijnkade demo dossier history opened to show the previously unseen Rapport corrigeren section on mobile and landscape tablet. No correction created, retention hold changed or field saved. Earlier audit/editing expectations and full-page mobile overlay requirement remain applicable; retention hold is not being submitted for a repeated review.",
+      "status": "reviewed_existing_edit_audit_and_mobile_overlay_requirements_reaffirmed",
+      "screenshots": {
+        "mobile": "screenshots/35-report-correction-mobile.jpg",
+        "tablet": "screenshots/35-report-correction-tablet.jpg"
+      },
+      "capturedViewports": {
+        "mobile": { "width": 390, "height": 844 },
+        "tablet": { "width": 1194, "height": 834, "orientation": "landscape" }
+      },
+      "feedback": [
+        {
+          "source": "user",
+          "verbatim": "Deze correcties & bewaarblokkade heb ik reeds feedbacjk op gegeven, ik wil wijzigingen toelaten met audit log. Layout kan beter op mobiel als full overlay",
+          "decision": "User reaffirmed existing requirements: allow edits with a clear audit log; mobile dialog should be a full-page overlay. This repeats VR-042 and VR-065 rather than approving the current separate correction process. Do not revisit already discussed correction/retention controls. Existing issued-report/signature version handling remains to design later."
+        }
+      ]
+    },
+    {
+      "id": "36-report-signing",
+      "title": "Report signing and completion form",
+      "route": "/app/inspections/a7623b44-854c-46da-8268-6d5541e18a85/report",
+      "state": "Existing Singelhof demo draft completion dialog opened with one empty signer entry in local component state. No name or signature entered, report finalized, saved or sent. Demo uses an older template with optional signatures; required-signature/resident-exception policy states are not represented by this template. Existing edit/audit and mobile-overlay requirements remain applicable; immutable-report wording shown in current UI is not treated as an agreed editing policy.",
+      "status": "reviewed_no_changes_existing_edit_policy_feedback_retained",
+      "screenshots": {
+        "mobile": "screenshots/36-report-signing-mobile.jpg",
+        "tablet": "screenshots/36-report-signing-tablet.jpg"
+      },
+      "capturedViewports": {
+        "mobile": { "width": 390, "height": 844 },
+        "tablet": { "width": 1194, "height": 834, "orientation": "landscape" }
+      },
+      "feedback": [
+        {
+          "source": "user",
+          "verbatim": "top",
+          "appliesTo": ["mobile", "tablet"],
+          "decision": "Signing form layout, fields, signature area and controls approved. Existing requirement to allow edits with an audit log remains; current immutable-report wording is not approved as policy."
+        }
+      ]
+    },
+    {
+      "id": "37-public-support",
+      "title": "Public support page",
+      "route": "/support",
+      "state": "Public support information opened on mobile and landscape tablet. No support request, email or account action performed. Earlier feedback about support/privacy placement within account settings remains applicable.",
+      "status": "reviewed_acceptable_for_now_low_priority_improvement",
+      "screenshots": {
+        "mobile": "screenshots/37-public-support-mobile.jpg",
+        "tablet": "screenshots/37-public-support-tablet.jpg"
+      },
+      "capturedViewports": {
+        "mobile": { "width": 390, "height": 844 },
+        "tablet": { "width": 1194, "height": 834, "orientation": "landscape" }
+      },
+      "feedback": [
+        {
+          "source": "user",
+          "verbatim": "wat is de functie van deze pagina",
+          "explanationProvided": "This public page is a support contact point available even without logging in. It displays the configured support email. Assistant suggested a clearer Help and contact page as a possible later improvement; no specific redesign was agreed."
+        },
+        {
+          "source": "user",
+          "verbatim": "Ah oke dit kan beter maar is prima zo",
+          "appliesTo": ["mobile", "tablet"],
+          "decision": "Support page is acceptable for now. Improvement is desirable but not a required change or blocker; no specific redesign requested."
+        }
+      ]
+    },
+    {
+      "id": "38-public-privacy",
+      "title": "Public privacy and data use information",
+      "route": "/privacy",
+      "state": "Existing public privacy information opened on mobile and landscape tablet. No settings or organisation data changed. This review concerns page presentation; it does not approve privacy policy accuracy or override earlier workflow decisions.",
+      "status": "reviewed_no_changes",
+      "screenshots": {
+        "mobile": "screenshots/38-public-privacy-mobile.jpg",
+        "tablet": "screenshots/38-public-privacy-tablet.jpg"
+      },
+      "capturedViewports": {
+        "mobile": { "width": 390, "height": 844 },
+        "tablet": { "width": 1194, "height": 834, "orientation": "landscape" }
+      },
+      "feedback": [
+        { "source": "user", "verbatim": "privacy is prima", "appliesTo": ["mobile", "tablet"], "decision": "Privacy page presentation approved; no visual changes requested." }
+      ]
+    },
+    {
+      "id": "39-account-deletion-information",
+      "title": "Public account deletion information",
+      "route": "/account-deletion",
+      "state": "Public instructions about account deletion viewed on mobile and landscape tablet. No deletion requested, account setting opened or data changed.",
+      "status": "reviewed_no_changes",
+      "screenshots": {
+        "mobile": "screenshots/39-account-deletion-information-mobile.jpg",
+        "tablet": "screenshots/39-account-deletion-information-tablet.jpg"
+      },
+      "capturedViewports": {
+        "mobile": { "width": 390, "height": 844 },
+        "tablet": { "width": 1194, "height": 834, "orientation": "landscape" }
+      },
+      "feedback": [
+        {
+          "source": "user",
+          "verbatim": "Beide zijn al goedkgekeurd je bent klaar",
+          "appliesTo": ["mobile", "tablet"],
+          "decision": "User confirms account deletion information and password recovery are already approved and ends the review. No changes requested."
+        }
+      ]
+    },
+    {
+      "id": "40-password-recovery",
+      "title": "Password recovery",
+      "route": "/forgot-password",
+      "state": "User explicitly confirmed this page was already approved and ended the review. Not reopened or newly captured in the concluding turn; no recovery email sent or password changed.",
+      "status": "approved_by_user_confirmation_no_new_capture",
+      "screenshots": {},
+      "feedback": [
+        {
+          "source": "user",
+          "verbatim": "Beide zijn al goedkgekeurd je bent klaar",
+          "decision": "Password recovery is already approved. Stop the visual review without asking again."
+        }
+      ]
+    }
+  ]
+}

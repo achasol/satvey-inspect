@@ -32,10 +32,12 @@ func (a *app) uploadNormAsset(w http.ResponseWriter, r *http.Request) error {
 	switch typ {
 	case "image/jpeg", "image/png", "image/webp":
 		kind = "photo"
+	case "application/pdf":
+		kind = "document"
 	case "audio/webm", "audio/mp4", "audio/ogg", "audio/wav", "audio/mpeg":
 		kind = "audio"
 	default:
-		return fail(415, "Gebruik JPG, PNG, WebP of audio")
+		return fail(415, "Gebruik JPG, PNG, WebP, PDF of audio")
 	}
 	limit := int64(20 << 20)
 	if kind == "audio" {
@@ -91,7 +93,16 @@ func (a *app) uploadNormAsset(w http.ResponseWriter, r *http.Request) error {
 }
 func (a *app) downloadNormAsset(w http.ResponseWriter, r *http.Request) error {
 	if _, _, e := a.require(r, "norms.read"); e != nil {
-		return e
+		if _, _, readErr := a.access(r, false); readErr != nil {
+			return readErr
+		}
+		var logo bool
+		if err := a.db.QueryRow(r.Context(), `SELECT EXISTS(SELECT 1 FROM organisations WHERE id=$1 AND logo_asset_id::text=$2) OR EXISTS(SELECT 1 FROM reports WHERE org_id=$1 AND snapshot->'organisation'->>'logoAssetId'=$2)`, r.PathValue("org"), r.PathValue("asset")).Scan(&logo); err != nil {
+			return err
+		}
+		if !logo {
+			return e
+		}
 	}
 	if !validID(r.PathValue("asset")) {
 		return fail(404, "Voorbeeld niet gevonden")

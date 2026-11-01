@@ -1,0 +1,3751 @@
+openapi: 3.0.0
+info:
+  title: VERA-Onderhoud
+  description: API-specificatie van informatiedomein Onderhoud
+  contact:
+    name: VERA
+    url: https://www.coraveraonline.nl
+    email: VERA@aedesdatastandaarden.nl
+  license:
+    name: "Copyright (c) Aedes vereniging van woningcorporaties"
+    url: https://raw.githubusercontent.com/Aedes-datastandaarden/vera-openapi/main/LICENSE
+  version: '4.3.3+261002.6'
+servers:
+  - url: https://onderhoud.vera.io:{port}/{basePath}
+    description: Productieserver
+    variables:
+       port:
+         enum:
+           - '8443'
+           - '443'
+         default: '443'
+       basePath:
+         default: v4
+tags:
+- name: Defecten
+  description: Operaties met betrekking tot een Defect
+- name: Inspectierapporten
+  description: Operaties met betrekking tot een Inspectierapport
+- name: Onderhoudsbestedingen
+  description: Operaties met betrekking tot een Onderhoudsbesteding
+- name: Onderhoudsorders
+  description: Operaties met betrekking tot een Onderhoudsorder
+- name: Onderhoudstaken
+  description: Operaties met betrekking tot een Onderhoudstaak
+- name: Onderhoudstaakvoorcalculaties
+  description: Operaties met betrekking tot een Onderhoudstaakvoorcalculatie
+- name: Onderhoudsverzoeken
+  description: Operaties met betrekking tot een Onderhoudsverzoek
+- name: Onderhoudsverzoekverrekeningen
+  description: Operaties met betrekking tot een Onderhoudsverzoekverrekening
+- name: Standaardprijzen
+  description: Operaties met betrekking tot een Standaardprijs
+paths:
+  /ping:
+    get:
+      summary: |
+        Een ping wordt beantwoord met response code 200
+      operationId: ping
+      responses:
+        '200':
+          description: OK
+        '408':
+          description: Request Timeout
+        default:
+          description: Onverwachte fout
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Foutbericht'
+  /defecten:
+    get:
+      tags:
+      - 'Defecten'
+      summary: Ophalen van Defecten
+      operationId: listDefecten
+      parameters:
+      - name: params
+        in: query
+        style: form
+        explode: true
+        schema:
+          $ref: '#/components/schemas/Defectbericht'
+      - $ref: '#/components/parameters/Cursor'
+      - $ref: '#/components/parameters/Pagina'
+      - $ref: '#/components/parameters/StuurgegevensZenderOrganisatie'
+      - $ref: '#/components/parameters/StuurgegevensZenderAdministratie'
+      - $ref: '#/components/parameters/StuurgegevensTijdstipBericht'
+      - $ref: '#/components/parameters/StuurgegevensReferentienummer'
+      - $ref: '#/components/parameters/ParametersPeiltijdstipMaterieel'
+      - $ref: '#/components/parameters/ParametersAantalPerPagina'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Defectbericht'
+                maxItems: 100
+          headers:
+            X-Parameters-Aantal:
+              $ref: '#/components/headers/X-Parameters-Aantal'
+            X-Parameters-AantalPerPagina:
+              $ref: '#/components/headers/X-Parameters-AantalPerPagina'
+            X-Parameters-Pagina:
+              $ref: '#/components/headers/X-Parameters-Pagina'
+            X-Parameters-Cursor:
+              $ref: '#/components/headers/X-Parameters-Cursor'
+        '401':
+          $ref: '#/components/responses/NietGeautoriseerd'
+        default:
+          description: Onverwachte fout
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Foutbericht'
+      security: 
+        - OAuth2: 
+          - Onderhoud.Defecten.Read
+          - Onderhoud.Defecten.ReadWrite
+    post:
+      tags:
+      - 'Defecten'
+      summary: Voegt een nieuw(e) Defect toe.
+      operationId: createDefect
+      parameters:
+      - $ref: '#/components/parameters/StuurgegevensZenderOrganisatie'
+      - $ref: '#/components/parameters/StuurgegevensZenderAdministratie'
+      - $ref: '#/components/parameters/StuurgegevensTijdstipBericht'
+      - $ref: '#/components/parameters/StuurgegevensReferentienummer'
+      requestBody:
+        description: Defect
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Defectbericht'
+      responses:
+        '201':
+          description: Created
+          headers:
+            Location:
+              schema:
+                type: string
+                format: uri
+              description: URL waar de resource leeft.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Defectbericht'
+        '401':
+          $ref: '#/components/responses/NietGeautoriseerd'
+        default:
+          description: Onverwachte fout
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Foutbericht'
+      security: 
+        - OAuth2: 
+          - Onderhoud.Defecten.ReadWrite
+    put:
+      tags:
+      - 'Defecten'
+      summary: |
+        Vervangen van een Defect op basis van overeenkomstige sleutelvelden.
+      operationId: replaceDefect
+      parameters:
+      - $ref: '#/components/parameters/StuurgegevensZenderOrganisatie'
+      - $ref: '#/components/parameters/StuurgegevensZenderAdministratie'
+      - $ref: '#/components/parameters/StuurgegevensTijdstipBericht'
+      - $ref: '#/components/parameters/StuurgegevensReferentienummer'
+      requestBody:
+        description: Entiteit Defect
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Defectbericht'
+      responses:
+        '200':
+          description: OK
+        '400':
+          description: Bad Request
+        '401':
+          $ref: '#/components/responses/NietGeautoriseerd'
+        '404':
+          description: Not Found
+        default:
+          description: Onverwachte fout
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Foutbericht'
+      security: 
+        - OAuth2: 
+          - Onderhoud.Defecten.ReadWrite
+    patch:
+      tags:
+      - 'Defecten'
+      summary: |
+        Wijzigen van afzonderlijke attributen van een Defect. In de meegestuurde entiteit moeten
+        sleutelvelden aanwezig zijn.
+      operationId: updateDefect
+      parameters:
+      - $ref: '#/components/parameters/StuurgegevensZenderOrganisatie'
+      - $ref: '#/components/parameters/StuurgegevensZenderAdministratie'
+      - $ref: '#/components/parameters/StuurgegevensTijdstipBericht'
+      - $ref: '#/components/parameters/StuurgegevensReferentienummer'
+      requestBody:
+        description: Entiteit Defect
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Defectbericht'
+      responses:
+        '200':
+          description: OK
+        '400':
+          description: Bad Request
+        '401':
+           $ref: '#/components/responses/NietGeautoriseerd'
+        '404':
+           description: Not Found
+        default:
+          description: Onverwachte fout
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Foutbericht'
+      security: 
+        - OAuth2: 
+          - Onderhoud.Defecten.ReadWrite
+  /defecten/{id}:
+    get:
+      tags:
+      - 'Defecten'
+      summary: Retourneert een Defect met de gegeven identifier
+      operationId: readDefectById
+      parameters:
+      - name: id
+        in: path
+        description: Id van Defect om op te halen
+        required: true
+        schema:
+          type: string
+      - $ref: '#/components/parameters/StuurgegevensZenderOrganisatie'
+      - $ref: '#/components/parameters/StuurgegevensZenderAdministratie'
+      - $ref: '#/components/parameters/StuurgegevensTijdstipBericht'
+      - $ref: '#/components/parameters/StuurgegevensReferentienummer'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Defectbericht'
+        '401':
+          $ref: '#/components/responses/NietGeautoriseerd'
+        '404':
+          description: Not Found
+        default:
+          description: Onverwachte fout
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Foutbericht'
+      security: 
+        - OAuth2: 
+          - Onderhoud.Defecten.Read
+          - Onderhoud.Defecten.ReadWrite
+    put:
+      tags:
+      - 'Defecten'
+      summary: Vervangen van een Defect
+      operationId: replaceDefectById
+      parameters:
+      - name: 'id'
+        in: 'path'
+        description: Id van Defect om te vervangen
+        required: true
+        schema:
+          type: string
+      - $ref: '#/components/parameters/StuurgegevensZenderOrganisatie'
+      - $ref: '#/components/parameters/StuurgegevensZenderAdministratie'
+      - $ref: '#/components/parameters/StuurgegevensTijdstipBericht'
+      - $ref: '#/components/parameters/StuurgegevensReferentienummer'
+      requestBody:
+        description: Entiteit Defect
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Defectbericht'
+      security: 
+        - OAuth2: 
+          - Onderhoud.Defecten.ReadWrite
+      responses:
+        '200':
+          description: OK
+        '401':
+          $ref: '#/components/responses/NietGeautoriseerd'
+        '404':
+          description: Not Found
+        default:
+          description: Onverwachte fout
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Foutbericht'
+    patch:
+      tags:
+      - 'Defecten'
+      summary: Wijzigen van een Defect
+      operationId: updateDefectById
+      parameters:
+      - name: 'id'
+        in: 'path'
+        description: Id van Defect om te wijzigen
+        required: true
+        schema:
+          type: string
+      - $ref: '#/components/parameters/StuurgegevensZenderOrganisatie'
+      - $ref: '#/components/parameters/StuurgegevensZenderAdministratie'
+      - $ref: '#/components/parameters/StuurgegevensTijdstipBericht'
+      - $ref: '#/components/parameters/StuurgegevensReferentienummer'
+      requestBody:
+        description: Entiteit Defect
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Defectbericht'
+      responses:
+        '200':
+          description: OK
+        '401':
+          $ref: '#/components/responses/NietGeautoriseerd'
+        '404':
+          description: Not Found
+        default:
+          description: Onverwachte fout
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Foutbericht'
+      security: 
+        - OAuth2: 
+          - Onderhoud.Defecten.ReadWrite
+  /inspectierapporten:
+    get:
+      tags:
+      - 'Inspectierapporten'
+      summary: Ophalen van Inspectierapporten
+      operationId: listInspectierapporten
+      parameters:
+      - name: params
+        in: query
+        style: form
+        explode: true
+        schema:
+          $ref: '#/components/schemas/Inspectierapportbericht'
+      - $ref: '#/components/parameters/Cursor'
+      - $ref: '#/components/parameters/Pagina'
+      - $ref: '#/components/parameters/StuurgegevensZenderOrganisatie'
+      - $ref: '#/components/parameters/StuurgegevensZenderAdministratie'
+      - $ref: '#/components/parameters/StuurgegevensTijdstipBericht'
+      - $ref: '#/components/parameters/StuurgegevensReferentienummer'
+      - $ref: '#/components/parameters/ParametersPeiltijdstipMaterieel'
+      - $ref: '#/components/parameters/ParametersAantalPerPagina'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Inspectierapportbericht'
+                maxItems: 100
+          headers:
+            X-Parameters-Aantal:
+              $ref: '#/components/headers/X-Parameters-Aantal'
+            X-Parameters-AantalPerPagina:
+              $ref: '#/components/headers/X-Parameters-AantalPerPagina'
+            X-Parameters-Pagina:
+              $ref: '#/components/headers/X-Parameters-Pagina'
+            X-Parameters-Cursor:
+              $ref: '#/components/headers/X-Parameters-Cursor'
+        '401':
+          $ref: '#/components/responses/NietGeautoriseerd'
+        default:
+          description: Onverwachte fout
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Foutbericht'
+      security: 
+        - OAuth2: 
+          - Onderhoud.Inspectierapporten.Read
+          - Onderhoud.Inspectierapporten.ReadWrite
+    post:
+      tags:
+      - 'Inspectierapporten'
+      summary: Voegt een nieuw(e) Inspectierapport toe.
+      operationId: createInspectierapport
+      parameters:
+      - $ref: '#/components/parameters/StuurgegevensZenderOrganisatie'
+      - $ref: '#/components/parameters/StuurgegevensZenderAdministratie'
+      - $ref: '#/components/parameters/StuurgegevensTijdstipBericht'
+      - $ref: '#/components/parameters/StuurgegevensReferentienummer'
+      requestBody:
+        description: Inspectierapport
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Inspectierapportbericht'
+      responses:
+        '201':
+          description: Created
+          headers:
+            Location:
+              schema:
+                type: string
+                format: uri
+              description: URL waar de resource leeft.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Inspectierapportbericht'
+        '401':
+          $ref: '#/components/responses/NietGeautoriseerd'
+        default:
+          description: Onverwachte fout
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Foutbericht'
+      security: 
+        - OAuth2: 
+          - Onderhoud.Inspectierapporten.ReadWrite
+    put:
+      tags:
+      - 'Inspectierapporten'
+      summary: |
+        Vervangen van een Inspectierapport op basis van overeenkomstige sleutelvelden.
+      operationId: replaceInspectierapport
+      parameters:
+      - $ref: '#/components/parameters/StuurgegevensZenderOrganisatie'
+      - $ref: '#/components/parameters/StuurgegevensZenderAdministratie'
+      - $ref: '#/components/parameters/StuurgegevensTijdstipBericht'
+      - $ref: '#/components/parameters/StuurgegevensReferentienummer'
+      requestBody:
+        description: Entiteit Inspectierapport
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Inspectierapportbericht'
+      responses:
+        '200':
+          description: OK
+        '400':
+          description: Bad Request
+        '401':
+          $ref: '#/components/responses/NietGeautoriseerd'
+        '404':
+          description: Not Found
+        default:
+          description: Onverwachte fout
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Foutbericht'
+      security: 
+        - OAuth2: 
+          - Onderhoud.Inspectierapporten.ReadWrite
+    patch:
+      tags:
+      - 'Inspectierapporten'
+      summary: |
+        Wijzigen van afzonderlijke attributen van een Inspectierapport. In de meegestuurde entiteit moeten
+        sleutelvelden aanwezig zijn.
+      operationId: updateInspectierapport
+      parameters:
+      - $ref: '#/components/parameters/StuurgegevensZenderOrganisatie'
+      - $ref: '#/components/parameters/StuurgegevensZenderAdministratie'
+      - $ref: '#/components/parameters/StuurgegevensTijdstipBericht'
+      - $ref: '#/components/parameters/StuurgegevensReferentienummer'
+      requestBody:
+        description: Entiteit Inspectierapport
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Inspectierapportbericht'
+      responses:
+        '200':
+          description: OK
+        '400':
+          description: Bad Request
+        '401':
+           $ref: '#/components/responses/NietGeautoriseerd'
+        '404':
+           description: Not Found
+        default:
+          description: Onverwachte fout
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Foutbericht'
+      security: 
+        - OAuth2: 
+          - Onderhoud.Inspectierapporten.ReadWrite
+  /inspectierapporten/{id}:
+    get:
+      tags:
+      - 'Inspectierapporten'
+      summary: Retourneert een Inspectierapport met de gegeven identifier
+      operationId: readInspectierapportById
+      parameters:
+      - name: id
+        in: path
+        description: Id van Inspectierapport om op te halen
+        required: true
+        schema:
+          type: string
+      - $ref: '#/components/parameters/StuurgegevensZenderOrganisatie'
+      - $ref: '#/components/parameters/StuurgegevensZenderAdministratie'
+      - $ref: '#/components/parameters/StuurgegevensTijdstipBericht'
+      - $ref: '#/components/parameters/StuurgegevensReferentienummer'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Inspectierapportbericht'
+        '401':
+          $ref: '#/components/responses/NietGeautoriseerd'
+        '404':
+          description: Not Found
+        default:
+          description: Onverwachte fout
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Foutbericht'
+      security: 
+        - OAuth2: 
+          - Onderhoud.Inspectierapporten.Read
+          - Onderhoud.Inspectierapporten.ReadWrite
+    put:
+      tags:
+      - 'Inspectierapporten'
+      summary: Vervangen van een Inspectierapport
+      operationId: replaceInspectierapportById
+      parameters:
+      - name: 'id'
+        in: 'path'
+        description: Id van Inspectierapport om te vervangen
+        required: true
+        schema:
+          type: string
+      - $ref: '#/components/parameters/StuurgegevensZenderOrganisatie'
+      - $ref: '#/components/parameters/StuurgegevensZenderAdministratie'
+      - $ref: '#/components/parameters/StuurgegevensTijdstipBericht'
+      - $ref: '#/components/parameters/StuurgegevensReferentienummer'
+      requestBody:
+        description: Entiteit Inspectierapport
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Inspectierapportbericht'
+      security: 
+        - OAuth2: 
+          - Onderhoud.Inspectierapporten.ReadWrite
+      responses:
+        '200':
+          description: OK
+        '401':
+          $ref: '#/components/responses/NietGeautoriseerd'
+        '404':
+          description: Not Found
+        default:
+          description: Onverwachte fout
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Foutbericht'
+    patch:
+      tags:
+      - 'Inspectierapporten'
+      summary: Wijzigen van een Inspectierapport
+      operationId: updateInspectierapportById
+      parameters:
+      - name: 'id'
+        in: 'path'
+        description: Id van Inspectierapport om te wijzigen
+        required: true
+        schema:
+          type: string
+      - $ref: '#/components/parameters/StuurgegevensZenderOrganisatie'
+      - $ref: '#/components/parameters/StuurgegevensZenderAdministratie'
+      - $ref: '#/components/parameters/StuurgegevensTijdstipBericht'
+      - $ref: '#/components/parameters/StuurgegevensReferentienummer'
+      requestBody:
+        description: Entiteit Inspectierapport
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Inspectierapportbericht'
+      responses:
+        '200':
+          description: OK
+        '401':
+          $ref: '#/components/responses/NietGeautoriseerd'
+        '404':
+          description: Not Found
+        default:
+          description: Onverwachte fout
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Foutbericht'
+      security: 
+        - OAuth2: 
+          - Onderhoud.Inspectierapporten.ReadWrite
+  /onderhoudsbestedingen:
+    get:
+      tags:
+      - 'Onderhoudsbestedingen'
+      summary: Ophalen van Onderhoudsbestedingen
+      operationId: listOnderhoudsbestedingen
+      parameters:
+      - name: params
+        in: query
+        style: form
+        explode: true
+        schema:
+          $ref: '#/components/schemas/Onderhoudsbestedingbericht'
+      - $ref: '#/components/parameters/Cursor'
+      - $ref: '#/components/parameters/Pagina'
+      - $ref: '#/components/parameters/StuurgegevensZenderOrganisatie'
+      - $ref: '#/components/parameters/StuurgegevensZenderAdministratie'
+      - $ref: '#/components/parameters/StuurgegevensTijdstipBericht'
+      - $ref: '#/components/parameters/StuurgegevensReferentienummer'
+      - $ref: '#/components/parameters/ParametersPeiltijdstipMaterieel'
+      - $ref: '#/components/parameters/ParametersAantalPerPagina'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Onderhoudsbestedingbericht'
+                maxItems: 100
+          headers:
+            X-Parameters-Aantal:
+              $ref: '#/components/headers/X-Parameters-Aantal'
+            X-Parameters-AantalPerPagina:
+              $ref: '#/components/headers/X-Parameters-AantalPerPagina'
+            X-Parameters-Pagina:
+              $ref: '#/components/headers/X-Parameters-Pagina'
+            X-Parameters-Cursor:
+              $ref: '#/components/headers/X-Parameters-Cursor'
+        '401':
+          $ref: '#/components/responses/NietGeautoriseerd'
+        default:
+          description: Onverwachte fout
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Foutbericht'
+      security: 
+        - OAuth2: 
+          - Onderhoud.Onderhoudsbestedingen.Read
+          - Onderhoud.Onderhoudsbestedingen.ReadWrite
+    post:
+      tags:
+      - 'Onderhoudsbestedingen'
+      summary: Voegt een nieuw(e) Onderhoudsbesteding toe.
+      operationId: createOnderhoudsbesteding
+      parameters:
+      - $ref: '#/components/parameters/StuurgegevensZenderOrganisatie'
+      - $ref: '#/components/parameters/StuurgegevensZenderAdministratie'
+      - $ref: '#/components/parameters/StuurgegevensTijdstipBericht'
+      - $ref: '#/components/parameters/StuurgegevensReferentienummer'
+      requestBody:
+        description: Onderhoudsbesteding
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Onderhoudsbestedingbericht'
+      responses:
+        '201':
+          description: Created
+          headers:
+            Location:
+              schema:
+                type: string
+                format: uri
+              description: URL waar de resource leeft.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Onderhoudsbestedingbericht'
+        '401':
+          $ref: '#/components/responses/NietGeautoriseerd'
+        default:
+          description: Onverwachte fout
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Foutbericht'
+      security: 
+        - OAuth2: 
+          - Onderhoud.Onderhoudsbestedingen.ReadWrite
+    put:
+      tags:
+      - 'Onderhoudsbestedingen'
+      summary: |
+        Vervangen van een Onderhoudsbesteding op basis van overeenkomstige sleutelvelden.
+      operationId: replaceOnderhoudsbesteding
+      parameters:
+      - $ref: '#/components/parameters/StuurgegevensZenderOrganisatie'
+      - $ref: '#/components/parameters/StuurgegevensZenderAdministratie'
+      - $ref: '#/components/parameters/StuurgegevensTijdstipBericht'
+      - $ref: '#/components/parameters/StuurgegevensReferentienummer'
+      requestBody:
+        description: Entiteit Onderhoudsbesteding
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Onderhoudsbestedingbericht'
+      responses:
+        '200':
+          description: OK
+        '400':
+          description: Bad Request
+        '401':
+          $ref: '#/components/responses/NietGeautoriseerd'
+        '404':
+          description: Not Found
+        default:
+          description: Onverwachte fout
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Foutbericht'
+      security: 
+        - OAuth2: 
+          - Onderhoud.Onderhoudsbestedingen.ReadWrite
+    patch:
+      tags:
+      - 'Onderhoudsbestedingen'
+      summary: |
+        Wijzigen van afzonderlijke attributen van een Onderhoudsbesteding. In de meegestuurde entiteit moeten
+        sleutelvelden aanwezig zijn.
+      operationId: updateOnderhoudsbesteding
+      parameters:
+      - $ref: '#/components/parameters/StuurgegevensZenderOrganisatie'
+      - $ref: '#/components/parameters/StuurgegevensZenderAdministratie'
+      - $ref: '#/components/parameters/StuurgegevensTijdstipBericht'
+      - $ref: '#/components/parameters/StuurgegevensReferentienummer'
+      requestBody:
+        description: Entiteit Onderhoudsbesteding
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Onderhoudsbestedingbericht'
+      responses:
+        '200':
+          description: OK
+        '400':
+          description: Bad Request
+        '401':
+           $ref: '#/components/responses/NietGeautoriseerd'
+        '404':
+           description: Not Found
+        default:
+          description: Onverwachte fout
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Foutbericht'
+      security: 
+        - OAuth2: 
+          - Onderhoud.Onderhoudsbestedingen.ReadWrite
+  /onderhoudsbestedingen/{id}:
+    get:
+      tags:
+      - 'Onderhoudsbestedingen'
+      summary: Retourneert een Onderhoudsbesteding met de gegeven identifier
+      operationId: readOnderhoudsbestedingById
+      parameters:
+      - name: id
+        in: path
+        description: Id van Onderhoudsbesteding om op te halen
+        required: true
+        schema:
+          type: string
+      - $ref: '#/components/parameters/StuurgegevensZenderOrganisatie'
+      - $ref: '#/components/parameters/StuurgegevensZenderAdministratie'
+      - $ref: '#/components/parameters/StuurgegevensTijdstipBericht'
+      - $ref: '#/components/parameters/StuurgegevensReferentienummer'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Onderhoudsbestedingbericht'
+        '401':
+          $ref: '#/components/responses/NietGeautoriseerd'
+        '404':
+          description: Not Found
+        default:
+          description: Onverwachte fout
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Foutbericht'
+      security: 
+        - OAuth2: 
+          - Onderhoud.Onderhoudsbestedingen.Read
+          - Onderhoud.Onderhoudsbestedingen.ReadWrite
+    put:
+      tags:
+      - 'Onderhoudsbestedingen'
+      summary: Vervangen van een Onderhoudsbesteding
+      operationId: replaceOnderhoudsbestedingById
+      parameters:
+      - name: 'id'
+        in: 'path'
+        description: Id van Onderhoudsbesteding om te vervangen
+        required: true
+        schema:
+          type: string
+      - $ref: '#/components/parameters/StuurgegevensZenderOrganisatie'
+      - $ref: '#/components/parameters/StuurgegevensZenderAdministratie'
+      - $ref: '#/components/parameters/StuurgegevensTijdstipBericht'
+      - $ref: '#/components/parameters/StuurgegevensReferentienummer'
+      requestBody:
+        description: Entiteit Onderhoudsbesteding
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Onderhoudsbestedingbericht'
+      security: 
+        - OAuth2: 
+          - Onderhoud.Onderhoudsbestedingen.ReadWrite
+      responses:
+        '200':
+          description: OK
+        '401':
+          $ref: '#/components/responses/NietGeautoriseerd'
+        '404':
+          description: Not Found
+        default:
+          description: Onverwachte fout
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Foutbericht'
+    patch:
+      tags:
+      - 'Onderhoudsbestedingen'
+      summary: Wijzigen van een Onderhoudsbesteding
+      operationId: updateOnderhoudsbestedingById
+      parameters:
+      - name: 'id'
+        in: 'path'
+        description: Id van Onderhoudsbesteding om te wijzigen
+        required: true
+        schema:
+          type: string
+      - $ref: '#/components/parameters/StuurgegevensZenderOrganisatie'
+      - $ref: '#/components/parameters/StuurgegevensZenderAdministratie'
+      - $ref: '#/components/parameters/StuurgegevensTijdstipBericht'
+      - $ref: '#/components/parameters/StuurgegevensReferentienummer'
+      requestBody:
+        description: Entiteit Onderhoudsbesteding
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Onderhoudsbestedingbericht'
+      responses:
+        '200':
+          description: OK
+        '401':
+          $ref: '#/components/responses/NietGeautoriseerd'
+        '404':
+          description: Not Found
+        default:
+          description: Onverwachte fout
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Foutbericht'
+      security: 
+        - OAuth2: 
+          - Onderhoud.Onderhoudsbestedingen.ReadWrite
+  /onderhoudsorders:
+    get:
+      tags:
+      - 'Onderhoudsorders'
+      summary: Ophalen van Onderhoudsorders
+      operationId: listOnderhoudsorders
+      parameters:
+      - name: params
+        in: query
+        style: form
+        explode: true
+        schema:
+          $ref: '#/components/schemas/Onderhoudsorderbericht'
+      - $ref: '#/components/parameters/Cursor'
+      - $ref: '#/components/parameters/Pagina'
+      - $ref: '#/components/parameters/StuurgegevensZenderOrganisatie'
+      - $ref: '#/components/parameters/StuurgegevensZenderAdministratie'
+      - $ref: '#/components/parameters/StuurgegevensTijdstipBericht'
+      - $ref: '#/components/parameters/StuurgegevensReferentienummer'
+      - $ref: '#/components/parameters/ParametersPeiltijdstipMaterieel'
+      - $ref: '#/components/parameters/ParametersAantalPerPagina'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Onderhoudsorderbericht'
+                maxItems: 100
+          headers:
+            X-Parameters-Aantal:
+              $ref: '#/components/headers/X-Parameters-Aantal'
+            X-Parameters-AantalPerPagina:
+              $ref: '#/components/headers/X-Parameters-AantalPerPagina'
+            X-Parameters-Pagina:
+              $ref: '#/components/headers/X-Parameters-Pagina'
+            X-Parameters-Cursor:
+              $ref: '#/components/headers/X-Parameters-Cursor'
+        '401':
+          $ref: '#/components/responses/NietGeautoriseerd'
+        default:
+          description: Onverwachte fout
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Foutbericht'
+      security: 
+        - OAuth2: 
+          - Onderhoud.Onderhoudsorders.Read
+          - Onderhoud.Onderhoudsorders.ReadWrite
+    post:
+      tags:
+      - 'Onderhoudsorders'
+      summary: Voegt een nieuw(e) Onderhoudsorder toe.
+      operationId: createOnderhoudsorder
+      parameters:
+      - $ref: '#/components/parameters/StuurgegevensZenderOrganisatie'
+      - $ref: '#/components/parameters/StuurgegevensZenderAdministratie'
+      - $ref: '#/components/parameters/StuurgegevensTijdstipBericht'
+      - $ref: '#/components/parameters/StuurgegevensReferentienummer'
+      requestBody:
+        description: Onderhoudsorder
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Onderhoudsorderbericht'
+      responses:
+        '201':
+          description: Created
+          headers:
+            Location:
+              schema:
+                type: string
+                format: uri
+              description: URL waar de resource leeft.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Onderhoudsorderbericht'
+        '401':
+          $ref: '#/components/responses/NietGeautoriseerd'
+        default:
+          description: Onverwachte fout
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Foutbericht'
+      security: 
+        - OAuth2: 
+          - Onderhoud.Onderhoudsorders.ReadWrite
+    put:
+      tags:
+      - 'Onderhoudsorders'
+      summary: |
+        Vervangen van een Onderhoudsorder op basis van overeenkomstige sleutelvelden.
+      operationId: replaceOnderhoudsorder
+      parameters:
+      - $ref: '#/components/parameters/StuurgegevensZenderOrganisatie'
+      - $ref: '#/components/parameters/StuurgegevensZenderAdministratie'
+      - $ref: '#/components/parameters/StuurgegevensTijdstipBericht'
+      - $ref: '#/components/parameters/StuurgegevensReferentienummer'
+      requestBody:
+        description: Entiteit Onderhoudsorder
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Onderhoudsorderbericht'
+      responses:
+        '200':
+          description: OK
+        '400':
+          description: Bad Request
+        '401':
+          $ref: '#/components/responses/NietGeautoriseerd'
+        '404':
+          description: Not Found
+        default:
+          description: Onverwachte fout
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Foutbericht'
+      security: 
+        - OAuth2: 
+          - Onderhoud.Onderhoudsorders.ReadWrite
+    patch:
+      tags:
+      - 'Onderhoudsorders'
+      summary: |
+        Wijzigen van afzonderlijke attributen van een Onderhoudsorder. In de meegestuurde entiteit moeten
+        sleutelvelden aanwezig zijn.
+      operationId: updateOnderhoudsorder
+      parameters:
+      - $ref: '#/components/parameters/StuurgegevensZenderOrganisatie'
+      - $ref: '#/components/parameters/StuurgegevensZenderAdministratie'
+      - $ref: '#/components/parameters/StuurgegevensTijdstipBericht'
+      - $ref: '#/components/parameters/StuurgegevensReferentienummer'
+      requestBody:
+        description: Entiteit Onderhoudsorder
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Onderhoudsorderbericht'
+      responses:
+        '200':
+          description: OK
+        '400':
+          description: Bad Request
+        '401':
+           $ref: '#/components/responses/NietGeautoriseerd'
+        '404':
+           description: Not Found
+        default:
+          description: Onverwachte fout
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Foutbericht'
+      security: 
+        - OAuth2: 
+          - Onderhoud.Onderhoudsorders.ReadWrite
+  /onderhoudsorders/{id}:
+    get:
+      tags:
+      - 'Onderhoudsorders'
+      summary: Retourneert een Onderhoudsorder met de gegeven identifier
+      operationId: readOnderhoudsorderById
+      parameters:
+      - name: id
+        in: path
+        description: Id van Onderhoudsorder om op te halen
+        required: true
+        schema:
+          type: string
+      - $ref: '#/components/parameters/StuurgegevensZenderOrganisatie'
+      - $ref: '#/components/parameters/StuurgegevensZenderAdministratie'
+      - $ref: '#/components/parameters/StuurgegevensTijdstipBericht'
+      - $ref: '#/components/parameters/StuurgegevensReferentienummer'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Onderhoudsorderbericht'
+        '401':
+          $ref: '#/components/responses/NietGeautoriseerd'
+        '404':
+          description: Not Found
+        default:
+          description: Onverwachte fout
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Foutbericht'
+      security: 
+        - OAuth2: 
+          - Onderhoud.Onderhoudsorders.Read
+          - Onderhoud.Onderhoudsorders.ReadWrite
+    put:
+      tags:
+      - 'Onderhoudsorders'
+      summary: Vervangen van een Onderhoudsorder
+      operationId: replaceOnderhoudsorderById
+      parameters:
+      - name: 'id'
+        in: 'path'
+        description: Id van Onderhoudsorder om te vervangen
+        required: true
+        schema:
+          type: string
+      - $ref: '#/components/parameters/StuurgegevensZenderOrganisatie'
+      - $ref: '#/components/parameters/StuurgegevensZenderAdministratie'
+      - $ref: '#/components/parameters/StuurgegevensTijdstipBericht'
+      - $ref: '#/components/parameters/StuurgegevensReferentienummer'
+      requestBody:
+        description: Entiteit Onderhoudsorder
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Onderhoudsorderbericht'
+      security: 
+        - OAuth2: 
+          - Onderhoud.Onderhoudsorders.ReadWrite
+      responses:
+        '200':
+          description: OK
+        '401':
+          $ref: '#/components/responses/NietGeautoriseerd'
+        '404':
+          description: Not Found
+        default:
+          description: Onverwachte fout
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Foutbericht'
+    patch:
+      tags:
+      - 'Onderhoudsorders'
+      summary: Wijzigen van een Onderhoudsorder
+      operationId: updateOnderhoudsorderById
+      parameters:
+      - name: 'id'
+        in: 'path'
+        description: Id van Onderhoudsorder om te wijzigen
+        required: true
+        schema:
+          type: string
+      - $ref: '#/components/parameters/StuurgegevensZenderOrganisatie'
+      - $ref: '#/components/parameters/StuurgegevensZenderAdministratie'
+      - $ref: '#/components/parameters/StuurgegevensTijdstipBericht'
+      - $ref: '#/components/parameters/StuurgegevensReferentienummer'
+      requestBody:
+        description: Entiteit Onderhoudsorder
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Onderhoudsorderbericht'
+      responses:
+        '200':
+          description: OK
+        '401':
+          $ref: '#/components/responses/NietGeautoriseerd'
+        '404':
+          description: Not Found
+        default:
+          description: Onverwachte fout
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Foutbericht'
+      security: 
+        - OAuth2: 
+          - Onderhoud.Onderhoudsorders.ReadWrite
+  /onderhoudstaken:
+    get:
+      tags:
+      - 'Onderhoudstaken'
+      summary: Ophalen van Onderhoudstaken
+      operationId: listOnderhoudstaken
+      parameters:
+      - name: params
+        in: query
+        style: form
+        explode: true
+        schema:
+          $ref: '#/components/schemas/Onderhoudstaakbericht'
+      - $ref: '#/components/parameters/Cursor'
+      - $ref: '#/components/parameters/Pagina'
+      - $ref: '#/components/parameters/StuurgegevensZenderOrganisatie'
+      - $ref: '#/components/parameters/StuurgegevensZenderAdministratie'
+      - $ref: '#/components/parameters/StuurgegevensTijdstipBericht'
+      - $ref: '#/components/parameters/StuurgegevensReferentienummer'
+      - $ref: '#/components/parameters/ParametersPeiltijdstipMaterieel'
+      - $ref: '#/components/parameters/ParametersAantalPerPagina'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Onderhoudstaakbericht'
+                maxItems: 100
+          headers:
+            X-Parameters-Aantal:
+              $ref: '#/components/headers/X-Parameters-Aantal'
+            X-Parameters-AantalPerPagina:
+              $ref: '#/components/headers/X-Parameters-AantalPerPagina'
+            X-Parameters-Pagina:
+              $ref: '#/components/headers/X-Parameters-Pagina'
+            X-Parameters-Cursor:
+              $ref: '#/components/headers/X-Parameters-Cursor'
+        '401':
+          $ref: '#/components/responses/NietGeautoriseerd'
+        default:
+          description: Onverwachte fout
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Foutbericht'
+      security: 
+        - OAuth2: 
+          - Onderhoud.Onderhoudstaken.Read
+          - Onderhoud.Onderhoudstaken.ReadWrite
+    post:
+      tags:
+      - 'Onderhoudstaken'
+      summary: Voegt een nieuw(e) Onderhoudstaak toe.
+      operationId: createOnderhoudstaak
+      parameters:
+      - $ref: '#/components/parameters/StuurgegevensZenderOrganisatie'
+      - $ref: '#/components/parameters/StuurgegevensZenderAdministratie'
+      - $ref: '#/components/parameters/StuurgegevensTijdstipBericht'
+      - $ref: '#/components/parameters/StuurgegevensReferentienummer'
+      requestBody:
+        description: Onderhoudstaak
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Onderhoudstaakbericht'
+      responses:
+        '201':
+          description: Created
+          headers:
+            Location:
+              schema:
+                type: string
+                format: uri
+              description: URL waar de resource leeft.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Onderhoudstaakbericht'
+        '401':
+          $ref: '#/components/responses/NietGeautoriseerd'
+        default:
+          description: Onverwachte fout
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Foutbericht'
+      security: 
+        - OAuth2: 
+          - Onderhoud.Onderhoudstaken.ReadWrite
+    put:
+      tags:
+      - 'Onderhoudstaken'
+      summary: |
+        Vervangen van een Onderhoudstaak op basis van overeenkomstige sleutelvelden.
+      operationId: replaceOnderhoudstaak
+      parameters:
+      - $ref: '#/components/parameters/StuurgegevensZenderOrganisatie'
+      - $ref: '#/components/parameters/StuurgegevensZenderAdministratie'
+      - $ref: '#/components/parameters/StuurgegevensTijdstipBericht'
+      - $ref: '#/components/parameters/StuurgegevensReferentienummer'
+      requestBody:
+        description: Entiteit Onderhoudstaak
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Onderhoudstaakbericht'
+      responses:
+        '200':
+          description: OK
+        '400':
+          description: Bad Request
+        '401':
+          $ref: '#/components/responses/NietGeautoriseerd'
+        '404':
+          description: Not Found
+        default:
+          description: Onverwachte fout
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Foutbericht'
+      security: 
+        - OAuth2: 
+          - Onderhoud.Onderhoudstaken.ReadWrite
+    patch:
+      tags:
+      - 'Onderhoudstaken'
+      summary: |
+        Wijzigen van afzonderlijke attributen van een Onderhoudstaak. In de meegestuurde entiteit moeten
+        sleutelvelden aanwezig zijn.
+      operationId: updateOnderhoudstaak
+      parameters:
+      - $ref: '#/components/parameters/StuurgegevensZenderOrganisatie'
+      - $ref: '#/components/parameters/StuurgegevensZenderAdministratie'
+      - $ref: '#/components/parameters/StuurgegevensTijdstipBericht'
+      - $ref: '#/components/parameters/StuurgegevensReferentienummer'
+      requestBody:
+        description: Entiteit Onderhoudstaak
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Onderhoudstaakbericht'
+      responses:
+        '200':
+          description: OK
+        '400':
+          description: Bad Request
+        '401':
+           $ref: '#/components/responses/NietGeautoriseerd'
+        '404':
+           description: Not Found
+        default:
+          description: Onverwachte fout
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Foutbericht'
+      security: 
+        - OAuth2: 
+          - Onderhoud.Onderhoudstaken.ReadWrite
+  /onderhoudstaken/{id}:
+    get:
+      tags:
+      - 'Onderhoudstaken'
+      summary: Retourneert een Onderhoudstaak met de gegeven identifier
+      operationId: readOnderhoudstaakById
+      parameters:
+      - name: id
+        in: path
+        description: Id van Onderhoudstaak om op te halen
+        required: true
+        schema:
+          type: string
+      - $ref: '#/components/parameters/StuurgegevensZenderOrganisatie'
+      - $ref: '#/components/parameters/StuurgegevensZenderAdministratie'
+      - $ref: '#/components/parameters/StuurgegevensTijdstipBericht'
+      - $ref: '#/components/parameters/StuurgegevensReferentienummer'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Onderhoudstaakbericht'
+        '401':
+          $ref: '#/components/responses/NietGeautoriseerd'
+        '404':
+          description: Not Found
+        default:
+          description: Onverwachte fout
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Foutbericht'
+      security: 
+        - OAuth2: 
+          - Onderhoud.Onderhoudstaken.Read
+          - Onderhoud.Onderhoudstaken.ReadWrite
+    put:
+      tags:
+      - 'Onderhoudstaken'
+      summary: Vervangen van een Onderhoudstaak
+      operationId: replaceOnderhoudstaakById
+      parameters:
+      - name: 'id'
+        in: 'path'
+        description: Id van Onderhoudstaak om te vervangen
+        required: true
+        schema:
+          type: string
+      - $ref: '#/components/parameters/StuurgegevensZenderOrganisatie'
+      - $ref: '#/components/parameters/StuurgegevensZenderAdministratie'
+      - $ref: '#/components/parameters/StuurgegevensTijdstipBericht'
+      - $ref: '#/components/parameters/StuurgegevensReferentienummer'
+      requestBody:
+        description: Entiteit Onderhoudstaak
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Onderhoudstaakbericht'
+      security: 
+        - OAuth2: 
+          - Onderhoud.Onderhoudstaken.ReadWrite
+      responses:
+        '200':
+          description: OK
+        '401':
+          $ref: '#/components/responses/NietGeautoriseerd'
+        '404':
+          description: Not Found
+        default:
+          description: Onverwachte fout
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Foutbericht'
+    patch:
+      tags:
+      - 'Onderhoudstaken'
+      summary: Wijzigen van een Onderhoudstaak
+      operationId: updateOnderhoudstaakById
+      parameters:
+      - name: 'id'
+        in: 'path'
+        description: Id van Onderhoudstaak om te wijzigen
+        required: true
+        schema:
+          type: string
+      - $ref: '#/components/parameters/StuurgegevensZenderOrganisatie'
+      - $ref: '#/components/parameters/StuurgegevensZenderAdministratie'
+      - $ref: '#/components/parameters/StuurgegevensTijdstipBericht'
+      - $ref: '#/components/parameters/StuurgegevensReferentienummer'
+      requestBody:
+        description: Entiteit Onderhoudstaak
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Onderhoudstaakbericht'
+      responses:
+        '200':
+          description: OK
+        '401':
+          $ref: '#/components/responses/NietGeautoriseerd'
+        '404':
+          description: Not Found
+        default:
+          description: Onverwachte fout
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Foutbericht'
+      security: 
+        - OAuth2: 
+          - Onderhoud.Onderhoudstaken.ReadWrite
+  /onderhoudstaakvoorcalculaties:
+    get:
+      tags:
+      - 'Onderhoudstaakvoorcalculaties'
+      summary: Ophalen van Onderhoudstaakvoorcalculaties
+      operationId: listOnderhoudstaakvoorcalculaties
+      parameters:
+      - name: params
+        in: query
+        style: form
+        explode: true
+        schema:
+          $ref: '#/components/schemas/Onderhoudstaakvoorcalculatiebericht'
+      - $ref: '#/components/parameters/Cursor'
+      - $ref: '#/components/parameters/Pagina'
+      - $ref: '#/components/parameters/StuurgegevensZenderOrganisatie'
+      - $ref: '#/components/parameters/StuurgegevensZenderAdministratie'
+      - $ref: '#/components/parameters/StuurgegevensTijdstipBericht'
+      - $ref: '#/components/parameters/StuurgegevensReferentienummer'
+      - $ref: '#/components/parameters/ParametersPeiltijdstipMaterieel'
+      - $ref: '#/components/parameters/ParametersAantalPerPagina'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Onderhoudstaakvoorcalculatiebericht'
+                maxItems: 100
+          headers:
+            X-Parameters-Aantal:
+              $ref: '#/components/headers/X-Parameters-Aantal'
+            X-Parameters-AantalPerPagina:
+              $ref: '#/components/headers/X-Parameters-AantalPerPagina'
+            X-Parameters-Pagina:
+              $ref: '#/components/headers/X-Parameters-Pagina'
+            X-Parameters-Cursor:
+              $ref: '#/components/headers/X-Parameters-Cursor'
+        '401':
+          $ref: '#/components/responses/NietGeautoriseerd'
+        default:
+          description: Onverwachte fout
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Foutbericht'
+      security: 
+        - OAuth2: 
+          - Onderhoud.Onderhoudstaakvoorcalculaties.Read
+          - Onderhoud.Onderhoudstaakvoorcalculaties.ReadWrite
+    post:
+      tags:
+      - 'Onderhoudstaakvoorcalculaties'
+      summary: Voegt een nieuw(e) Onderhoudstaakvoorcalculatie toe.
+      operationId: createOnderhoudstaakvoorcalculatie
+      parameters:
+      - $ref: '#/components/parameters/StuurgegevensZenderOrganisatie'
+      - $ref: '#/components/parameters/StuurgegevensZenderAdministratie'
+      - $ref: '#/components/parameters/StuurgegevensTijdstipBericht'
+      - $ref: '#/components/parameters/StuurgegevensReferentienummer'
+      requestBody:
+        description: Onderhoudstaakvoorcalculatie
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Onderhoudstaakvoorcalculatiebericht'
+      responses:
+        '201':
+          description: Created
+          headers:
+            Location:
+              schema:
+                type: string
+                format: uri
+              description: URL waar de resource leeft.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Onderhoudstaakvoorcalculatiebericht'
+        '401':
+          $ref: '#/components/responses/NietGeautoriseerd'
+        default:
+          description: Onverwachte fout
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Foutbericht'
+      security: 
+        - OAuth2: 
+          - Onderhoud.Onderhoudstaakvoorcalculaties.ReadWrite
+    put:
+      tags:
+      - 'Onderhoudstaakvoorcalculaties'
+      summary: |
+        Vervangen van een Onderhoudstaakvoorcalculatie op basis van overeenkomstige sleutelvelden.
+      operationId: replaceOnderhoudstaakvoorcalculatie
+      parameters:
+      - $ref: '#/components/parameters/StuurgegevensZenderOrganisatie'
+      - $ref: '#/components/parameters/StuurgegevensZenderAdministratie'
+      - $ref: '#/components/parameters/StuurgegevensTijdstipBericht'
+      - $ref: '#/components/parameters/StuurgegevensReferentienummer'
+      requestBody:
+        description: Entiteit Onderhoudstaakvoorcalculatie
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Onderhoudstaakvoorcalculatiebericht'
+      responses:
+        '200':
+          description: OK
+        '400':
+          description: Bad Request
+        '401':
+          $ref: '#/components/responses/NietGeautoriseerd'
+        '404':
+          description: Not Found
+        default:
+          description: Onverwachte fout
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Foutbericht'
+      security: 
+        - OAuth2: 
+          - Onderhoud.Onderhoudstaakvoorcalculaties.ReadWrite
+    patch:
+      tags:
+      - 'Onderhoudstaakvoorcalculaties'
+      summary: |
+        Wijzigen van afzonderlijke attributen van een Onderhoudstaakvoorcalculatie. In de meegestuurde entiteit moeten
+        sleutelvelden aanwezig zijn.
+      operationId: updateOnderhoudstaakvoorcalculatie
+      parameters:
+      - $ref: '#/components/parameters/StuurgegevensZenderOrganisatie'
+      - $ref: '#/components/parameters/StuurgegevensZenderAdministratie'
+      - $ref: '#/components/parameters/StuurgegevensTijdstipBericht'
+      - $ref: '#/components/parameters/StuurgegevensReferentienummer'
+      requestBody:
+        description: Entiteit Onderhoudstaakvoorcalculatie
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Onderhoudstaakvoorcalculatiebericht'
+      responses:
+        '200':
+          description: OK
+        '400':
+          description: Bad Request
+        '401':
+           $ref: '#/components/responses/NietGeautoriseerd'
+        '404':
+           description: Not Found
+        default:
+          description: Onverwachte fout
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Foutbericht'
+      security: 
+        - OAuth2: 
+          - Onderhoud.Onderhoudstaakvoorcalculaties.ReadWrite
+  /onderhoudstaakvoorcalculaties/{id}:
+    get:
+      tags:
+      - 'Onderhoudstaakvoorcalculaties'
+      summary: Retourneert een Onderhoudstaakvoorcalculatie met de gegeven identifier
+      operationId: readOnderhoudstaakvoorcalculatieById
+      parameters:
+      - name: id
+        in: path
+        description: Id van Onderhoudstaakvoorcalculatie om op te halen
+        required: true
+        schema:
+          type: string
+      - $ref: '#/components/parameters/StuurgegevensZenderOrganisatie'
+      - $ref: '#/components/parameters/StuurgegevensZenderAdministratie'
+      - $ref: '#/components/parameters/StuurgegevensTijdstipBericht'
+      - $ref: '#/components/parameters/StuurgegevensReferentienummer'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Onderhoudstaakvoorcalculatiebericht'
+        '401':
+          $ref: '#/components/responses/NietGeautoriseerd'
+        '404':
+          description: Not Found
+        default:
+          description: Onverwachte fout
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Foutbericht'
+      security: 
+        - OAuth2: 
+          - Onderhoud.Onderhoudstaakvoorcalculaties.Read
+          - Onderhoud.Onderhoudstaakvoorcalculaties.ReadWrite
+    put:
+      tags:
+      - 'Onderhoudstaakvoorcalculaties'
+      summary: Vervangen van een Onderhoudstaakvoorcalculatie
+      operationId: replaceOnderhoudstaakvoorcalculatieById
+      parameters:
+      - name: 'id'
+        in: 'path'
+        description: Id van Onderhoudstaakvoorcalculatie om te vervangen
+        required: true
+        schema:
+          type: string
+      - $ref: '#/components/parameters/StuurgegevensZenderOrganisatie'
+      - $ref: '#/components/parameters/StuurgegevensZenderAdministratie'
+      - $ref: '#/components/parameters/StuurgegevensTijdstipBericht'
+      - $ref: '#/components/parameters/StuurgegevensReferentienummer'
+      requestBody:
+        description: Entiteit Onderhoudstaakvoorcalculatie
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Onderhoudstaakvoorcalculatiebericht'
+      security: 
+        - OAuth2: 
+          - Onderhoud.Onderhoudstaakvoorcalculaties.ReadWrite
+      responses:
+        '200':
+          description: OK
+        '401':
+          $ref: '#/components/responses/NietGeautoriseerd'
+        '404':
+          description: Not Found
+        default:
+          description: Onverwachte fout
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Foutbericht'
+    patch:
+      tags:
+      - 'Onderhoudstaakvoorcalculaties'
+      summary: Wijzigen van een Onderhoudstaakvoorcalculatie
+      operationId: updateOnderhoudstaakvoorcalculatieById
+      parameters:
+      - name: 'id'
+        in: 'path'
+        description: Id van Onderhoudstaakvoorcalculatie om te wijzigen
+        required: true
+        schema:
+          type: string
+      - $ref: '#/components/parameters/StuurgegevensZenderOrganisatie'
+      - $ref: '#/components/parameters/StuurgegevensZenderAdministratie'
+      - $ref: '#/components/parameters/StuurgegevensTijdstipBericht'
+      - $ref: '#/components/parameters/StuurgegevensReferentienummer'
+      requestBody:
+        description: Entiteit Onderhoudstaakvoorcalculatie
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Onderhoudstaakvoorcalculatiebericht'
+      responses:
+        '200':
+          description: OK
+        '401':
+          $ref: '#/components/responses/NietGeautoriseerd'
+        '404':
+          description: Not Found
+        default:
+          description: Onverwachte fout
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Foutbericht'
+      security: 
+        - OAuth2: 
+          - Onderhoud.Onderhoudstaakvoorcalculaties.ReadWrite
+  /onderhoudsverzoeken:
+    get:
+      tags:
+      - 'Onderhoudsverzoeken'
+      summary: Ophalen van Onderhoudsverzoeken
+      operationId: listOnderhoudsverzoeken
+      parameters:
+      - name: params
+        in: query
+        style: form
+        explode: true
+        schema:
+          $ref: '#/components/schemas/Onderhoudsverzoekbericht'
+      - $ref: '#/components/parameters/Cursor'
+      - $ref: '#/components/parameters/Pagina'
+      - $ref: '#/components/parameters/StuurgegevensZenderOrganisatie'
+      - $ref: '#/components/parameters/StuurgegevensZenderAdministratie'
+      - $ref: '#/components/parameters/StuurgegevensTijdstipBericht'
+      - $ref: '#/components/parameters/StuurgegevensReferentienummer'
+      - $ref: '#/components/parameters/ParametersPeiltijdstipMaterieel'
+      - $ref: '#/components/parameters/ParametersAantalPerPagina'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Onderhoudsverzoekbericht'
+                maxItems: 100
+          headers:
+            X-Parameters-Aantal:
+              $ref: '#/components/headers/X-Parameters-Aantal'
+            X-Parameters-AantalPerPagina:
+              $ref: '#/components/headers/X-Parameters-AantalPerPagina'
+            X-Parameters-Pagina:
+              $ref: '#/components/headers/X-Parameters-Pagina'
+            X-Parameters-Cursor:
+              $ref: '#/components/headers/X-Parameters-Cursor'
+        '401':
+          $ref: '#/components/responses/NietGeautoriseerd'
+        default:
+          description: Onverwachte fout
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Foutbericht'
+      security: 
+        - OAuth2: 
+          - Onderhoud.Onderhoudsverzoeken.Read
+          - Onderhoud.Onderhoudsverzoeken.ReadWrite
+    post:
+      tags:
+      - 'Onderhoudsverzoeken'
+      summary: Voegt een nieuw(e) Onderhoudsverzoek toe.
+      operationId: createOnderhoudsverzoek
+      parameters:
+      - $ref: '#/components/parameters/StuurgegevensZenderOrganisatie'
+      - $ref: '#/components/parameters/StuurgegevensZenderAdministratie'
+      - $ref: '#/components/parameters/StuurgegevensTijdstipBericht'
+      - $ref: '#/components/parameters/StuurgegevensReferentienummer'
+      requestBody:
+        description: Onderhoudsverzoek
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Onderhoudsverzoekbericht'
+      responses:
+        '201':
+          description: Created
+          headers:
+            Location:
+              schema:
+                type: string
+                format: uri
+              description: URL waar de resource leeft.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Onderhoudsverzoekbericht'
+        '401':
+          $ref: '#/components/responses/NietGeautoriseerd'
+        default:
+          description: Onverwachte fout
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Foutbericht'
+      security: 
+        - OAuth2: 
+          - Onderhoud.Onderhoudsverzoeken.ReadWrite
+    put:
+      tags:
+      - 'Onderhoudsverzoeken'
+      summary: |
+        Vervangen van een Onderhoudsverzoek op basis van overeenkomstige sleutelvelden.
+      operationId: replaceOnderhoudsverzoek
+      parameters:
+      - $ref: '#/components/parameters/StuurgegevensZenderOrganisatie'
+      - $ref: '#/components/parameters/StuurgegevensZenderAdministratie'
+      - $ref: '#/components/parameters/StuurgegevensTijdstipBericht'
+      - $ref: '#/components/parameters/StuurgegevensReferentienummer'
+      requestBody:
+        description: Entiteit Onderhoudsverzoek
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Onderhoudsverzoekbericht'
+      responses:
+        '200':
+          description: OK
+        '400':
+          description: Bad Request
+        '401':
+          $ref: '#/components/responses/NietGeautoriseerd'
+        '404':
+          description: Not Found
+        default:
+          description: Onverwachte fout
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Foutbericht'
+      security: 
+        - OAuth2: 
+          - Onderhoud.Onderhoudsverzoeken.ReadWrite
+    patch:
+      tags:
+      - 'Onderhoudsverzoeken'
+      summary: |
+        Wijzigen van afzonderlijke attributen van een Onderhoudsverzoek. In de meegestuurde entiteit moeten
+        sleutelvelden aanwezig zijn.
+      operationId: updateOnderhoudsverzoek
+      parameters:
+      - $ref: '#/components/parameters/StuurgegevensZenderOrganisatie'
+      - $ref: '#/components/parameters/StuurgegevensZenderAdministratie'
+      - $ref: '#/components/parameters/StuurgegevensTijdstipBericht'
+      - $ref: '#/components/parameters/StuurgegevensReferentienummer'
+      requestBody:
+        description: Entiteit Onderhoudsverzoek
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Onderhoudsverzoekbericht'
+      responses:
+        '200':
+          description: OK
+        '400':
+          description: Bad Request
+        '401':
+           $ref: '#/components/responses/NietGeautoriseerd'
+        '404':
+           description: Not Found
+        default:
+          description: Onverwachte fout
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Foutbericht'
+      security: 
+        - OAuth2: 
+          - Onderhoud.Onderhoudsverzoeken.ReadWrite
+  /onderhoudsverzoeken/{id}:
+    get:
+      tags:
+      - 'Onderhoudsverzoeken'
+      summary: Retourneert een Onderhoudsverzoek met de gegeven identifier
+      operationId: readOnderhoudsverzoekById
+      parameters:
+      - name: id
+        in: path
+        description: Id van Onderhoudsverzoek om op te halen
+        required: true
+        schema:
+          type: string
+      - $ref: '#/components/parameters/StuurgegevensZenderOrganisatie'
+      - $ref: '#/components/parameters/StuurgegevensZenderAdministratie'
+      - $ref: '#/components/parameters/StuurgegevensTijdstipBericht'
+      - $ref: '#/components/parameters/StuurgegevensReferentienummer'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Onderhoudsverzoekbericht'
+        '401':
+          $ref: '#/components/responses/NietGeautoriseerd'
+        '404':
+          description: Not Found
+        default:
+          description: Onverwachte fout
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Foutbericht'
+      security: 
+        - OAuth2: 
+          - Onderhoud.Onderhoudsverzoeken.Read
+          - Onderhoud.Onderhoudsverzoeken.ReadWrite
+    put:
+      tags:
+      - 'Onderhoudsverzoeken'
+      summary: Vervangen van een Onderhoudsverzoek
+      operationId: replaceOnderhoudsverzoekById
+      parameters:
+      - name: 'id'
+        in: 'path'
+        description: Id van Onderhoudsverzoek om te vervangen
+        required: true
+        schema:
+          type: string
+      - $ref: '#/components/parameters/StuurgegevensZenderOrganisatie'
+      - $ref: '#/components/parameters/StuurgegevensZenderAdministratie'
+      - $ref: '#/components/parameters/StuurgegevensTijdstipBericht'
+      - $ref: '#/components/parameters/StuurgegevensReferentienummer'
+      requestBody:
+        description: Entiteit Onderhoudsverzoek
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Onderhoudsverzoekbericht'
+      security: 
+        - OAuth2: 
+          - Onderhoud.Onderhoudsverzoeken.ReadWrite
+      responses:
+        '200':
+          description: OK
+        '401':
+          $ref: '#/components/responses/NietGeautoriseerd'
+        '404':
+          description: Not Found
+        default:
+          description: Onverwachte fout
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Foutbericht'
+    patch:
+      tags:
+      - 'Onderhoudsverzoeken'
+      summary: Wijzigen van een Onderhoudsverzoek
+      operationId: updateOnderhoudsverzoekById
+      parameters:
+      - name: 'id'
+        in: 'path'
+        description: Id van Onderhoudsverzoek om te wijzigen
+        required: true
+        schema:
+          type: string
+      - $ref: '#/components/parameters/StuurgegevensZenderOrganisatie'
+      - $ref: '#/components/parameters/StuurgegevensZenderAdministratie'
+      - $ref: '#/components/parameters/StuurgegevensTijdstipBericht'
+      - $ref: '#/components/parameters/StuurgegevensReferentienummer'
+      requestBody:
+        description: Entiteit Onderhoudsverzoek
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Onderhoudsverzoekbericht'
+      responses:
+        '200':
+          description: OK
+        '401':
+          $ref: '#/components/responses/NietGeautoriseerd'
+        '404':
+          description: Not Found
+        default:
+          description: Onverwachte fout
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Foutbericht'
+      security: 
+        - OAuth2: 
+          - Onderhoud.Onderhoudsverzoeken.ReadWrite
+  /onderhoudsverzoekverrekeningen:
+    get:
+      tags:
+      - 'Onderhoudsverzoekverrekeningen'
+      summary: Ophalen van Onderhoudsverzoekverrekeningen
+      operationId: listOnderhoudsverzoekverrekeningen
+      parameters:
+      - name: params
+        in: query
+        style: form
+        explode: true
+        schema:
+          $ref: '#/components/schemas/Onderhoudsverzoekverrekeningbericht'
+      - $ref: '#/components/parameters/Cursor'
+      - $ref: '#/components/parameters/Pagina'
+      - $ref: '#/components/parameters/StuurgegevensZenderOrganisatie'
+      - $ref: '#/components/parameters/StuurgegevensZenderAdministratie'
+      - $ref: '#/components/parameters/StuurgegevensTijdstipBericht'
+      - $ref: '#/components/parameters/StuurgegevensReferentienummer'
+      - $ref: '#/components/parameters/ParametersPeiltijdstipMaterieel'
+      - $ref: '#/components/parameters/ParametersAantalPerPagina'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Onderhoudsverzoekverrekeningbericht'
+                maxItems: 100
+          headers:
+            X-Parameters-Aantal:
+              $ref: '#/components/headers/X-Parameters-Aantal'
+            X-Parameters-AantalPerPagina:
+              $ref: '#/components/headers/X-Parameters-AantalPerPagina'
+            X-Parameters-Pagina:
+              $ref: '#/components/headers/X-Parameters-Pagina'
+            X-Parameters-Cursor:
+              $ref: '#/components/headers/X-Parameters-Cursor'
+        '401':
+          $ref: '#/components/responses/NietGeautoriseerd'
+        default:
+          description: Onverwachte fout
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Foutbericht'
+      security: 
+        - OAuth2: 
+          - Onderhoud.Onderhoudsverzoekverrekeningen.Read
+          - Onderhoud.Onderhoudsverzoekverrekeningen.ReadWrite
+    post:
+      tags:
+      - 'Onderhoudsverzoekverrekeningen'
+      summary: Voegt een nieuw(e) Onderhoudsverzoekverrekening toe.
+      operationId: createOnderhoudsverzoekverrekening
+      parameters:
+      - $ref: '#/components/parameters/StuurgegevensZenderOrganisatie'
+      - $ref: '#/components/parameters/StuurgegevensZenderAdministratie'
+      - $ref: '#/components/parameters/StuurgegevensTijdstipBericht'
+      - $ref: '#/components/parameters/StuurgegevensReferentienummer'
+      requestBody:
+        description: Onderhoudsverzoekverrekening
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Onderhoudsverzoekverrekeningbericht'
+      responses:
+        '201':
+          description: Created
+          headers:
+            Location:
+              schema:
+                type: string
+                format: uri
+              description: URL waar de resource leeft.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Onderhoudsverzoekverrekeningbericht'
+        '401':
+          $ref: '#/components/responses/NietGeautoriseerd'
+        default:
+          description: Onverwachte fout
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Foutbericht'
+      security: 
+        - OAuth2: 
+          - Onderhoud.Onderhoudsverzoekverrekeningen.ReadWrite
+    put:
+      tags:
+      - 'Onderhoudsverzoekverrekeningen'
+      summary: |
+        Vervangen van een Onderhoudsverzoekverrekening op basis van overeenkomstige sleutelvelden.
+      operationId: replaceOnderhoudsverzoekverrekening
+      parameters:
+      - $ref: '#/components/parameters/StuurgegevensZenderOrganisatie'
+      - $ref: '#/components/parameters/StuurgegevensZenderAdministratie'
+      - $ref: '#/components/parameters/StuurgegevensTijdstipBericht'
+      - $ref: '#/components/parameters/StuurgegevensReferentienummer'
+      requestBody:
+        description: Entiteit Onderhoudsverzoekverrekening
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Onderhoudsverzoekverrekeningbericht'
+      responses:
+        '200':
+          description: OK
+        '400':
+          description: Bad Request
+        '401':
+          $ref: '#/components/responses/NietGeautoriseerd'
+        '404':
+          description: Not Found
+        default:
+          description: Onverwachte fout
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Foutbericht'
+      security: 
+        - OAuth2: 
+          - Onderhoud.Onderhoudsverzoekverrekeningen.ReadWrite
+    patch:
+      tags:
+      - 'Onderhoudsverzoekverrekeningen'
+      summary: |
+        Wijzigen van afzonderlijke attributen van een Onderhoudsverzoekverrekening. In de meegestuurde entiteit moeten
+        sleutelvelden aanwezig zijn.
+      operationId: updateOnderhoudsverzoekverrekening
+      parameters:
+      - $ref: '#/components/parameters/StuurgegevensZenderOrganisatie'
+      - $ref: '#/components/parameters/StuurgegevensZenderAdministratie'
+      - $ref: '#/components/parameters/StuurgegevensTijdstipBericht'
+      - $ref: '#/components/parameters/StuurgegevensReferentienummer'
+      requestBody:
+        description: Entiteit Onderhoudsverzoekverrekening
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Onderhoudsverzoekverrekeningbericht'
+      responses:
+        '200':
+          description: OK
+        '400':
+          description: Bad Request
+        '401':
+           $ref: '#/components/responses/NietGeautoriseerd'
+        '404':
+           description: Not Found
+        default:
+          description: Onverwachte fout
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Foutbericht'
+      security: 
+        - OAuth2: 
+          - Onderhoud.Onderhoudsverzoekverrekeningen.ReadWrite
+  /onderhoudsverzoekverrekeningen/{id}:
+    get:
+      tags:
+      - 'Onderhoudsverzoekverrekeningen'
+      summary: Retourneert een Onderhoudsverzoekverrekening met de gegeven identifier
+      operationId: readOnderhoudsverzoekverrekeningById
+      parameters:
+      - name: id
+        in: path
+        description: Id van Onderhoudsverzoekverrekening om op te halen
+        required: true
+        schema:
+          type: string
+      - $ref: '#/components/parameters/StuurgegevensZenderOrganisatie'
+      - $ref: '#/components/parameters/StuurgegevensZenderAdministratie'
+      - $ref: '#/components/parameters/StuurgegevensTijdstipBericht'
+      - $ref: '#/components/parameters/StuurgegevensReferentienummer'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Onderhoudsverzoekverrekeningbericht'
+        '401':
+          $ref: '#/components/responses/NietGeautoriseerd'
+        '404':
+          description: Not Found
+        default:
+          description: Onverwachte fout
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Foutbericht'
+      security: 
+        - OAuth2: 
+          - Onderhoud.Onderhoudsverzoekverrekeningen.Read
+          - Onderhoud.Onderhoudsverzoekverrekeningen.ReadWrite
+    put:
+      tags:
+      - 'Onderhoudsverzoekverrekeningen'
+      summary: Vervangen van een Onderhoudsverzoekverrekening
+      operationId: replaceOnderhoudsverzoekverrekeningById
+      parameters:
+      - name: 'id'
+        in: 'path'
+        description: Id van Onderhoudsverzoekverrekening om te vervangen
+        required: true
+        schema:
+          type: string
+      - $ref: '#/components/parameters/StuurgegevensZenderOrganisatie'
+      - $ref: '#/components/parameters/StuurgegevensZenderAdministratie'
+      - $ref: '#/components/parameters/StuurgegevensTijdstipBericht'
+      - $ref: '#/components/parameters/StuurgegevensReferentienummer'
+      requestBody:
+        description: Entiteit Onderhoudsverzoekverrekening
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Onderhoudsverzoekverrekeningbericht'
+      security: 
+        - OAuth2: 
+          - Onderhoud.Onderhoudsverzoekverrekeningen.ReadWrite
+      responses:
+        '200':
+          description: OK
+        '401':
+          $ref: '#/components/responses/NietGeautoriseerd'
+        '404':
+          description: Not Found
+        default:
+          description: Onverwachte fout
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Foutbericht'
+    patch:
+      tags:
+      - 'Onderhoudsverzoekverrekeningen'
+      summary: Wijzigen van een Onderhoudsverzoekverrekening
+      operationId: updateOnderhoudsverzoekverrekeningById
+      parameters:
+      - name: 'id'
+        in: 'path'
+        description: Id van Onderhoudsverzoekverrekening om te wijzigen
+        required: true
+        schema:
+          type: string
+      - $ref: '#/components/parameters/StuurgegevensZenderOrganisatie'
+      - $ref: '#/components/parameters/StuurgegevensZenderAdministratie'
+      - $ref: '#/components/parameters/StuurgegevensTijdstipBericht'
+      - $ref: '#/components/parameters/StuurgegevensReferentienummer'
+      requestBody:
+        description: Entiteit Onderhoudsverzoekverrekening
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Onderhoudsverzoekverrekeningbericht'
+      responses:
+        '200':
+          description: OK
+        '401':
+          $ref: '#/components/responses/NietGeautoriseerd'
+        '404':
+          description: Not Found
+        default:
+          description: Onverwachte fout
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Foutbericht'
+      security: 
+        - OAuth2: 
+          - Onderhoud.Onderhoudsverzoekverrekeningen.ReadWrite
+  /standaardprijzen:
+    get:
+      tags:
+      - 'Standaardprijzen'
+      summary: Ophalen van Standaardprijzen
+      operationId: listStandaardprijzen
+      parameters:
+      - name: params
+        in: query
+        style: form
+        explode: true
+        schema:
+          $ref: '#/components/schemas/Standaardprijsbericht'
+      - $ref: '#/components/parameters/Cursor'
+      - $ref: '#/components/parameters/Pagina'
+      - $ref: '#/components/parameters/StuurgegevensZenderOrganisatie'
+      - $ref: '#/components/parameters/StuurgegevensZenderAdministratie'
+      - $ref: '#/components/parameters/StuurgegevensTijdstipBericht'
+      - $ref: '#/components/parameters/StuurgegevensReferentienummer'
+      - $ref: '#/components/parameters/ParametersPeiltijdstipMaterieel'
+      - $ref: '#/components/parameters/ParametersAantalPerPagina'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Standaardprijsbericht'
+                maxItems: 100
+          headers:
+            X-Parameters-Aantal:
+              $ref: '#/components/headers/X-Parameters-Aantal'
+            X-Parameters-AantalPerPagina:
+              $ref: '#/components/headers/X-Parameters-AantalPerPagina'
+            X-Parameters-Pagina:
+              $ref: '#/components/headers/X-Parameters-Pagina'
+            X-Parameters-Cursor:
+              $ref: '#/components/headers/X-Parameters-Cursor'
+        '401':
+          $ref: '#/components/responses/NietGeautoriseerd'
+        default:
+          description: Onverwachte fout
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Foutbericht'
+      security: 
+        - OAuth2: 
+          - Onderhoud.Standaardprijzen.Read
+          - Onderhoud.Standaardprijzen.ReadWrite
+    post:
+      tags:
+      - 'Standaardprijzen'
+      summary: Voegt een nieuw(e) Standaardprijs toe.
+      operationId: createStandaardprijs
+      parameters:
+      - $ref: '#/components/parameters/StuurgegevensZenderOrganisatie'
+      - $ref: '#/components/parameters/StuurgegevensZenderAdministratie'
+      - $ref: '#/components/parameters/StuurgegevensTijdstipBericht'
+      - $ref: '#/components/parameters/StuurgegevensReferentienummer'
+      requestBody:
+        description: Standaardprijs
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Standaardprijsbericht'
+      responses:
+        '201':
+          description: Created
+          headers:
+            Location:
+              schema:
+                type: string
+                format: uri
+              description: URL waar de resource leeft.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Standaardprijsbericht'
+        '401':
+          $ref: '#/components/responses/NietGeautoriseerd'
+        default:
+          description: Onverwachte fout
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Foutbericht'
+      security: 
+        - OAuth2: 
+          - Onderhoud.Standaardprijzen.ReadWrite
+    put:
+      tags:
+      - 'Standaardprijzen'
+      summary: |
+        Vervangen van een Standaardprijs op basis van overeenkomstige sleutelvelden.
+      operationId: replaceStandaardprijs
+      parameters:
+      - $ref: '#/components/parameters/StuurgegevensZenderOrganisatie'
+      - $ref: '#/components/parameters/StuurgegevensZenderAdministratie'
+      - $ref: '#/components/parameters/StuurgegevensTijdstipBericht'
+      - $ref: '#/components/parameters/StuurgegevensReferentienummer'
+      requestBody:
+        description: Entiteit Standaardprijs
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Standaardprijsbericht'
+      responses:
+        '200':
+          description: OK
+        '400':
+          description: Bad Request
+        '401':
+          $ref: '#/components/responses/NietGeautoriseerd'
+        '404':
+          description: Not Found
+        default:
+          description: Onverwachte fout
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Foutbericht'
+      security: 
+        - OAuth2: 
+          - Onderhoud.Standaardprijzen.ReadWrite
+    patch:
+      tags:
+      - 'Standaardprijzen'
+      summary: |
+        Wijzigen van afzonderlijke attributen van een Standaardprijs. In de meegestuurde entiteit moeten
+        sleutelvelden aanwezig zijn.
+      operationId: updateStandaardprijs
+      parameters:
+      - $ref: '#/components/parameters/StuurgegevensZenderOrganisatie'
+      - $ref: '#/components/parameters/StuurgegevensZenderAdministratie'
+      - $ref: '#/components/parameters/StuurgegevensTijdstipBericht'
+      - $ref: '#/components/parameters/StuurgegevensReferentienummer'
+      requestBody:
+        description: Entiteit Standaardprijs
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Standaardprijsbericht'
+      responses:
+        '200':
+          description: OK
+        '400':
+          description: Bad Request
+        '401':
+           $ref: '#/components/responses/NietGeautoriseerd'
+        '404':
+           description: Not Found
+        default:
+          description: Onverwachte fout
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Foutbericht'
+      security: 
+        - OAuth2: 
+          - Onderhoud.Standaardprijzen.ReadWrite
+  /standaardprijzen/{id}:
+    get:
+      tags:
+      - 'Standaardprijzen'
+      summary: Retourneert een Standaardprijs met de gegeven identifier
+      operationId: readStandaardprijsById
+      parameters:
+      - name: id
+        in: path
+        description: Id van Standaardprijs om op te halen
+        required: true
+        schema:
+          type: string
+      - $ref: '#/components/parameters/StuurgegevensZenderOrganisatie'
+      - $ref: '#/components/parameters/StuurgegevensZenderAdministratie'
+      - $ref: '#/components/parameters/StuurgegevensTijdstipBericht'
+      - $ref: '#/components/parameters/StuurgegevensReferentienummer'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Standaardprijsbericht'
+        '401':
+          $ref: '#/components/responses/NietGeautoriseerd'
+        '404':
+          description: Not Found
+        default:
+          description: Onverwachte fout
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Foutbericht'
+      security: 
+        - OAuth2: 
+          - Onderhoud.Standaardprijzen.Read
+          - Onderhoud.Standaardprijzen.ReadWrite
+    put:
+      tags:
+      - 'Standaardprijzen'
+      summary: Vervangen van een Standaardprijs
+      operationId: replaceStandaardprijsById
+      parameters:
+      - name: 'id'
+        in: 'path'
+        description: Id van Standaardprijs om te vervangen
+        required: true
+        schema:
+          type: string
+      - $ref: '#/components/parameters/StuurgegevensZenderOrganisatie'
+      - $ref: '#/components/parameters/StuurgegevensZenderAdministratie'
+      - $ref: '#/components/parameters/StuurgegevensTijdstipBericht'
+      - $ref: '#/components/parameters/StuurgegevensReferentienummer'
+      requestBody:
+        description: Entiteit Standaardprijs
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Standaardprijsbericht'
+      security: 
+        - OAuth2: 
+          - Onderhoud.Standaardprijzen.ReadWrite
+      responses:
+        '200':
+          description: OK
+        '401':
+          $ref: '#/components/responses/NietGeautoriseerd'
+        '404':
+          description: Not Found
+        default:
+          description: Onverwachte fout
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Foutbericht'
+    patch:
+      tags:
+      - 'Standaardprijzen'
+      summary: Wijzigen van een Standaardprijs
+      operationId: updateStandaardprijsById
+      parameters:
+      - name: 'id'
+        in: 'path'
+        description: Id van Standaardprijs om te wijzigen
+        required: true
+        schema:
+          type: string
+      - $ref: '#/components/parameters/StuurgegevensZenderOrganisatie'
+      - $ref: '#/components/parameters/StuurgegevensZenderAdministratie'
+      - $ref: '#/components/parameters/StuurgegevensTijdstipBericht'
+      - $ref: '#/components/parameters/StuurgegevensReferentienummer'
+      requestBody:
+        description: Entiteit Standaardprijs
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Standaardprijsbericht'
+      responses:
+        '200':
+          description: OK
+        '401':
+          $ref: '#/components/responses/NietGeautoriseerd'
+        '404':
+          description: Not Found
+        default:
+          description: Onverwachte fout
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Foutbericht'
+      security: 
+        - OAuth2: 
+          - Onderhoud.Standaardprijzen.ReadWrite
+security:
+  - ApiKeyAuth: []
+  - OAuth2: 
+    - Onderhoud.All.Read
+    - Onderhoud.All.ReadWrite
+
+components:
+  headers:
+    X-Parameters-Aantal:
+      description: Totaal aantal gevonden resultaten
+      schema:
+        $ref: '#/components/schemas/Aantal'
+    X-Parameters-AantalPerPagina:
+      description: |
+        Het maximum aantal resultaten per pagina zoals dat in het request opgegeven is,
+        of de default waarde indien dit niet opgeven is.
+      example: 20
+      schema:
+        $ref: '#/components/schemas/AantalPerPagina'
+    X-Parameters-Pagina:
+      description: Het huidige paginanummer
+      schema:
+        $ref: '#/components/schemas/Paginanummer'
+    X-Parameters-Cursor:
+      description: |
+        Bij het ophalen van de volgende set van resultaten dient deze waarde 
+        als parameter (cursor) in de query meegestuurd te worden.
+      example: 241d66b1-fcdb-4266-b908-01aeec18781e
+      schema:
+        $ref: '#/components/schemas/Cursor'
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-KEY
+    OAuth2:
+      type: oauth2
+      description: Deze API ondersteunt OAuth2 met flows Authorization Code en Client Credentials
+      flows:
+        authorizationCode:
+          authorizationUrl: /oauth/authorize
+          tokenUrl: /oauth/token
+          scopes:
+            Onderhoud.All.Read: alleen lezen van alle resources
+            Onderhoud.All.ReadWrite: lezen en schrijven van alle resources
+            Onderhoud.Defecten.Read: alleen lezen van Defecten
+            Onderhoud.Defecten.ReadWrite: lezen en schrijven van Defecten
+            Onderhoud.Inspectierapporten.Read: alleen lezen van Inspectierapporten
+            Onderhoud.Inspectierapporten.ReadWrite: lezen en schrijven van Inspectierapporten
+            Onderhoud.Onderhoudsbestedingen.Read: alleen lezen van Onderhoudsbestedingen
+            Onderhoud.Onderhoudsbestedingen.ReadWrite: lezen en schrijven van Onderhoudsbestedingen
+            Onderhoud.Onderhoudsorders.Read: alleen lezen van Onderhoudsorders
+            Onderhoud.Onderhoudsorders.ReadWrite: lezen en schrijven van Onderhoudsorders
+            Onderhoud.Onderhoudstaken.Read: alleen lezen van Onderhoudstaken
+            Onderhoud.Onderhoudstaken.ReadWrite: lezen en schrijven van Onderhoudstaken
+            Onderhoud.Onderhoudstaakvoorcalculaties.Read: alleen lezen van Onderhoudstaakvoorcalculaties
+            Onderhoud.Onderhoudstaakvoorcalculaties.ReadWrite: lezen en schrijven van Onderhoudstaakvoorcalculaties
+            Onderhoud.Onderhoudsverzoeken.Read: alleen lezen van Onderhoudsverzoeken
+            Onderhoud.Onderhoudsverzoeken.ReadWrite: lezen en schrijven van Onderhoudsverzoeken
+            Onderhoud.Onderhoudsverzoekverrekeningen.Read: alleen lezen van Onderhoudsverzoekverrekeningen
+            Onderhoud.Onderhoudsverzoekverrekeningen.ReadWrite: lezen en schrijven van Onderhoudsverzoekverrekeningen
+            Onderhoud.Standaardprijzen.Read: alleen lezen van Standaardprijzen
+            Onderhoud.Standaardprijzen.ReadWrite: lezen en schrijven van Standaardprijzen
+        clientCredentials:
+          tokenUrl: /oauth/token
+          scopes:
+            Onderhoud.All.Read: alleen lezen van alle resources
+            Onderhoud.All.ReadWrite: lezen en schrijven van alle resources
+            Onderhoud.Defecten.Read: alleen lezen van Defecten
+            Onderhoud.Defecten.ReadWrite: lezen en schrijven van Defecten
+            Onderhoud.Inspectierapporten.Read: alleen lezen van Inspectierapporten
+            Onderhoud.Inspectierapporten.ReadWrite: lezen en schrijven van Inspectierapporten
+            Onderhoud.Onderhoudsbestedingen.Read: alleen lezen van Onderhoudsbestedingen
+            Onderhoud.Onderhoudsbestedingen.ReadWrite: lezen en schrijven van Onderhoudsbestedingen
+            Onderhoud.Onderhoudsorders.Read: alleen lezen van Onderhoudsorders
+            Onderhoud.Onderhoudsorders.ReadWrite: lezen en schrijven van Onderhoudsorders
+            Onderhoud.Onderhoudstaken.Read: alleen lezen van Onderhoudstaken
+            Onderhoud.Onderhoudstaken.ReadWrite: lezen en schrijven van Onderhoudstaken
+            Onderhoud.Onderhoudstaakvoorcalculaties.Read: alleen lezen van Onderhoudstaakvoorcalculaties
+            Onderhoud.Onderhoudstaakvoorcalculaties.ReadWrite: lezen en schrijven van Onderhoudstaakvoorcalculaties
+            Onderhoud.Onderhoudsverzoeken.Read: alleen lezen van Onderhoudsverzoeken
+            Onderhoud.Onderhoudsverzoeken.ReadWrite: lezen en schrijven van Onderhoudsverzoeken
+            Onderhoud.Onderhoudsverzoekverrekeningen.Read: alleen lezen van Onderhoudsverzoekverrekeningen
+            Onderhoud.Onderhoudsverzoekverrekeningen.ReadWrite: lezen en schrijven van Onderhoudsverzoekverrekeningen
+            Onderhoud.Standaardprijzen.Read: alleen lezen van Standaardprijzen
+            Onderhoud.Standaardprijzen.ReadWrite: lezen en schrijven van Standaardprijzen
+  responses:
+    NietGeautoriseerd:
+      description: Unauthorized
+      headers:
+        X-API-KEY:
+          schema:
+            type: string
+  schemas:
+    Defectbericht:
+      allOf:    
+        - $ref: '#/components/schemas/Defect'
+        - $ref: '#/components/schemas/Bericht-basis'
+    Defect:
+      type: object
+      properties:
+        id:
+          type: string
+          description: De unieke, primaire sleutel van het gegeven binnen het systeem waarin het is vastgelegd, die wordt gebruikt om associaties met andere entiteiten binnen hetzelfde systeem te leggen.
+        idExtern:
+          type: string
+          description: De unieke, primaire sleutel van het gegeven in het bronsysteem waarin het wordt beheerd. Het bronsysteem verwijst naar het systeem waarin de entiteit wordt beheerd binnen het ICT-landschap van een organisatie. Dit bronsysteem fungeert als de single-source-of-truth.
+        idGegevensbeheerder:
+          type: string
+          description: De primaire sleutel van het gegeven van de gegevensbeheerder. Bijv. de overheid of andere standaarden.
+        idOrganisatie:
+          type: string
+          description: Dit verwijst naar de organisatie die verantwoordelijk is voor het gegeven. Horende bij de idExtern.
+        idAdministratie:
+          type: string
+          description: De verwijzing naar de administratie binnen de specifieke organisatie die verantwoordelijk is voor de bron van het gegeven. Dit hoort bij idExtern.
+        code:
+          type: string
+          description: De unieke code (Bijvoorbeeld om te tonen of te zoeken)
+        soort:
+          allOf:
+          - $ref: '#/components/schemas/Referentiedata'
+          description: 'Typering van het soort defect. Bijvoorbeeld lekt, klemt, gebroken etc. Referentiedata: DEFECTSOORT.'
+        omschrijving:
+          type: string
+          description: 'De korte omschrijving van het defect. Bijvoorbeeld: Keuken: kraan lekt. Meestal wordt deze omschrijving automatisch samengesteld uit de LEDO.'
+        status:
+          allOf:
+          - $ref: '#/components/schemas/Referentiedata'
+          description: 'De status van een defect. Bijvoorbeeld een huurder heeft een defect gemeld en een inspecteur heeft het defect geïnspecteerd. Referentiedata: DEFECTSTATUS.'
+        melddatum:
+          type: string
+          format: date-time
+          description: De datum en tijd waarop het defect is gemeld.
+        aangetroffenOorzaak:
+          allOf:
+          - $ref: '#/components/schemas/Referentiedata'
+          description: 'De achteraf vastgestelde oorzaak. Een voorbeeld is: de voetafdruk van een huurder tegen de deur die nu ""opeens"" klemt. De oorzaak was door de huurder als normale slijtage opgegeven maar de vakman heeft vastgesteld dat het bewonersgedrag is. Referentiedata: DEFECTOORZAAK.'
+        bouwkundigElement:
+          type: string
+          format: uri
+          description: URI naar BouwkundigElement in domeinsysteem Vastgoed.
+        cluster:
+          type: string
+          format: uri
+          description: URI naar Cluster in domeinsysteem Vastgoed.
+        collectiefObject:
+          type: string
+          format: uri
+          description: URI naar CollectiefObject in domeinsysteem Vastgoed.
+        eenheid:
+          type: string
+          format: uri
+          description: URI naar Eenheid in domeinsysteem Vastgoed.
+        inspectierapport:
+          allOf:
+          - $ref: '#/components/schemas/Inspectierapport-sleutels'
+          description: Het inspectierapport waarmee het defect is gemeld.
+        locatie:
+          allOf:
+          - $ref: '#/components/schemas/Referentiedata'
+          description: 'De locatie waar het onderhoud moet plaatsvinden. Bijvoorbeeld huiskamer of toilet. Referentiedata: DEFECTLOCATIE.'
+        onderhoudsverzoeken:
+          description: De onderhoudsverzoeken waarmee het defect is gemeld.
+          type: array
+          items:
+            $ref: '#/components/schemas/Onderhoudsverzoek-sleutels'
+        oorzaak:
+          allOf:
+          - $ref: '#/components/schemas/Referentiedata'
+          description: 'De oorzaak van het defect zoals initieel bij het melden van het defect is vastgelegd. Dit is vaak de oorzaak die de huurder aangeeft bij de melding. Referentiedata: DEFECTOORZAAK.'
+        relaties:
+          type: array  
+          items:
+            type: string
+            format: uri
+          description: URI's naar Relaties in domeinsysteem Relaties.
+    Referentiedatabericht:
+      allOf:    
+        - $ref: '#/components/schemas/Referentiedata'
+        - $ref: '#/components/schemas/Bericht-basis'
+    Referentiedata:
+      type: object
+      properties:
+        id:
+          type: string
+          description: De unieke, primaire sleutel van het gegeven binnen het systeem waarin het is vastgelegd, die wordt gebruikt om associaties met andere entiteiten binnen hetzelfde systeem te leggen. Dit veld is verplicht, behalve bij een POST
+        idExtern:
+          type: string
+          description: De unieke, primaire sleutel van het gegeven in het bronsysteem waarin het wordt beheerd. Het bronsysteem verwijst naar het systeem waarin de entiteit wordt beheerd binnen het ICT-landschap van een organisatie. Dit bronsysteem fungeert als de single-source-of-truth.
+        idGegevensbeheerder:
+          type: string
+          description: De primaire sleutel van het gegeven van de gegevensbeheerder. Bijv. de overheid of andere standaarden.
+        idOrganisatie:
+          type: string
+          description: Dit verwijst naar de organisatie die verantwoordelijk is voor het gegeven. Horende bij de idExtern.
+        idAdministratie:
+          type: string
+          description: De verwijzing naar de administratie binnen de specifieke organisatie die verantwoordelijk is voor de bron van het gegeven. Dit hoort bij idExtern.
+        code:
+          type: string
+          description: De unieke code (Bijvoorbeeld om te tonen of te zoeken) Bijvoorbeeld NL.
+        soort:
+          allOf:
+          - $ref: '#/components/schemas/Referentiedata-sleutels'
+          description: De soort van het referentiedata item. Bijvoorbeeld nationaliteit.
+        naam:
+          type: string
+          description: De te tonen waarde van het referentiedata item. Bijvoorbeeld Nederlandse.
+        omschrijving:
+          type: string
+          description: De omschrijving van de referentiedata. Bijvoorbeeld De Nederlandse nationaliteit.
+        parent:
+          allOf:
+          - $ref: '#/components/schemas/Referentiedata-sleutels'
+          description: De bovenliggende referentiedata in het geval er sprake is van een hierarchische relatie tussen referentiedata.
+        begindatum:
+          type: string
+          format: date
+          description: De begindatum van het klasse item.
+        einddatum:
+          type: string
+          format: date
+          description: De einddatum van het klasse item.
+        sortering:
+          type: string
+          description: De sorteervolgorde van de referentiedata anders dan alfabetisch.
+    Referentiedata-sleutels:
+      type: object
+      properties:
+        id:
+          type: string
+          description: De unieke, primaire sleutel van het gegeven binnen het systeem waarin het is vastgelegd, die wordt gebruikt om associaties met andere entiteiten binnen hetzelfde systeem te leggen. Dit veld is verplicht, behalve bij een POST
+        idExtern:
+          type: string
+          description: De unieke, primaire sleutel van het gegeven in het bronsysteem waarin het wordt beheerd. Het bronsysteem verwijst naar het systeem waarin de entiteit wordt beheerd binnen het ICT-landschap van een organisatie. Dit bronsysteem fungeert als de single-source-of-truth.
+        idGegevensbeheerder:
+          type: string
+          description: De primaire sleutel van het gegeven van de gegevensbeheerder. Bijv. de overheid of andere standaarden.
+        idOrganisatie:
+          type: string
+          description: Dit verwijst naar de organisatie die verantwoordelijk is voor het gegeven. Horende bij de idExtern.
+        idAdministratie:
+          type: string
+          description: De verwijzing naar de administratie binnen de specifieke organisatie die verantwoordelijk is voor de bron van het gegeven. Dit hoort bij idExtern.
+        code:
+          type: string
+          description: De unieke code (Bijvoorbeeld om te tonen of te zoeken) Bijvoorbeeld NL.
+        naam:
+          type: string
+          description: De te tonen waarde van het referentiedata item. Bijvoorbeeld Nederlandse.
+    Inspectierapport-sleutels:
+      type: object
+      properties:
+        id:
+          type: string
+          description: De unieke, primaire sleutel van het gegeven binnen het systeem waarin het is vastgelegd, die wordt gebruikt om associaties met andere entiteiten binnen hetzelfde systeem te leggen.
+        idExtern:
+          type: string
+          description: De unieke, primaire sleutel van het gegeven in het bronsysteem waarin het wordt beheerd. Het bronsysteem verwijst naar het systeem waarin de entiteit wordt beheerd binnen het ICT-landschap van een organisatie. Dit bronsysteem fungeert als de single-source-of-truth.
+        idGegevensbeheerder:
+          type: string
+          description: De primaire sleutel van het gegeven van de gegevensbeheerder. Bijv. de overheid of andere standaarden.
+        idOrganisatie:
+          type: string
+          description: Dit verwijst naar de organisatie die verantwoordelijk is voor het gegeven. Horende bij de idExtern.
+        idAdministratie:
+          type: string
+          description: De verwijzing naar de administratie binnen de specifieke organisatie die verantwoordelijk is voor de bron van het gegeven. Dit hoort bij idExtern.
+        code:
+          type: string
+          description: De unieke code (Bijvoorbeeld om te tonen of te zoeken)
+    Onderhoudsverzoek-sleutels:
+      type: object
+      properties:
+        id:
+          type: string
+          description: De unieke, primaire sleutel van het gegeven binnen het systeem waarin het is vastgelegd, die wordt gebruikt om associaties met andere entiteiten binnen hetzelfde systeem te leggen. Dit veld is verplicht, behalve bij een POST
+        idExtern:
+          type: string
+          description: De unieke, primaire sleutel van het gegeven in het bronsysteem waarin het wordt beheerd. Het bronsysteem verwijst naar het systeem waarin de entiteit wordt beheerd binnen het ICT-landschap van een organisatie. Dit bronsysteem fungeert als de single-source-of-truth.
+        idGegevensbeheerder:
+          type: string
+          description: De primaire sleutel van het gegeven van de gegevensbeheerder. Bijv. de overheid of andere standaarden.
+        idOrganisatie:
+          type: string
+          description: Dit verwijst naar de organisatie die verantwoordelijk is voor het gegeven. Horende bij de idExtern.
+        idAdministratie:
+          type: string
+          description: De verwijzing naar de administratie binnen de specifieke organisatie die verantwoordelijk is voor de bron van het gegeven. Dit hoort bij idExtern.
+        code:
+          type: string
+          description: De unieke code (Bijvoorbeeld om te tonen of te zoeken)
+    Inspectierapportbericht:
+      allOf:    
+        - $ref: '#/components/schemas/Inspectierapport'
+        - $ref: '#/components/schemas/Bericht-basis'
+    Inspectierapport:
+      type: object
+      properties:
+        id:
+          type: string
+          description: De unieke, primaire sleutel van het gegeven binnen het systeem waarin het is vastgelegd, die wordt gebruikt om associaties met andere entiteiten binnen hetzelfde systeem te leggen.
+        idExtern:
+          type: string
+          description: De unieke, primaire sleutel van het gegeven in het bronsysteem waarin het wordt beheerd. Het bronsysteem verwijst naar het systeem waarin de entiteit wordt beheerd binnen het ICT-landschap van een organisatie. Dit bronsysteem fungeert als de single-source-of-truth.
+        idGegevensbeheerder:
+          type: string
+          description: De primaire sleutel van het gegeven van de gegevensbeheerder. Bijv. de overheid of andere standaarden.
+        idOrganisatie:
+          type: string
+          description: Dit verwijst naar de organisatie die verantwoordelijk is voor het gegeven. Horende bij de idExtern.
+        idAdministratie:
+          type: string
+          description: De verwijzing naar de administratie binnen de specifieke organisatie die verantwoordelijk is voor de bron van het gegeven. Dit hoort bij idExtern.
+        code:
+          type: string
+          description: De unieke code (Bijvoorbeeld om te tonen of te zoeken)
+        soort:
+          allOf:
+          - $ref: '#/components/schemas/Referentiedata'
+          description: 'Bijvoorbeeld: Voorinspectierapport, eindinspectierapport. Referentiedata: INSPECTIERAPPORTSOORT.'
+        omschrijving:
+          type: string
+          description: 'De korte omschrijving van de uitgevoerde inspectie. Bijvoorbeeld: Voorinspectie ten behoeve van mutatieonderhoud'
+        status:
+          allOf:
+          - $ref: '#/components/schemas/Referentiedata'
+          description: 'De status van het inspectierapport. Bijvoorbeeld Concept, Definitief, Getekend etc. Referentiedata: INSPECTIERAPPORTSTATUS.'
+        geconstateerdeDefecten:
+          description: De defecten die zijn geconstateerd tijdens de inspectie.
+          type: array
+          items:
+            $ref: '#/components/schemas/Defect-sleutels'
+        inspectieOrder:
+          allOf:
+          - $ref: '#/components/schemas/Onderhoudsorder-sleutels'
+          description: De inspectieorder waardoor de inspectie heeft plaatsgevonden.
+        relaties:
+          type: array  
+          items:
+            type: string
+            format: uri
+          description: URI's naar Relaties in domeinsysteem Relaties.
+        voorgesteldeOnderhoudstaken:
+          description: In de situatie dat de inspecteur ook uit te voeren onderhoudstaken vaststelt tijdens de inspectie kunnen deze als voorgestelde onderhoudstaken opgenomen worden bij het inspectierapport
+          type: array
+          items:
+            $ref: '#/components/schemas/Onderhoudstaak-sleutels'
+    Defect-sleutels:
+      type: object
+      properties:
+        id:
+          type: string
+          description: De unieke, primaire sleutel van het gegeven binnen het systeem waarin het is vastgelegd, die wordt gebruikt om associaties met andere entiteiten binnen hetzelfde systeem te leggen.
+        idExtern:
+          type: string
+          description: De unieke, primaire sleutel van het gegeven in het bronsysteem waarin het wordt beheerd. Het bronsysteem verwijst naar het systeem waarin de entiteit wordt beheerd binnen het ICT-landschap van een organisatie. Dit bronsysteem fungeert als de single-source-of-truth.
+        idGegevensbeheerder:
+          type: string
+          description: De primaire sleutel van het gegeven van de gegevensbeheerder. Bijv. de overheid of andere standaarden.
+        idOrganisatie:
+          type: string
+          description: Dit verwijst naar de organisatie die verantwoordelijk is voor het gegeven. Horende bij de idExtern.
+        idAdministratie:
+          type: string
+          description: De verwijzing naar de administratie binnen de specifieke organisatie die verantwoordelijk is voor de bron van het gegeven. Dit hoort bij idExtern.
+        code:
+          type: string
+          description: De unieke code (Bijvoorbeeld om te tonen of te zoeken)
+    Onderhoudsorder-sleutels:
+      type: object
+      properties:
+        id:
+          type: string
+          description: De unieke, primaire sleutel van het gegeven binnen het systeem waarin het is vastgelegd, die wordt gebruikt om associaties met andere entiteiten binnen hetzelfde systeem te leggen.
+        idExtern:
+          type: string
+          description: De unieke, primaire sleutel van het gegeven in het bronsysteem waarin het wordt beheerd. Het bronsysteem verwijst naar het systeem waarin de entiteit wordt beheerd binnen het ICT-landschap van een organisatie. Dit bronsysteem fungeert als de single-source-of-truth.
+        idGegevensbeheerder:
+          type: string
+          description: De primaire sleutel van het gegeven van de gegevensbeheerder. Bijv. de overheid of andere standaarden.
+        idOrganisatie:
+          type: string
+          description: Dit verwijst naar de organisatie die verantwoordelijk is voor het gegeven. Horende bij de idExtern.
+        idAdministratie:
+          type: string
+          description: De verwijzing naar de administratie binnen de specifieke organisatie die verantwoordelijk is voor de bron van het gegeven. Dit hoort bij idExtern.
+        code:
+          type: string
+          description: De unieke code (Bijvoorbeeld om te tonen of te zoeken)
+    Onderhoudstaak-sleutels:
+      type: object
+      properties:
+        id:
+          type: string
+          description: De unieke, primaire sleutel van het gegeven binnen het systeem waarin het is vastgelegd, die wordt gebruikt om associaties met andere entiteiten binnen hetzelfde systeem te leggen.
+        idExtern:
+          type: string
+          description: De unieke, primaire sleutel van het gegeven in het bronsysteem waarin het wordt beheerd. Het bronsysteem verwijst naar het systeem waarin de entiteit wordt beheerd binnen het ICT-landschap van een organisatie. Dit bronsysteem fungeert als de single-source-of-truth.
+        idGegevensbeheerder:
+          type: string
+          description: De primaire sleutel van het gegeven van de gegevensbeheerder. Bijv. de overheid of andere standaarden.
+        idOrganisatie:
+          type: string
+          description: Dit verwijst naar de organisatie die verantwoordelijk is voor het gegeven. Horende bij de idExtern.
+        idAdministratie:
+          type: string
+          description: De verwijzing naar de administratie binnen de specifieke organisatie die verantwoordelijk is voor de bron van het gegeven. Dit hoort bij idExtern.
+        code:
+          type: string
+          description: De unieke code (Bijvoorbeeld om te tonen of te zoeken)
+    Onderhoudsbestedingbericht:
+      allOf:    
+        - $ref: '#/components/schemas/Onderhoudsbesteding'
+        - $ref: '#/components/schemas/Bericht-basis'
+    Onderhoudsbesteding:
+      type: object
+      properties:
+        id:
+          type: string
+          description: De unieke, primaire sleutel van het gegeven binnen het systeem waarin het is vastgelegd, die wordt gebruikt om associaties met andere entiteiten binnen hetzelfde systeem te leggen.
+        idExtern:
+          type: string
+          description: De unieke, primaire sleutel van het gegeven in het bronsysteem waarin het wordt beheerd. Het bronsysteem verwijst naar het systeem waarin de entiteit wordt beheerd binnen het ICT-landschap van een organisatie. Dit bronsysteem fungeert als de single-source-of-truth.
+        idGegevensbeheerder:
+          type: string
+          description: De primaire sleutel van het gegeven van de gegevensbeheerder. Bijv. de overheid of andere standaarden.
+        idOrganisatie:
+          type: string
+          description: Dit verwijst naar de organisatie die verantwoordelijk is voor het gegeven. Horende bij de idExtern.
+        idAdministratie:
+          type: string
+          description: De verwijzing naar de administratie binnen de specifieke organisatie die verantwoordelijk is voor de bron van het gegeven. Dit hoort bij idExtern.
+        code:
+          type: string
+          description: De unieke code (Bijvoorbeeld om te tonen of te zoeken)
+        soort:
+          allOf:
+          - $ref: '#/components/schemas/Referentiedata'
+          description: 'Het soort besteding voor de onderhoudstaak. Afhankelijk van de afrekenwijze kunnen hier verschillende bestedingsoorten gebruikt worden zoals vaste taakprijs bij nacalculatie eenheidsprijzen en werktijd bij nacalculatie Referentiedata: ONDERHOUDSBESTEDINGSOORT.'
+        omschrijving:
+          type: string
+          description: De korte omschrijving van de onderhoudsbesteding.
+        uitvoerdatum:
+          type: string
+          format: date-time
+          description: De datum en tijdwaarop de onderhoudsbesteding is uitgevoerd.
+        uitvoerBegintijd:
+          type: string
+          format: date-time
+          description: De aanvangstijd van de uitvoering
+        uitvoerEindtijd:
+          type: string
+          format: date-time
+          description: De eindtijd van de uitvoering.
+        aantal:
+          type: number
+          format: float
+          description: Het aantal bestede middelen of tijd (uitgedrukt in de meeteenheid van de besteding).
+        bedrag:
+          type: number
+          format: float
+          description: De totale kosten van de bestedingsregel op basis van het aantal, de meeteenheid en het eventueel gebruikte artikel
+        grootboekmutatie:
+          type: string
+          format: uri
+          description: URI naar Grootboekmutatie in domeinsysteem Financien.
+        meeteenheid:
+          allOf:
+          - $ref: '#/components/schemas/Referentiedata'
+          description: 'De meeteenheid waarin de besteding wordt gemeten. Bijv. uur, liter etc. Referentiedata: MEETEENHEID.'
+        onderhoudstaak:
+          allOf:
+          - $ref: '#/components/schemas/Onderhoudstaak-sleutels'
+          description: Verwijzing naar de onderhoudstaak
+        reistijd:
+          type: string
+          format: duration
+          pattern: '^(-?)P(?=\d|T\d)(?:(\d+)Y)?(?:(\d+)M)?(?:(\d+)([DW]))?(?:T(?:(\d+)H)?(?:(\d+)M)?(?:(\d+(?:\.\d+)?)S)?)?$'
+          description: De reistijd
+    Onderhoudsorderbericht:
+      allOf:    
+        - $ref: '#/components/schemas/Onderhoudsorder'
+        - $ref: '#/components/schemas/Bericht-basis'
+    Onderhoudsorder:
+      type: object
+      properties:
+        id:
+          type: string
+          description: De unieke, primaire sleutel van het gegeven binnen het systeem waarin het is vastgelegd, die wordt gebruikt om associaties met andere entiteiten binnen hetzelfde systeem te leggen.
+        idExtern:
+          type: string
+          description: De unieke, primaire sleutel van het gegeven in het bronsysteem waarin het wordt beheerd. Het bronsysteem verwijst naar het systeem waarin de entiteit wordt beheerd binnen het ICT-landschap van een organisatie. Dit bronsysteem fungeert als de single-source-of-truth.
+        idGegevensbeheerder:
+          type: string
+          description: De primaire sleutel van het gegeven van de gegevensbeheerder. Bijv. de overheid of andere standaarden.
+        idOrganisatie:
+          type: string
+          description: Dit verwijst naar de organisatie die verantwoordelijk is voor het gegeven. Horende bij de idExtern.
+        idAdministratie:
+          type: string
+          description: De verwijzing naar de administratie binnen de specifieke organisatie die verantwoordelijk is voor de bron van het gegeven. Dit hoort bij idExtern.
+        code:
+          type: string
+          description: De unieke code (Bijvoorbeeld om te tonen of te zoeken)
+        onderhoudSoort:
+          allOf:
+          - $ref: '#/components/schemas/Referentiedata'
+          description: 'Typering van de onderhoudsorder zoals bijvoorbeeld inspectie, mutatiewerkzaamheden, reparatiewerkzaamheden, etc. Referentiedata: ONDERHOUDSOORT.'
+        onderhoudDetailSoort:
+          allOf:
+          - $ref: '#/components/schemas/Referentiedata'
+          description: 'Detaillering van de onderhoudsorder soort zoals gewenst bij inspecties: Voorinspectie, Eindinspectie, Steekproef, … Referentiedata: ONDERHOUDDETAILSOORT.'
+        omschrijving:
+          type: string
+          description: 'De korte omschrijving van de onderhoudsorder. Bijvoorbeeld: Herstel de lekkende kraan in de keuken.'
+        bovenliggendeOrder:
+          allOf:
+          - $ref: '#/components/schemas/Onderhoudsorder-sleutels'
+          description: Als een onderhoudsorder door een opdrachtnemer wordt uitbesteed aan een of meer onderaannemers, dan kan een hiërarchie tussen de orders worden aangebracht door dit attribuut te gebruiken.
+        status:
+          allOf:
+          - $ref: '#/components/schemas/Referentiedata'
+          description: 'De status van de order. Bijvoorbeeld: Order zit in de steekproef of de order is technisch gereed. Referentiedata: ONDERHOUDSORDERSTATUS.'
+        begindatum:
+          type: string
+          format: date-time
+          description: De datum en tijd waarop er is/wordt gestart met het uitvoeren van de order.
+        einddatum:
+          type: string
+          format: date-time
+          description: De datum en tijd waarop de order beëindigd is/wordt.
+        uitersteStartdatum:
+          type: string
+          format: date-time
+          description: Uiterste datum en tijd waarop de onderhoudsorder gestart moet zijn. Dit wordt vaak bepaald aan de hand van de LEDO.
+        uitersteGereeddatum:
+          type: string
+          format: date-time
+          description: Uiterste datum en tijd waarop de onderhoudsorder technisch gereed moet zijn. Dit wordt vaak bepaald aan de hand van de LEDO.
+        opdrachtdatum:
+          type: string
+          format: date-time
+          description: Datum en tijd waarop de opdracht is verstrekt aan het (extern) onderhoudsbedrijf of de interne vakgroep voor de uitvoering van de werkzaamheden.
+        afrekenwijze:
+          allOf:
+          - $ref: '#/components/schemas/Referentiedata'
+          description: 'De wijze waarop de onderhoudsorder wordt afgerekend (of niet). Bijvoorbeeld: Nacalculatie regie, Nacalculatie eenheidsprijzen, Vaste prijs, Afkoop, Garantie. De afrekenwijze bepaalt ook welke soorten onderhoudsbestedingen gebruikt moeten worden (Bij eenheidsprijzen gebruik je bijvoorbeeld bestedingsoort Vaste taakprijs) Referentiedata: AFREKENWIJZESOORT.'
+        afspraken:
+          type: array  
+          items:
+            type: string
+            format: uri
+          description: URI's naar Afspraken in domeinsysteem Relaties.
+        btwVerlegd:
+          type: boolean
+          description: Uiteindelijke beslissing of de btw is verlegd ja/nee. Mag afwijken van de instelling op de crediteur.
+        cluster:
+          type: string
+          format: uri
+          description: URI naar Cluster in domeinsysteem Vastgoed.
+        collectiefObject:
+          type: string
+          format: uri
+          description: URI naar CollectiefObject in domeinsysteem Vastgoed.
+        debiteur:
+          type: string
+          format: uri
+          description: URI naar Debiteur in domeinsysteem Financien.
+        defecten:
+          description: De defecten die via het verzoek of het inspectierapport zijn gemeld.
+          type: array
+          items:
+            $ref: '#/components/schemas/Defect-sleutels'
+        eenheid:
+          type: string
+          format: uri
+          description: URI naar Eenheid in domeinsysteem Vastgoed.
+        financieelGereeddatum:
+          type: string
+          format: date-time
+          description: De datum en tijd waarop de order financieel beëindigd is.
+        offertes:
+          type: array  
+          items:
+            type: string
+            format: uri
+          description: URI's naar Offertes in domeinsysteem Financien.
+        onderhoudstaken:
+          description: De onderhoudstaken behorend bij de onderhoudsorder.
+          type: array
+          items:
+            $ref: '#/components/schemas/Onderhoudstaak-sleutels'
+        onderhoudsverzoeken:
+          description: Het onderhoudsverzoek of de onderhoudsverzoeken die hebben geleid tot de onderhoudsorder.
+          type: array
+          items:
+            $ref: '#/components/schemas/Onderhoudsverzoek-sleutels'
+        overeenkomst:
+          type: string
+          format: uri
+          description: URI naar Overeenkomst in domeinsysteem Overeenkomsten.
+        relaties:
+          type: array  
+          items:
+            type: string
+            format: uri
+          description: URI's naar Relaties in domeinsysteem Relaties.
+        technischGereeddatum:
+          type: string
+          format: date-time
+          description: De datum en tijd waarop de order technisch beëindigd is.
+        uitvoerendeSoort:
+          allOf:
+          - $ref: '#/components/schemas/Referentiedata'
+          description: 'De waarde die het soort uitvoerende aangeeft die de taak uitvoert. Bijvoorbeeld: vakgroep/leverancier of intern/extern. Referentiedata: UITVOERENDESOORT.'
+    Onderhoudstaakbericht:
+      allOf:    
+        - $ref: '#/components/schemas/Onderhoudstaak'
+        - $ref: '#/components/schemas/Bericht-basis'
+    Onderhoudstaak:
+      type: object
+      properties:
+        id:
+          type: string
+          description: De unieke, primaire sleutel van het gegeven binnen het systeem waarin het is vastgelegd, die wordt gebruikt om associaties met andere entiteiten binnen hetzelfde systeem te leggen.
+        idExtern:
+          type: string
+          description: De unieke, primaire sleutel van het gegeven in het bronsysteem waarin het wordt beheerd. Het bronsysteem verwijst naar het systeem waarin de entiteit wordt beheerd binnen het ICT-landschap van een organisatie. Dit bronsysteem fungeert als de single-source-of-truth.
+        idGegevensbeheerder:
+          type: string
+          description: De primaire sleutel van het gegeven van de gegevensbeheerder. Bijv. de overheid of andere standaarden.
+        idOrganisatie:
+          type: string
+          description: Dit verwijst naar de organisatie die verantwoordelijk is voor het gegeven. Horende bij de idExtern.
+        idAdministratie:
+          type: string
+          description: De verwijzing naar de administratie binnen de specifieke organisatie die verantwoordelijk is voor de bron van het gegeven. Dit hoort bij idExtern.
+        code:
+          type: string
+          description: De unieke code (Bijvoorbeeld om te tonen of te zoeken)
+        omschrijving:
+          type: string
+          description: De korte omschrijving van de taak.
+        status:
+          allOf:
+          - $ref: '#/components/schemas/Referentiedata'
+          description: 'De status van de onderhoudstaak. Bijvoorbeeld: aangemaakt, ingepland, in uitvoer, afgerond. Referentiedata: ONDERHOUDSTAAKSTATUS.'
+        detailStatus:
+          allOf:
+          - $ref: '#/components/schemas/Referentiedata'
+          description: 'De detail status van de onderhoudstaak. Bijvoorbeeld: Klant niet aanwezig Referentiedata: ONDERHOUDSTAAKDETAILSTATUS.'
+        afspraken:
+          type: array  
+          items:
+            type: string
+            format: uri
+          description: URI's naar Afspraken in domeinsysteem Relaties.
+        defecten:
+          description: De geconstateerde defecten die met de onderhoudstaak worden verholpen
+          type: array
+          items:
+            $ref: '#/components/schemas/Defect-sleutels'
+        onderhoudsbestedingen:
+          description: De onderhoudsbestedingen behorend bij de onderhoudstaak.
+          type: array
+          items:
+            $ref: '#/components/schemas/Onderhoudsbesteding-sleutels'
+        onderhoudsorder:
+          allOf:
+          - $ref: '#/components/schemas/Onderhoudsorder-sleutels'
+          description: De onderhoudsorder behorend bij de onderhoudstaak.
+        onderhoudsverzoek:
+          allOf:
+          - $ref: '#/components/schemas/Onderhoudsverzoek-sleutels'
+          description: Het onderhoudsverzoek behorend bij de onderhoudstaak. Ook als er (nog) geen onderhoudsorder is bij de onderhoudstaak, kan op deze manier het bijbehorende onderhoudsverzoek worden gevonden.
+        relaties:
+          type: array  
+          items:
+            type: string
+            format: uri
+          description: URI's naar Relaties in domeinsysteem Relaties.
+        specialisme:
+          allOf:
+          - $ref: '#/components/schemas/Referentiedata'
+          description: 'Het specialisme dat nodig is om de taak uit te voeren. Voorbeelden zijn Timmerman, Loodgieter, etc. Referentiedata: ONDERHOUDSPECIALISME.'
+        voorcalculaties:
+          description: De onderhoudstaakvoorcalculaties behorende bij de onderhoudstaak.
+          type: array
+          items:
+            $ref: '#/components/schemas/Onderhoudstaakvoorcalculatie-sleutels'
+    Onderhoudsbesteding-sleutels:
+      type: object
+      properties:
+        id:
+          type: string
+          description: De unieke, primaire sleutel van het gegeven binnen het systeem waarin het is vastgelegd, die wordt gebruikt om associaties met andere entiteiten binnen hetzelfde systeem te leggen.
+        idExtern:
+          type: string
+          description: De unieke, primaire sleutel van het gegeven in het bronsysteem waarin het wordt beheerd. Het bronsysteem verwijst naar het systeem waarin de entiteit wordt beheerd binnen het ICT-landschap van een organisatie. Dit bronsysteem fungeert als de single-source-of-truth.
+        idGegevensbeheerder:
+          type: string
+          description: De primaire sleutel van het gegeven van de gegevensbeheerder. Bijv. de overheid of andere standaarden.
+        idOrganisatie:
+          type: string
+          description: Dit verwijst naar de organisatie die verantwoordelijk is voor het gegeven. Horende bij de idExtern.
+        idAdministratie:
+          type: string
+          description: De verwijzing naar de administratie binnen de specifieke organisatie die verantwoordelijk is voor de bron van het gegeven. Dit hoort bij idExtern.
+        code:
+          type: string
+          description: De unieke code (Bijvoorbeeld om te tonen of te zoeken)
+    Onderhoudstaakvoorcalculatie-sleutels:
+      type: object
+      properties:
+        id:
+          type: string
+          description: De unieke, primaire sleutel van het gegeven binnen het systeem waarin het is vastgelegd, die wordt gebruikt om associaties met andere entiteiten binnen hetzelfde systeem te leggen.
+        idExtern:
+          type: string
+          description: De unieke, primaire sleutel van het gegeven in het bronsysteem waarin het wordt beheerd. Het bronsysteem verwijst naar het systeem waarin de entiteit wordt beheerd binnen het ICT-landschap van een organisatie. Dit bronsysteem fungeert als de single-source-of-truth.
+        idGegevensbeheerder:
+          type: string
+          description: De primaire sleutel van het gegeven van de gegevensbeheerder. Bijv. de overheid of andere standaarden.
+        idOrganisatie:
+          type: string
+          description: Dit verwijst naar de organisatie die verantwoordelijk is voor het gegeven. Horende bij de idExtern.
+        idAdministratie:
+          type: string
+          description: De verwijzing naar de administratie binnen de specifieke organisatie die verantwoordelijk is voor de bron van het gegeven. Dit hoort bij idExtern.
+        code:
+          type: string
+          description: De unieke code (Bijvoorbeeld om te tonen of te zoeken)
+    Onderhoudstaakvoorcalculatiebericht:
+      allOf:    
+        - $ref: '#/components/schemas/Onderhoudstaakvoorcalculatie'
+        - $ref: '#/components/schemas/Bericht-basis'
+    Onderhoudstaakvoorcalculatie:
+      type: object
+      properties:
+        id:
+          type: string
+          description: De unieke, primaire sleutel van het gegeven binnen het systeem waarin het is vastgelegd, die wordt gebruikt om associaties met andere entiteiten binnen hetzelfde systeem te leggen.
+        idExtern:
+          type: string
+          description: De unieke, primaire sleutel van het gegeven in het bronsysteem waarin het wordt beheerd. Het bronsysteem verwijst naar het systeem waarin de entiteit wordt beheerd binnen het ICT-landschap van een organisatie. Dit bronsysteem fungeert als de single-source-of-truth.
+        idGegevensbeheerder:
+          type: string
+          description: De primaire sleutel van het gegeven van de gegevensbeheerder. Bijv. de overheid of andere standaarden.
+        idOrganisatie:
+          type: string
+          description: Dit verwijst naar de organisatie die verantwoordelijk is voor het gegeven. Horende bij de idExtern.
+        idAdministratie:
+          type: string
+          description: De verwijzing naar de administratie binnen de specifieke organisatie die verantwoordelijk is voor de bron van het gegeven. Dit hoort bij idExtern.
+        code:
+          type: string
+          description: De unieke code (Bijvoorbeeld om te tonen of te zoeken)
+        bestedingsoort:
+          allOf:
+          - $ref: '#/components/schemas/Referentiedata'
+          description: 'Het soort besteding voor de voorcalculatie. Referentiedata: ONDERHOUDSBESTEDINGSOORT.'
+        omschrijving:
+          type: string
+          description: De omschrijving van de voorcalculatie.
+        aantal:
+          type: number
+          format: float
+          description: Het verwachte aantal te besteden middelen of tijd (uitgedrukt in de meeteenheid van de voorcalculatie).
+        bedrag:
+          type: number
+          format: float
+          description: Een indicatie van de kosten van de verwachte bestedingen.
+        meeteenheid:
+          allOf:
+          - $ref: '#/components/schemas/Referentiedata'
+          description: 'De meeteenheid waarin de voorcalculatie wordt gemeten. Bijv. uur, liter etc. Referentiedata: MEETEENHEID.'
+        onderhoudstaak:
+          allOf:
+          - $ref: '#/components/schemas/Onderhoudstaak-sleutels'
+          description: De onderhoudstaak behorende bij de voorcalculatie.
+        standaardprijs:
+          allOf:
+          - $ref: '#/components/schemas/Standaardprijs-sleutels'
+          description: Verwijzing naar een standaard (eenheids- of taak-) prijs die past bij de bestedingssoort, of die geldt voor de onderhoudstaak als geheel.
+    Standaardprijs-sleutels:
+      type: object
+      properties:
+        id:
+          type: string
+          description: De unieke, primaire sleutel van het gegeven binnen het systeem waarin het is vastgelegd, die wordt gebruikt om associaties met andere entiteiten binnen hetzelfde systeem te leggen.
+        idExtern:
+          type: string
+          description: De unieke, primaire sleutel van het gegeven in het bronsysteem waarin het wordt beheerd. Het bronsysteem verwijst naar het systeem waarin de entiteit wordt beheerd binnen het ICT-landschap van een organisatie. Dit bronsysteem fungeert als de single-source-of-truth.
+        idGegevensbeheerder:
+          type: string
+          description: De primaire sleutel van het gegeven van de gegevensbeheerder. Bijv. de overheid of andere standaarden.
+        idOrganisatie:
+          type: string
+          description: Dit verwijst naar de organisatie die verantwoordelijk is voor het gegeven. Horende bij de idExtern.
+        idAdministratie:
+          type: string
+          description: De verwijzing naar de administratie binnen de specifieke organisatie die verantwoordelijk is voor de bron van het gegeven. Dit hoort bij idExtern.
+        code:
+          type: string
+          description: De unieke code (Bijvoorbeeld om te tonen of te zoeken)
+    Onderhoudsverzoekbericht:
+      allOf:    
+        - $ref: '#/components/schemas/Onderhoudsverzoek'
+        - $ref: '#/components/schemas/Bericht-basis'
+    Onderhoudsverzoek:
+      type: object
+      properties:
+        id:
+          type: string
+          description: De unieke, primaire sleutel van het gegeven binnen het systeem waarin het is vastgelegd, die wordt gebruikt om associaties met andere entiteiten binnen hetzelfde systeem te leggen. Dit veld is verplicht, behalve bij een POST
+        idExtern:
+          type: string
+          description: De unieke, primaire sleutel van het gegeven in het bronsysteem waarin het wordt beheerd. Het bronsysteem verwijst naar het systeem waarin de entiteit wordt beheerd binnen het ICT-landschap van een organisatie. Dit bronsysteem fungeert als de single-source-of-truth.
+        idGegevensbeheerder:
+          type: string
+          description: De primaire sleutel van het gegeven van de gegevensbeheerder. Bijv. de overheid of andere standaarden.
+        idOrganisatie:
+          type: string
+          description: Dit verwijst naar de organisatie die verantwoordelijk is voor het gegeven. Horende bij de idExtern.
+        idAdministratie:
+          type: string
+          description: De verwijzing naar de administratie binnen de specifieke organisatie die verantwoordelijk is voor de bron van het gegeven. Dit hoort bij idExtern.
+        code:
+          type: string
+          description: De unieke code (Bijvoorbeeld om te tonen of te zoeken)
+        onderhoudSoort:
+          allOf:
+          - $ref: '#/components/schemas/Referentiedata'
+          description: 'Het soort onderhoud dat wordt verzocht. Bijvoorbeeld: reparatie, mutatieonderhoud etc. Referentiedata: ONDERHOUDSOORT.'
+        omschrijving:
+          type: string
+          description: 'De korte omschrijving van het verzoek. Bijvoorbeeld: Keuken: kraan lekt.'
+        status:
+          allOf:
+          - $ref: '#/components/schemas/Referentiedata'
+          description: 'De status van het verzoek. Bijvoorbeeld: Geregistreerd, In behandeling, Geannuleerd, Afgehandeld Referentiedata: ONDERHOUDSVERZOEKSTATUS.'
+        melddatum:
+          type: string
+          format: date-time
+          description: 'De datum en tijdwaarop het onderhoudsverzoek is gemeld. Validatie-regex: ^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z$'
+        alternatiefContactgegeven:
+          type: string
+          description: Tekstveld waarin contactgegevens van een alternatieve contactpersoon opgenomen kunnen worden. Voorbeeld is het verzoek van een huurder (student) waarbij hij aangeeft contact op te nemen met zijn ouders voor de afhandeling van het verzoek.
+        contactmomenten:
+          type: array  
+          items:
+            type: string
+            format: uri
+          description: URI's naar Contactmomenten in domeinsysteem Relaties.
+        defecten:
+          description: De defecten die via zijn gemeld en gekoppeld aan het onderhoudsverzoek.
+          type: array
+          items:
+            $ref: '#/components/schemas/Defect-sleutels'
+        onderhoudsorders:
+          description: De onderhoudsorders behorend bij het onderhoudsverzoek.
+          type: array
+          items:
+            $ref: '#/components/schemas/Onderhoudsorder-sleutels'
+        onderhoudstaken:
+          description: De taken die via het verzoek zijn gemeld.
+          type: array
+          items:
+            $ref: '#/components/schemas/Onderhoudstaak-sleutels'
+        onderhoudsverzoeken:
+          description: Gerelateerde onderhoudsverzoeken bij het onderhoudsverzoek.
+          type: array
+          items:
+            $ref: '#/components/schemas/Onderhoudsverzoek-sleutels'
+        relaties:
+          type: array  
+          items:
+            type: string
+            format: uri
+          description: URI's naar Relaties in domeinsysteem Relaties.
+        verrekeningen:
+          description: De verrekeningen van het onderhoudsverzoek met de melder.
+          type: array
+          items:
+            $ref: '#/components/schemas/Onderhoudsverzoekverrekening-sleutels'
+        voorkeurAfspraken:
+          type: array  
+          items:
+            type: string
+            format: uri
+          description: URI's naar Afspraken in domeinsysteem Relaties.
+    Onderhoudsverzoekverrekening-sleutels:
+      type: object
+      properties:
+        id:
+          type: string
+          description: De unieke, primaire sleutel van het gegeven binnen het systeem waarin het is vastgelegd, die wordt gebruikt om associaties met andere entiteiten binnen hetzelfde systeem te leggen.
+        idExtern:
+          type: string
+          description: De unieke, primaire sleutel van het gegeven in het bronsysteem waarin het wordt beheerd. Het bronsysteem verwijst naar het systeem waarin de entiteit wordt beheerd binnen het ICT-landschap van een organisatie. Dit bronsysteem fungeert als de single-source-of-truth.
+        idGegevensbeheerder:
+          type: string
+          description: De primaire sleutel van het gegeven van de gegevensbeheerder. Bijv. de overheid of andere standaarden.
+        idOrganisatie:
+          type: string
+          description: Dit verwijst naar de organisatie die verantwoordelijk is voor het gegeven. Horende bij de idExtern.
+        idAdministratie:
+          type: string
+          description: De verwijzing naar de administratie binnen de specifieke organisatie die verantwoordelijk is voor de bron van het gegeven. Dit hoort bij idExtern.
+        code:
+          type: string
+          description: De unieke code (Bijvoorbeeld om te tonen of te zoeken)
+    Onderhoudsverzoekverrekeningbericht:
+      allOf:    
+        - $ref: '#/components/schemas/Onderhoudsverzoekverrekening'
+        - $ref: '#/components/schemas/Bericht-basis'
+    Onderhoudsverzoekverrekening:
+      type: object
+      properties:
+        id:
+          type: string
+          description: De unieke, primaire sleutel van het gegeven binnen het systeem waarin het is vastgelegd, die wordt gebruikt om associaties met andere entiteiten binnen hetzelfde systeem te leggen.
+        idExtern:
+          type: string
+          description: De unieke, primaire sleutel van het gegeven in het bronsysteem waarin het wordt beheerd. Het bronsysteem verwijst naar het systeem waarin de entiteit wordt beheerd binnen het ICT-landschap van een organisatie. Dit bronsysteem fungeert als de single-source-of-truth.
+        idGegevensbeheerder:
+          type: string
+          description: De primaire sleutel van het gegeven van de gegevensbeheerder. Bijv. de overheid of andere standaarden.
+        idOrganisatie:
+          type: string
+          description: Dit verwijst naar de organisatie die verantwoordelijk is voor het gegeven. Horende bij de idExtern.
+        idAdministratie:
+          type: string
+          description: De verwijzing naar de administratie binnen de specifieke organisatie die verantwoordelijk is voor de bron van het gegeven. Dit hoort bij idExtern.
+        code:
+          type: string
+          description: De unieke code (Bijvoorbeeld om te tonen of te zoeken)
+        soort:
+          allOf:
+          - $ref: '#/components/schemas/Referentiedata'
+          description: 'Typering van het soort verrekening: te verhalen, te activeren. Referentiedata: VERREKENINGSOORT.'
+        bedrag:
+          type: number
+          format: float
+          description: Het bedrag dat in rekening wordt gebracht.
+        order:
+          allOf:
+          - $ref: '#/components/schemas/Onderhoudsorder-sleutels'
+          description: Verwijzing naar de eventuele onderhoudsorder waarvoor de (deel)verrekening.
+    Standaardprijsbericht:
+      allOf:    
+        - $ref: '#/components/schemas/Standaardprijs'
+        - $ref: '#/components/schemas/Bericht-basis'
+    Standaardprijs:
+      type: object
+      properties:
+        id:
+          type: string
+          description: De unieke, primaire sleutel van het gegeven binnen het systeem waarin het is vastgelegd, die wordt gebruikt om associaties met andere entiteiten binnen hetzelfde systeem te leggen.
+        idExtern:
+          type: string
+          description: De unieke, primaire sleutel van het gegeven in het bronsysteem waarin het wordt beheerd. Het bronsysteem verwijst naar het systeem waarin de entiteit wordt beheerd binnen het ICT-landschap van een organisatie. Dit bronsysteem fungeert als de single-source-of-truth.
+        idGegevensbeheerder:
+          type: string
+          description: De primaire sleutel van het gegeven van de gegevensbeheerder. Bijv. de overheid of andere standaarden.
+        idOrganisatie:
+          type: string
+          description: Dit verwijst naar de organisatie die verantwoordelijk is voor het gegeven. Horende bij de idExtern.
+        idAdministratie:
+          type: string
+          description: De verwijzing naar de administratie binnen de specifieke organisatie die verantwoordelijk is voor de bron van het gegeven. Dit hoort bij idExtern.
+        code:
+          type: string
+          description: De unieke code (Bijvoorbeeld om te tonen of te zoeken)
+        omschrijving:
+          type: string
+          description: De omschrijving van de standaardprijs.
+        aantal:
+          type: integer
+          format: int32
+          description: Het aantal eenheden (uitgedrukt in de meeteenheid van de standaardprijs), waarbij de standaardprijs van toepassing is.
+        bedrag:
+          type: number
+          format: float
+          description: De standaard prijs.
+        meeteenheid:
+          allOf:
+          - $ref: '#/components/schemas/Referentiedata'
+          description: 'De meeteenheid waarin de eenheden wordt gemeten. Bijv. uur, liter, stuks, etc. Referentiedata: MEETEENHEID.'
+        onderhoudstaakvoorcalculaties:
+          description: De onderhoudstaakvoorcalculatie(s) die behoort (behoren) bij de standaardprijs.
+          type: array
+          items:
+            $ref: '#/components/schemas/Onderhoudstaakvoorcalculatie-sleutels'
+    Bericht-basis:
+      type: object
+      properties:
+        extra-attributen:
+          description: Mogelijkheid om het bericht uit te breiden met attributen die nog niet in het logisch datamodel beschikbaar zijn
+          type: array
+          items:
+            $ref: '#/components/schemas/ExtraAttribuut'
+        informatieobjecten:
+          type: array  
+          items:
+            type: string
+            format: uri
+          description: URI's naar Informatieobjecten in domeinsysteem Dossier.
+        sturingslabels:
+          description: Mogelijkheid om het bericht uit te breiden met sturingslabels
+          type: array
+          items:
+            $ref: '#/components/schemas/Sturingslabel'
+        archivering:
+          allOf:
+          - $ref: '#/components/schemas/Archivering'
+          description: Mogelijkheid om het bericht uit te breiden met archiveringsinformatie
+    ExtraAttribuutbericht:
+      allOf:    
+        - $ref: '#/components/schemas/ExtraAttribuut'
+        - $ref: '#/components/schemas/Bericht-basis'
+    ExtraAttribuut:
+      type: object
+      properties:
+        naam:
+          type: string
+          description: De naam van het niet bestaande attribuut. Bijv. Huurprognose.
+        waarde:
+          type: string
+          description: De waarde van het niet bestaande attribuut. Bijv. €850,-.
+    Sturingslabelbericht:
+      allOf:    
+        - $ref: '#/components/schemas/Sturingslabel'
+        - $ref: '#/components/schemas/Bericht-basis'
+    Sturingslabel:
+      type: object
+      properties:
+        id:
+          type: string
+          description: De unieke, primaire sleutel van het gegeven binnen het systeem waarin het is vastgelegd, die wordt gebruikt om associaties met andere entiteiten binnen hetzelfde systeem te leggen. Dit veld is verplicht, behalve bij een POST
+        idExtern:
+          type: string
+          description: De unieke, primaire sleutel van het gegeven in het bronsysteem waarin het wordt beheerd. Het bronsysteem verwijst naar het systeem waarin de entiteit wordt beheerd binnen het ICT-landschap van een organisatie. Dit bronsysteem fungeert als de single-source-of-truth.
+        idGegevensbeheerder:
+          type: string
+          description: De primaire sleutel van het gegeven van de gegevensbeheerder. Bijv. de overheid of andere standaarden.
+        idOrganisatie:
+          type: string
+          description: Dit verwijst naar de organisatie die verantwoordelijk is voor het gegeven. Horende bij de idExtern.
+        idAdministratie:
+          type: string
+          description: De verwijzing naar de administratie binnen de specifieke organisatie die verantwoordelijk is voor de bron van het gegeven. Dit hoort bij idExtern.
+        code:
+          type: string
+          description: De unieke code (Bijvoorbeeld om te tonen of te zoeken) Bijvoorbeeld DVI2014.
+        soort:
+          allOf:
+          - $ref: '#/components/schemas/Referentiedata'
+          description: 'De categorie of groepering van het label. Bijv. dVI samenstelling bezit etc. Referentiedata: STURINGSLABELSOORT.'
+        label:
+          allOf:
+          - $ref: '#/components/schemas/Referentiedata'
+          description: 'Het label dat is bepaald op basis van de bijbehorende definitie. Bijv. Zelfstandige huurwoning. Referentiedata: STURINGSLABEL.'
+        datum:
+          type: string
+          format: date
+          description: Datum en tijdstip waarop het label is bepaald. OBSOLETE
+          deprecated: true
+        begindatum:
+          type: string
+          format: date
+          description: Datum en tijdstip waarop het label is bepaald.
+        einddatum:
+          type: string
+          format: date
+          description: De einddatum waarop het label niet meer geldig is.
+        bron:
+          allOf:
+          - $ref: '#/components/schemas/Referentiedata'
+          description: 'De bron van de definitie van het label. Bijv. dVI 2014, CORA etc. Referentiedata: STURINGSLABELBRON.'
+    Archiveringbericht:
+      allOf:    
+        - $ref: '#/components/schemas/Archivering'
+        - $ref: '#/components/schemas/Bericht-basis'
+    Archivering:
+      type: object
+      properties:
+        archiefactiedatum:
+          type: string
+          format: date
+          description: De datum waarop het gearchiveerde object vernietigd moet worden dan wel overgebracht moet worden naar een archiefbewaarplaats
+        archiefnominatie:
+          allOf:
+          - $ref: '#/components/schemas/Referentiedata'
+          description: 'Aanduiding of het object blijvend bewaard of na een bepaalde termijn vernietigd moet worden Referentiedata: ARCHIEFNOMINATIE.'
+        archiefstatus:
+          allOf:
+          - $ref: '#/components/schemas/Referentiedata'
+          description: 'De fase waarin het object zich qua archivering bevindt Referentiedata: ARCHIEFSTATUS.'
+    Foutbericht:
+      type: object
+      properties:
+        code:
+          type: string
+          description: Foutcode
+        omschrijving:
+          type: string
+          description: Omschrijving van de fout
+    TijdstipBericht:
+      type: string
+      format: date-time
+    Referentienummer:
+      type: string
+    ZenderOrganisatie:
+      type: string
+    ZenderAdministratie:
+      type: string
+    Aantal:
+      type: integer
+    AantalPerPagina:
+      type: integer
+    Paginanummer:
+      type: integer
+    Cursor:
+      type: string
+    PeiltijdstipMaterieel:
+      type: string
+      format: date-time
+  parameters:
+    Cursor:
+      in: query
+      name: cursor
+      description: |
+        De cursor uit de response dient te worden meegestuurd bij het opvragen van 
+        de volgende set van resultaten wanneer deze groter is dan het aantal resultaten per pagina.
+      example: ca73d9bc-f810-48bf-8950-ec3fd70b0159
+      required: false
+      schema:
+        $ref: '#/components/schemas/Cursor'
+    Pagina:
+      in: query
+      name: pagina
+      description: Opgevraagde paginanummer
+      example: 3
+      required: false
+      schema:
+        $ref: '#/components/schemas/Paginanummer'
+    StuurgegevensTijdstipBericht:
+      in: header
+      name: X-Stuurgegevens-Tijdstip-Bericht
+      description: Tijdstip van verzenden
+      example: 2022-07-21T17:32:28Z
+      required: false
+      schema:
+        $ref: '#/components/schemas/TijdstipBericht'
+    StuurgegevensReferentienummer:
+      in: header
+      name: X-Stuurgegevens-Referentienummer
+      description: | 
+        Code bedoeld voor correlatie
+      example: 05aa0347-fef9-486a-a1b0-4fd75f33e746
+      required: false
+      schema:
+        $ref: '#/components/schemas/Referentienummer'
+    StuurgegevensZenderOrganisatie:
+      in: header
+      name: X-Stuurgegevens-Zender-Organisatie
+      description: Naam van de verzendende organisatie
+      required: false
+      schema:
+        $ref: '#/components/schemas/ZenderOrganisatie'
+    StuurgegevensZenderAdministratie:
+      in: header
+      name: X-Stuurgegevens-Zender-Administratie
+      description: |
+        Met het stuurgegeven Administratie kan onderscheid gemaakt worden tussen 
+        de verschillende gegevensverzamelingen die de verzendende organisatie beheert
+      required: false
+      schema:
+        $ref: '#/components/schemas/ZenderAdministratie'
+    ParametersAantalPerPagina:
+      in: header
+      name: X-Parameters-AantalPerPagina
+      description: Maximaal aantal resultaten in de response
+      example: 20
+      required: false
+      schema:
+        $ref: '#/components/schemas/AantalPerPagina'
+    ParametersPeiltijdstipMaterieel:
+      in: header
+      name: X-Parameters-PeiltijdstipMaterieel
+      description: De peildatum. Indien leeg worden de actuele gegevens opgevraagd
+      example: 2022-04-14T12:00:00Z
+      required: false
+      schema:
+        $ref: '#/components/schemas/PeiltijdstipMaterieel'
+

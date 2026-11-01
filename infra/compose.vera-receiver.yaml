@@ -1,0 +1,25 @@
+# Standalone test target. No production services, databases or credentials.
+services:
+  vera-receiver:
+    init: true
+    build:
+      context: ../tools/vera-receiver
+    mem_limit: 256m
+    memswap_limit: 256m
+    cpus: 0.5
+    pids_limit: 128
+    environment:
+      VERA_RECEIVER_TEST_MODE: '1'
+      VERA_RECEIVER_LISTEN: 0.0.0.0:8090
+      VERA_RECEIVER_BASE_URL: https://localhost:8090
+      VERA_RECEIVER_CLIENT_ID: satvey-test
+      VERA_RECEIVER_CLIENT_SECRET: dummy-client-secret-only-for-tests
+      VERA_RECEIVER_CONTROL_KEY: dummy-control-secret-only-for-tests
+      GOMEMLIMIT: 192MiB
+      GOMAXPROCS: '1'
+    ports: ['127.0.0.1:8090:8090']
+    healthcheck:
+      test: [CMD, wget, --no-check-certificate, -q, -O, /dev/null, https://localhost:8090/healthz]
+      interval: 2s
+      timeout: 3s
+      retries: 30

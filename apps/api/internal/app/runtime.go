@@ -178,7 +178,10 @@ func (a *app) metricsHandler(w http.ResponseWriter, r *http.Request) error {
  UNION ALL SELECT 'scope',status,next_attempt_at FROM scope_jobs WHERE status IN ('pending','processing','failed')
  UNION ALL SELECT 'audio',status,next_attempt_at FROM transcription_jobs WHERE status IN ('pending','processing','failed')
  UNION ALL SELECT 'mail',status,next_attempt_at FROM mail_jobs WHERE status IN ('pending','processing','failed')
- UNION ALL SELECT 'property',status,next_attempt_at FROM property_sync_jobs WHERE status IN ('pending','processing','failed')) j GROUP BY kind,status`)
+ UNION ALL SELECT 'property',status,next_attempt_at FROM property_sync_jobs WHERE status IN ('pending','processing','failed')
+ UNION ALL SELECT 'report_pdf',status,created_at FROM report_artifacts WHERE status<>'ready'
+ UNION ALL SELECT 'file_deletion',CASE WHEN attempts>0 THEN 'failed' ELSE 'pending' END,next_attempt_at FROM inspection_file_deletions
+ UNION ALL SELECT 'vera_handover',status,created_at FROM handover_deliveries WHERE status NOT IN ('accepted','manual')) j GROUP BY kind,status`)
 	if e != nil {
 		return e
 	}

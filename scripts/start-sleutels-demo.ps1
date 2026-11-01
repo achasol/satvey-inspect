@@ -1,4 +1,4 @@
-param([switch]$Seed)
+param([switch]$Seed, [switch]$VERA)
 $ErrorActionPreference = 'Stop'
 $workspacePath = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $nodeCommand = Get-Command node -ErrorAction SilentlyContinue
@@ -6,9 +6,13 @@ $nodePath = if ($nodeCommand) { $nodeCommand.Source } else { 'C:/Program Files/n
 if (!(Test-Path -LiteralPath $nodePath)) { throw 'Install Node.js 22.12 or newer to run the native demo frontend.' }
 $cachePath = Join-Path $workspacePath '.cache'
 New-Item -ItemType Directory -Path $cachePath -Force | Out-Null
+$previousDemoOrigin = $env:APP_URL
 Push-Location $workspacePath
 try {
-    & docker compose -f compose.yaml -f compose.demo.yaml up -d api
+    if (!$env:APP_URL) { $env:APP_URL = 'http://localhost:5174' }
+    $demoComposeArgs = @('compose', '-f', 'compose.yaml', '-f', 'compose.demo.yaml')
+    if ($VERA) { $demoComposeArgs += @('-f', 'infra/compose.vera-local.yaml') }
+    & docker @demoComposeArgs up -d --wait api
     if ($LASTEXITCODE -ne 0) { throw 'The API services could not be started.' }
     if (!(Test-Path -LiteralPath (Join-Path $workspacePath 'node_modules/vite/bin/vite.js'))) {
         $previousPath = $env:Path
@@ -51,6 +55,12 @@ try {
             if ($LASTEXITCODE -ne 0) { throw 'Preparing demo data failed.' }
         } finally { $env:DEMO_API_URL = $previousDemoAPI }
     }
+    if ($VERA) {
+        & docker @demoComposeArgs cp 'vera-receiver:/tmp/vera-receiver-ca.pem' (Join-Path $cachePath 'vera-receiver-ca.pem')
+        if ($LASTEXITCODE -ne 0) { throw 'Copying the public VERA test certificate failed.' }
+        & $nodePath scripts/connect-vera-demo.mjs
+        if ($LASTEXITCODE -ne 0) { throw 'Connecting the fictional demo to the VERA test receiver failed.' }
+    }
     Write-Output 'Demo ready: http://localhost:5174/app'
     Write-Output 'Organisation: De Sleutels - Demo; email: demo@desleutels.local'
-} finally { Pop-Location }
+} finally { $env:APP_URL = $previousDemoOrigin; Pop-Location }

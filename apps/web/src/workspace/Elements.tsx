@@ -42,10 +42,10 @@ export function ElementsModule({
     <section className={s.stack} aria-label="Ruimtes en elementen">
       <div className={s.pageHeading}>
         <div>
-          <h2>Ruimtes en elementen</h2>
+          <h2>Elementencatalogus</h2>
           <p className={s.muted}>
             Beschrijf welke elementen bij welke ruimtes horen. Beoordelingscriteria leg je vast in
-            normenkaders.
+            kwaliteitskaders.
           </p>
         </div>
         {can(org, 'norms.manage') && (
@@ -54,7 +54,7 @@ export function ElementsModule({
           </Button>
         )}
       </div>
-      <div className={s.twoColumns}>
+      <div className={s.elementFilters}>
         <Field
           label="Element zoeken"
           placeholder="Bijvoorbeeld kraan of wand"

@@ -1,3 +1,4 @@
+import { captureFiles } from './helpers/capture';
 import { test, expect } from '@playwright/test';
 import type { Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
@@ -55,8 +56,7 @@ async function setup(page: Page) {
   return { path, iid, room: room.id as string, second };
 }
 async function addPhoto(page: Page) {
-  await page.getByLabel("Foto's toevoegen", { exact: true }).setInputFiles(photo);
-  await page.getByRole('button', { name: 'Opname bewaren', exact: true }).click();
+  await captureFiles(page, photo);
   await expect(page.getByText('Voorbeeldvoorstel', { exact: true })).toBeVisible({
     timeout: 20000,
   });
@@ -227,7 +227,7 @@ test('annotation drafts survive reload and offline saves remain queued until rec
 
 test('long camera visits split uploads without requiring a save click', async ({ page }) => {
   const { path } = await setup(page);
-  await page.evaluate(() => {
+  const denyCapture = () =>
     Object.defineProperty(navigator, 'mediaDevices', {
       configurable: true,
       value: {
@@ -236,14 +236,15 @@ test('long camera visits split uploads without requiring a save click', async ({
         },
       },
     });
-  });
-  await page.getByRole('button', { name: 'Foto maken', exact: true }).click();
-  const camera = page.getByRole('dialog', { name: 'Camera', exact: true });
+  await page.addInitScript(denyCapture);
+  await page.evaluate(denyCapture);
+  await page.getByRole('button', { name: /Inspectie (starten|hervatten)/ }).click();
+  const camera = page.getByRole('dialog', { name: 'Inspectie opnemen', exact: true });
   await expect(camera.getByRole('button', { name: 'Gereed', exact: true })).toBeEnabled();
   await camera
     .getByLabel('Foto toevoegen in camerasessie', { exact: true })
     .setInputFiles(Array.from({ length: 31 }, (_, i) => ({ ...photo, name: `wand-${i}.png` })));
-  await expect(camera.getByText('1 foto’s', { exact: true })).toBeVisible();
+  await expect(camera.getByText(/^1 foto’s/)).toBeVisible();
   await camera.getByRole('button', { name: 'Gereed', exact: true }).click();
   await expect(camera).toBeHidden();
   await expect
@@ -258,7 +259,7 @@ test('camera fallback saves per room automatically and recovers an interrupted v
   page,
 }, info) => {
   const { path, room, second } = await setup(page);
-  await page.evaluate(() => {
+  const denyCapture = () =>
     Object.defineProperty(navigator, 'mediaDevices', {
       configurable: true,
       value: {
@@ -267,17 +268,18 @@ test('camera fallback saves per room automatically and recovers an interrupted v
         },
       },
     });
-  });
-  await page.getByRole('button', { name: 'Foto maken', exact: true }).click();
-  const camera = page.getByRole('dialog', { name: 'Camera', exact: true });
+  await page.addInitScript(denyCapture);
+  await page.evaluate(denyCapture);
+  await page.getByRole('button', { name: /Inspectie (starten|hervatten)/ }).click();
+  const camera = page.getByRole('dialog', { name: 'Inspectie opnemen', exact: true });
   await expect(camera.getByText(/Cameratoegang geweigerd/)).toBeVisible();
   await camera.getByLabel('Foto toevoegen in camerasessie', { exact: true }).setInputFiles(photo);
-  await expect(camera.getByText('1 foto’s', { exact: true })).toBeVisible();
+  await expect(camera.getByText(/^1 foto’s/)).toBeVisible();
 
   await page.reload();
-  await page.getByRole('button', { name: 'Foto maken', exact: true }).click();
+  await page.getByRole('button', { name: /Inspectie (starten|hervatten)/ }).click();
   await expect(camera.getByText('Eerdere camerasessie hersteld.', { exact: true })).toBeVisible();
-  await expect(camera.getByText('1 foto’s', { exact: true })).toBeVisible();
+  await expect(camera.getByText(/^1 foto’s/)).toBeVisible();
   await camera.getByRole('button', { name: 'Badkamer', exact: true }).click();
   await camera.getByRole('button', { name: 'Badkamer 2', exact: true }).click();
   await expect(camera.getByRole('button', { name: 'Badkamer 2', exact: true })).toBeVisible();
@@ -287,7 +289,7 @@ test('camera fallback saves per room automatically and recovers an interrupted v
   );
   await expect(camera.getByRole('button', { name: 'Badkamer 2', exact: true })).toBeEnabled();
   await camera.getByLabel('Foto toevoegen in camerasessie', { exact: true }).setInputFiles(photo);
-  await expect(camera.getByText('1 foto’s', { exact: true })).toBeVisible();
+  await expect(camera.getByText(/^1 foto’s/)).toBeVisible();
   const savedVisit = await page.evaluate(async () => {
     const db = await new Promise<IDBDatabase>((resolve) => {
       const r = indexedDB.open('satvey-workspace');
@@ -335,25 +337,27 @@ test('live camera keeps its stream across room changes and stops it on close', a
     info.project.name !== 'chromium',
     'Virtual camera is configured for desktop Chromium; real phones require device testing.',
   );
-  await context.grantPermissions(['camera']);
+  await context.grantPermissions(['camera', 'microphone']);
   const { path, room, second } = await setup(page);
   await page.evaluate(() => {
     const original = navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices);
     (window as unknown as { cameraRequests: number }).cameraRequests = 0;
     navigator.mediaDevices.getUserMedia = async (constraints) => {
-      (window as unknown as { cameraRequests: number }).cameraRequests++;
+      if (constraints?.video) (window as unknown as { cameraRequests: number }).cameraRequests++;
       const result = await original(constraints);
-      (window as unknown as { cameraTrack: MediaStreamTrack }).cameraTrack =
-        result.getVideoTracks()[0];
+      if (constraints?.video)
+        (window as unknown as { cameraTrack: MediaStreamTrack }).cameraTrack =
+          result.getVideoTracks()[0];
       return result;
     };
   });
-  await page.getByRole('button', { name: 'Foto maken', exact: true }).click();
-  const camera = page.getByRole('dialog', { name: 'Camera', exact: true }),
+  await page.getByRole('button', { name: /Inspectie (starten|hervatten)/ }).click();
+  const camera = page.getByRole('dialog', { name: 'Inspectie opnemen', exact: true }),
     shutter = camera.getByRole('button', { name: 'Foto vastleggen', exact: true });
   await expect(shutter).toBeEnabled({ timeout: 15000 });
+  await page.waitForTimeout(2200);
   await shutter.click();
-  await expect(camera.getByText('1 foto’s', { exact: true })).toBeVisible();
+  await expect(camera.getByText(/^1 foto’s/)).toBeVisible();
   await camera.getByRole('button', { name: 'Badkamer', exact: true }).click();
   await camera.getByRole('button', { name: 'Badkamer 2', exact: true }).click();
   await expect(shutter).toBeEnabled();
@@ -365,8 +369,9 @@ test('live camera keeps its stream across room changes and stops it on close', a
       () => (window as unknown as { cameraTrack: MediaStreamTrack }).cameraTrack.readyState,
     ),
   ).toBe('live');
+  await page.waitForTimeout(2200);
   await shutter.click();
-  await expect(camera.getByText('1 foto’s', { exact: true })).toBeVisible();
+  await expect(camera.getByText(/^1 foto’s/)).toBeVisible();
   await page.screenshot({ path: 'tests/artifacts/live-camera-chromium.png' });
   await camera.getByRole('button', { name: 'Gereed', exact: true }).click();
   await expect(camera).toBeHidden();
@@ -376,12 +381,19 @@ test('live camera keeps its stream across room changes and stops it on close', a
     ),
   ).toBe('ended');
   await expect
-    .poll(async () => (await (await page.request.get(path)).json()).media.length, {
-      timeout: 20000,
-    })
+    .poll(
+      async () =>
+        (await (await page.request.get(path)).json()).media.filter(
+          (m: { kind: string }) => m.kind === 'photo',
+        ).length,
+      {
+        timeout: 20000,
+      },
+    )
     .toBe(2);
   const current = await (await page.request.get(path)).json();
+  expect(current.media.filter((m: { kind: string }) => m.kind === 'audio')).toHaveLength(2);
   expect(current.batches.map((b: { roomId: string }) => b.roomId).sort()).toEqual(
-    [room, second].sort(),
+    [room, room, second, second].sort(),
   );
 });

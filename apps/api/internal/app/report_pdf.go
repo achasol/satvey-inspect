@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"html/template"
 	"image"
+	"image/png"
 	"io"
 	"mime"
 	"mime/multipart"
@@ -28,7 +29,10 @@ import (
 var reportAssets embed.FS
 
 type reportPerson struct {
-	Name string `json:"name"`
+	PrimaryColor string  `json:"-"`
+	Tint         string  `json:"tint"`
+	LogoAssetID  *string `json:"logoAssetId"`
+	Name         string  `json:"name"`
 }
 type pdfInspection struct {
 	PropertySnapshot *catalogProperty `json:"propertySnapshot"`
@@ -38,6 +42,7 @@ type pdfInspection struct {
 	City             string           `json:"city"`
 	Kind             string           `json:"kind"`
 	Status           string           `json:"status"`
+	VisitedAt        *time.Time       `json:"visitedAt"`
 	ScheduledAt      *time.Time       `json:"scheduledAt"`
 	CreatedAt        time.Time        `json:"createdAt"`
 }
@@ -56,23 +61,25 @@ type pdfObservation struct {
 	Photos      []pdfPhoto
 }
 type pdfAssessment struct {
-	RuleID              string   `json:"ruleId"`
-	BatchID             string   `json:"batchId"`
-	Outcome             string   `json:"outcome"`
-	Reason              string   `json:"reason"`
-	PhotoIDs            []string `json:"photoIds"`
+	ScoreDetail         *scoreDetail `json:"scoreDetail"`
+	RuleID              string       `json:"ruleId"`
+	BatchID             string       `json:"batchId"`
+	Outcome             string       `json:"outcome"`
+	Reason              string       `json:"reason"`
+	PhotoIDs            []string     `json:"photoIds"`
 	Code, Title, Result string
 	Photos              []pdfPhoto
 }
 type pdfPhoto struct {
-	ID           string `json:"id"`
-	BatchID      string `json:"batchId"`
-	Kind         string `json:"kind"`
-	Name         string `json:"name"`
-	File, Number string
-	Annotations  []photoAnnotation `json:"annotations"`
+	ID                   string `json:"id"`
+	BatchID              string `json:"batchId"`
+	Kind                 string `json:"kind"`
+	Name                 string `json:"name"`
+	File, Number, Anchor string
+	Annotations          []photoAnnotation `json:"annotations"`
 }
 type pdfFormatAnswer struct {
+	ScoreDetail                           *scoreDetail `json:"scoreDetail"`
 	Title, Value, Reason, Outcome, Result string
 	PhotoIDs                              []string
 	Photos                                []pdfPhoto
@@ -92,7 +99,19 @@ type pdfRoom struct {
 	Photos                      []pdfPhoto
 	PhotoRows                   [][]pdfPhoto
 }
+type pdfAgreement struct {
+	Title string
+	agreementInput
+	Photos []pdfPhoto
+}
 type pdfDocument struct {
+	AgreementSections                                                            []pdfAgreement    `json:"-"`
+	RendererVersion                                                              int               `json:"rendererVersion"`
+	Number                                                                       int               `json:"number"`
+	Acknowledgement                                                              string            `json:"acknowledgement"`
+	Agreements                                                                   []agreementInput  `json:"agreements"`
+	SigningException                                                             *signingException `json:"signingException"`
+	Disagreement                                                                 string            `json:"disagreement"`
 	Signatures                                                                   []reportSignature `json:"signatures"`
 	Format                                                                       *formatDocument   `json:"format"`
 	Answers                                                                      []formatAnswer    `json:"answers"`
@@ -125,6 +144,7 @@ func reportDate(value time.Time) string {
 	return value.In(zone).Format("02-01-2006 15:04")
 }
 func preparePDFDocument(doc *pdfDocument) error {
+	doc.Organisation.PrimaryColor = readableReportTint(doc.Organisation.Tint)
 	if err := prepareSignatures(doc.Signatures); err != nil {
 		return err
 	}
@@ -220,7 +240,7 @@ func preparePDFDocument(doc *pdfDocument) error {
 					if a.Status != "confirmed" && a.Status != "unanswerable" {
 						continue
 					}
-					v := pdfFormatAnswer{Title: q.Title, Reason: a.Reason, Outcome: a.Outcome, PhotoIDs: a.PhotoIDs}
+					v := pdfFormatAnswer{Title: q.Title, Reason: a.Reason, Outcome: a.Outcome, PhotoIDs: a.PhotoIDs, ScoreDetail: a.ScoreDetail}
 					var value any
 					_ = json.Unmarshal(a.Value, &value)
 					if a.Status == "unanswerable" {
@@ -275,7 +295,7 @@ func preparePDFDocument(doc *pdfDocument) error {
 					allWaived = allWaived && a.Status == "unanswerable"
 				}
 				if allWaived {
-					room.Coverage = "Niet te beantwoorden ? toegelicht"
+					room.Coverage = "Niet te beantwoorden - toegelicht"
 				}
 			}
 		}
@@ -336,7 +356,7 @@ func preparePDFDocument(doc *pdfDocument) error {
 				}
 			}
 			if a.Title == "" {
-				a.Title = "Normbeoordeling"
+				a.Title = "Kwaliteitsbeoordeling"
 			}
 			switch a.Outcome {
 			case "acceptable":
@@ -377,6 +397,18 @@ func preparePDFDocument(doc *pdfDocument) error {
 			}
 		}
 	}
+	for _, agreement := range doc.Agreements {
+		section := pdfAgreement{agreementInput: agreement, Title: fmt.Sprintf("Afspraak %d", len(doc.AgreementSections)+1)}
+		for _, pid := range agreement.PhotoIDs {
+			if photo, ok := photos[pid]; ok && photo.Number != "" {
+				section.Photos = append(section.Photos, photo)
+			}
+		}
+		doc.AgreementSections = append(doc.AgreementSections, section)
+	}
+	if !doc.Final || doc.RendererVersion >= 2 {
+		prepareIllustratedEvidence(doc)
+	}
 	return nil
 }
 
@@ -393,9 +425,9 @@ func (a *app) pdfSource(r *http.Request) (pdfDocument, error) {
 		return doc, e
 	}
 	var snapshot map[string]json.RawMessage
-	if status == "final" {
+	if status == "final" || validID(r.URL.Query().Get("reportId")) {
 		var raw []byte
-		if e = tx.QueryRow(r.Context(), "SELECT snapshot FROM reports WHERE inspection_id=$1 AND org_id=$2", inspection, org).Scan(&raw); e != nil {
+		if e = tx.QueryRow(r.Context(), `SELECT snapshot FROM reports WHERE inspection_id=$1 AND org_id=$2 AND ($3='' OR id::text=$3) ORDER BY number DESC LIMIT 1`, inspection, org, r.URL.Query().Get("reportId")).Scan(&raw); e != nil {
 			return doc, e
 		}
 		if e = json.Unmarshal(raw, &snapshot); e != nil {
@@ -439,7 +471,12 @@ func (a *app) reportPDF(w http.ResponseWriter, r *http.Request) error {
 	if e != nil {
 		return e
 	}
-	pdf, e := a.renderReportPDF(r.Context(), r.PathValue("org"), doc)
+	var pdf []byte
+	if doc.Final {
+		pdf, e = a.frozenReportPDF(r.Context(), r.PathValue("org"), doc)
+	} else {
+		pdf, e = a.renderReportPDF(r.Context(), r.PathValue("org"), doc)
+	}
 	if e != nil {
 		return e
 	}
@@ -462,6 +499,9 @@ func (a *app) reportPDF(w http.ResponseWriter, r *http.Request) error {
 }
 
 func executePDFTemplate(name string, doc pdfDocument) ([]byte, error) {
+	if name == "index.html" && doc.Final && doc.RendererVersion < 2 {
+		name = "legacy.html"
+	}
 	t, e := template.ParseFS(reportAssets, "report_assets/"+name)
 	if e != nil {
 		return nil, e
@@ -494,6 +534,35 @@ func (a *app) renderReportPDF(ctx context.Context, org string, doc pdfDocument) 
 			return nil, e
 		}
 		if e = add(name, data); e != nil {
+			return nil, e
+		}
+	}
+	if doc.Organisation.LogoAssetID != nil {
+		var key string
+		if e = a.db.QueryRow(ctx, `SELECT object_key FROM norm_assets WHERE id=$1 AND org_id=$2 AND kind='photo' AND size<=1048576`, *doc.Organisation.LogoAssetID, org).Scan(&key); e != nil {
+			return nil, e
+		}
+		object, err := a.storage.GetObject(ctx, &s3.GetObjectInput{Bucket: &a.bucket, Key: &key})
+		if err != nil {
+			return nil, err
+		}
+		raw, err := io.ReadAll(io.LimitReader(object.Body, 1048577))
+		object.Body.Close()
+		if err != nil {
+			return nil, err
+		}
+		if len(raw) > 1048576 {
+			return nil, fail(413, "Logo is te groot")
+		}
+		logo, err := imaging.Decode(bytes.NewReader(raw), imaging.AutoOrientation(true))
+		if err != nil {
+			return nil, err
+		}
+		var buffer bytes.Buffer
+		if err = png.Encode(&buffer, imaging.Fit(logo, 400, 160, imaging.Lanczos)); err != nil {
+			return nil, err
+		}
+		if e = add("organisation-logo.png", buffer.Bytes()); e != nil {
 			return nil, e
 		}
 	}

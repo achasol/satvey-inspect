@@ -18,6 +18,7 @@ import { allPages, navigation } from './navigation';
 import { BrandMark, Dialog, IconButton, UIProvider, cx } from './components/ui';
 import { Overview } from './pages/Overview';
 import s from './App.module.css';
+import { PublicInformation } from './workspace/PublicInformation';
 import { Workspace } from './workspace/Workspace';
 
 const Foundations = lazy(async () => ({
@@ -298,7 +299,11 @@ export function App() {
     return (
       <UIProvider locale="nl">
         <Suspense fallback={<p role="status">Satvey laden…</p>}>
-          <Workspace />
+          {['/support', '/privacy', '/account-deletion'].includes(pathname) ? (
+            <PublicInformation />
+          ) : (
+            <Workspace />
+          )}
         </Suspense>
       </UIProvider>
     );

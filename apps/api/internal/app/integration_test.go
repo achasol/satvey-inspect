@@ -91,7 +91,7 @@ func setup(t *testing.T) *fixture {
 	f.client = &http.Client{Jar: jar}
 	t.Cleanup(func() {
 		f.server.Close()
-		rows, e := db.Query(ctx, "SELECT object_key FROM media WHERE org_id=$1 UNION ALL SELECT object_key FROM norm_assets WHERE org_id=$1 UNION ALL SELECT object_key FROM inspection_file_deletions WHERE org_id=$1", f.org)
+		rows, e := db.Query(ctx, "SELECT object_key FROM media WHERE org_id=$1 UNION ALL SELECT object_key FROM norm_assets WHERE org_id=$1 UNION ALL SELECT object_key FROM inspection_file_deletions WHERE org_id=$1 UNION ALL SELECT object_key FROM handover_artifacts WHERE org_id=$1 UNION ALL SELECT object_key FROM report_artifacts WHERE org_id=$1", f.org)
 		if e == nil {
 			for rows.Next() {
 				var key string
@@ -102,11 +102,13 @@ func setup(t *testing.T) *fixture {
 		}
 		tx, e := db.Begin(ctx)
 		if e == nil {
-			for _, table := range []string{"security_events", "mail_jobs", "inspection_file_deletions", "property_events", "property_imports", "property_sync_jobs", "format_review_events", "scope_jobs", "format_answers", "transcription_jobs", "transcription_cache", "norm_assessments", "reports", "observations", "processing_jobs", "media", "batches", "rooms", "inspections", "properties", "property_sources", "memberships", "invitations", "oidc_states", "organisation_domains", "format_versions", "inspection_formats", "norm_versions", "norm_frameworks", "norm_assets", "room_elements", "organisation_roles"} {
+			_, _ = tx.Exec(ctx, `UPDATE organisations SET logo_asset_id=NULL WHERE id=$1`, f.org)
+			for _, table := range []string{"manual_handovers", "inspection_measurements", "retention_policies", "report_deliveries", "report_artifacts", "inspection_events", "inspection_agreements", "security_events", "mail_jobs", "inspection_file_deletions", "property_events", "property_imports", "property_sync_jobs", "format_review_events", "scope_jobs", "format_answers", "transcription_jobs", "transcription_cache", "norm_assessments", "reports", "observations", "processing_jobs", "media", "batches", "rooms", "inspections", "mutation_cases", "properties", "property_sources", "memberships", "invitations", "oidc_states", "organisation_domains", "format_versions", "inspection_formats", "norm_versions", "norm_frameworks", "norm_assets", "room_elements", "organisation_roles"} {
 				_, _ = tx.Exec(ctx, "DELETE FROM "+table+" WHERE org_id=$1", f.org)
 			}
 			_, _ = tx.Exec(ctx, "DELETE FROM organisations WHERE id=$1", f.org)
 			_, _ = tx.Exec(ctx, "DELETE FROM sessions WHERE user_id=$1", f.uid)
+			_, _ = tx.Exec(ctx, "DELETE FROM mobile_login_requests WHERE user_id=$1", f.uid)
 			_, _ = tx.Exec(ctx, "DELETE FROM users WHERE id=$1", f.uid)
 			_ = tx.Commit(ctx)
 		}

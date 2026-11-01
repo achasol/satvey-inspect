@@ -33,22 +33,28 @@ func (a *app) edit(r *http.Request) (pgx.Tx, principal, error) {
 		return nil, u, e
 	}
 	var status string
-	e = tx.QueryRow(r.Context(), "SELECT status FROM inspections WHERE id=$1 AND org_id=$2 FOR UPDATE", r.PathValue("inspection"), r.PathValue("org")).Scan(&status)
+	var archived bool
+	e = tx.QueryRow(r.Context(), "SELECT status,archived_at IS NOT NULL FROM inspections WHERE id=$1 AND org_id=$2 FOR UPDATE", r.PathValue("inspection"), r.PathValue("org")).Scan(&status, &archived)
 	if e != nil {
 		tx.Rollback(r.Context())
 		return nil, u, e
 	}
-	if status != "draft" {
+	if archived || status != "draft" {
 		tx.Rollback(r.Context())
-		return nil, u, fail(409, "Dit rapport is vastgelegd en kan niet meer worden gewijzigd")
+		return nil, u, fail(409, "Open Bewerken bij het rapport om een nieuwe versie binnen dit dossier te maken")
+	}
+	if e = setActor(r.Context(), tx, u.ID); e != nil {
+		tx.Rollback(r.Context())
+		return nil, u, e
 	}
 	return tx, u, nil
 }
 
-const inspectionSelect = `SELECT i.id,i.kind,i.status,i.scheduled_at AS "scheduledAt",i.created_at AS "createdAt",p.id AS "propertyId",i.norm_version_id AS "normVersionId",i.format_version_id AS "formatVersionId",COALESCE(i.property_snapshot->>'address',p.address) AS address,COALESCE(i.property_snapshot->>'postcode',p.postcode) AS postcode,COALESCE(i.property_snapshot->>'city',p.city) AS city,i.property_snapshot AS "propertySnapshot",i.property_context_version AS "propertyContextVersion",(i.status='draft' AND p.revision<>COALESCE((i.property_snapshot->>'revision')::integer,0)) AS "propertyChanged" FROM inspections i JOIN properties p ON p.id=i.property_id AND p.org_id=i.org_id`
+const inspectionSelect = `SELECT i.id,(SELECT name FROM users WHERE id=COALESCE(i.assigned_to,i.created_by)) AS "inspectorName",i.kind,i.status,i.revision,i.latest_report_id AS "latestReportId",i.retention_hold AS "retentionHold",i.retention_hold_reason AS "retentionHoldReason",i.assigned_to AS "assignedTo",i.reviewer_id AS "reviewerId",i.review_status AS "reviewStatus",i.review_note AS "reviewNote",i.priority,i.visit_outcome AS "visitOutcome",i.visited_at AS "visitedAt",i.external_reference AS "externalReference",i.mutation_case_id AS "mutationCaseId",i.predecessor_id AS "predecessorId",i.created_by AS "createdBy",i.archived_at AS "archivedAt",i.archive_reason AS "archiveReason",i.corrects_inspection_id AS "correctsInspectionId",i.correction_reason AS "correctionReason",i.superseded_by AS "supersededBy",i.scheduled_at AS "scheduledAt",i.created_at AS "createdAt",p.id AS "propertyId",i.norm_version_id AS "normVersionId",i.format_version_id AS "formatVersionId",COALESCE(i.property_snapshot->>'address',p.address) AS address,COALESCE(i.property_snapshot->>'postcode',p.postcode) AS postcode,COALESCE(i.property_snapshot->>'city',p.city) AS city,i.property_snapshot AS "propertySnapshot",i.property_context_version AS "propertyContextVersion",(i.status='draft' AND p.revision<>COALESCE((i.property_snapshot->>'revision')::integer,0)) AS "propertyChanged" FROM inspections i JOIN properties p ON p.id=i.property_id AND p.org_id=i.org_id`
 
 func (a *app) inspections(w http.ResponseWriter, r *http.Request) error {
-	if _, _, e := a.access(r, false); e != nil {
+	u, _, e := a.access(r, false)
+	if e != nil {
 		return e
 	}
 	limit, offset := 50, 0
@@ -70,11 +76,29 @@ func (a *app) inspections(w http.ResponseWriter, r *http.Request) error {
 	if len(query) > 200 {
 		return fail(400, "Zoekopdracht te lang")
 	}
-	out, e := list(r.Context(), a.db, inspectionSelect+" WHERE i.org_id=$1 AND ($2='' OR strpos(lower(COALESCE(i.property_snapshot->>'address',p.address)||' '||COALESCE(i.property_snapshot->>'city',p.city)),lower($2))>0) ORDER BY i.scheduled_at NULLS LAST,i.created_at DESC,i.id LIMIT $3 OFFSET $4", r.PathValue("org"), query, limit, offset)
+	view := r.URL.Query().Get("view")
+	if !contains([]string{"", "all", "mine", "today", "overdue", "unassigned", "review", "delivery", "archived"}, view) {
+		return fail(400, "Onbekende weergave")
+	}
+	archived := view == "archived" || r.URL.Query().Get("archived") == "true"
+	filter := ` WHERE i.org_id=$1 AND (i.archived_at IS NOT NULL)=$5
+ AND ($2='' OR strpos(regexp_replace(lower(COALESCE(i.property_snapshot->>'address',p.address)||' '||COALESCE(i.property_snapshot->>'city',p.city)||' '||COALESCE(i.property_snapshot->>'postcode',p.postcode)||' '||p.object_number||' '||COALESCE(p.source_object_id,'')||' '||i.external_reference),'[[:space:]]','','g'),regexp_replace(lower($2),'[[:space:]]','','g'))>0)
+ AND ($7 IN ('','all','archived') OR ($7='mine' AND i.assigned_to=$6::uuid) OR ($7='today' AND (i.scheduled_at AT TIME ZONE 'Europe/Amsterdam')::date=(now() AT TIME ZONE 'Europe/Amsterdam')::date)
+ OR ($7='overdue' AND i.status='draft' AND i.visit_outcome<>'cancelled' AND i.scheduled_at<now()) OR ($7='unassigned' AND i.assigned_to IS NULL AND i.status='draft')
+ OR ($7='review' AND i.review_status<>'approved') OR ($7='delivery' AND EXISTS(SELECT 1 FROM internal_sync_jobs s WHERE s.inspection_id=i.id AND s.org_id=i.org_id AND s.status IN ('blocked','retrying'))) OR ($7='delivery' AND EXISTS(SELECT 1 FROM handover_deliveries d WHERE d.inspection_id=i.id AND d.org_id=i.org_id AND d.status IN ('blocked','retrying'))) OR ($7='delivery' AND EXISTS(SELECT 1 FROM report_deliveries rd JOIN mail_jobs mj ON mj.id=rd.mail_job_id WHERE rd.org_id=i.org_id AND rd.inspection_id=i.id AND mj.status='failed')))`
+	out, e := list(r.Context(), a.db, inspectionSelect+filter+` ORDER BY (i.status='draft') DESC,CASE i.priority WHEN 'urgent' THEN 0 WHEN 'high' THEN 1 ELSE 2 END,i.scheduled_at NULLS LAST,i.created_at DESC,i.id LIMIT $3 OFFSET $4`, r.PathValue("org"), query, limit, offset, archived, u.ID, view)
 	if e != nil {
 		return e
 	}
-	send(w, 200, out)
+	if strings.HasSuffix(r.URL.Path, "/inspection-page") {
+		var total, open int
+		if e = a.db.QueryRow(r.Context(), `SELECT count(*),count(*) FILTER(WHERE i.status='draft') FROM inspections i JOIN properties p ON p.id=i.property_id AND p.org_id=i.org_id`+filter+` AND $3::integer>0 AND $4::integer>=0`, r.PathValue("org"), query, limit, offset, archived, u.ID, view).Scan(&total, &open); e != nil {
+			return e
+		}
+		send(w, 200, map[string]any{"items": out, "total": total, "open": open})
+	} else {
+		send(w, 200, out)
+	}
 	return nil
 }
 func (a *app) createInspection(w http.ResponseWriter, r *http.Request) error {
@@ -178,7 +202,7 @@ func detail(ctx context.Context, q querier, org, inspection string) (map[string]
 	queries := map[string]string{
 		"rooms":        `SELECT id,name,category_id AS "categoryId",generation,approved_generation AS "approvedGeneration" FROM rooms WHERE inspection_id=$1 AND org_id=$2 ORDER BY category_id IS NOT NULL DESC,name`,
 		"batches":      `SELECT id,room_id AS "roomId",status,version,created_at AS "createdAt" FROM batches WHERE inspection_id=$1 AND org_id=$2 ORDER BY created_at`,
-		"media":        `SELECT id,batch_id AS "batchId",kind,name,mime,size,duration,annotations,annotation_version AS "annotationVersion",transcript,transcript_version AS "transcriptVersion" FROM media WHERE inspection_id=$1 AND org_id=$2 ORDER BY created_at`,
+		"media":        `SELECT id,batch_id AS "batchId",kind,name,mime,size,duration,content_deleted_at AS "contentDeletedAt",annotations,annotation_version AS "annotationVersion",transcript,transcript_version AS "transcriptVersion" FROM media WHERE inspection_id=$1 AND org_id=$2 ORDER BY created_at`,
 		"observations": `SELECT id,batch_id AS "batchId",title,description,label,status,source,version,photo_ids AS "photoIds",audio_ids AS "audioIds" FROM observations WHERE inspection_id=$1 AND org_id=$2 ORDER BY id`,
 		"jobs":         `SELECT batch_id AS "batchId",status,provider,last_error AS "error" FROM processing_jobs WHERE inspection_id=$1 AND org_id=$2`,
 	}
@@ -215,10 +239,15 @@ func detail(ctx context.Context, q querier, org, inspection string) (map[string]
 		out[key] = raw
 	}
 
-	assessments, e := list(ctx, q, `SELECT id,batch_id AS "batchId",rule_id AS "ruleId",norm_version_id AS "normVersionId",outcome,reason,photo_ids AS "photoIds",audio_ids AS "audioIds",source,reviewed_outcome AS "reviewedOutcome",review_note AS "reviewNote",previous_reviewed_outcome AS "previousReviewedOutcome",previous_review_note AS "previousReviewNote",stale,version FROM norm_assessments WHERE inspection_id=$1 AND org_id=$2 ORDER BY rule_id`, inspection, org)
+	assessments, e := list(ctx, q, `SELECT id,batch_id AS "batchId",rule_id AS "ruleId",norm_version_id AS "normVersionId",outcome,reason,photo_ids AS "photoIds",audio_ids AS "audioIds",source,reviewed_outcome AS "reviewedOutcome",review_note AS "reviewNote",previous_reviewed_outcome AS "previousReviewedOutcome",previous_review_note AS "previousReviewNote",score_detail AS "scoreDetail",proposed_score AS "proposedScore",stale,version FROM norm_assessments WHERE inspection_id=$1 AND org_id=$2 ORDER BY rule_id`, inspection, org)
 	if e != nil {
 		return nil, e
 	}
+	agreements, err := list(ctx, q, `SELECT id,description,responsibility,due_date::text AS "dueDate",status,note,photo_ids AS "photoIds",version,source_agreement_id AS "sourceAgreementId" FROM inspection_agreements WHERE org_id=$1 AND inspection_id=$2 ORDER BY due_date NULLS LAST,id`, org, inspection)
+	if err != nil {
+		return nil, err
+	}
+	out["agreements"] = agreements
 	out["assessments"] = assessments
 	return out, nil
 }
@@ -276,15 +305,8 @@ func (a *app) createRoom(w http.ResponseWriter, r *http.Request) error {
 		if category == nil || category.Property {
 			return fail(422, "Kies een ruimtecategorie uit het format")
 		}
-		if !category.Repeatable {
-			var count int
-			if e = tx.QueryRow(r.Context(), `SELECT count(*) FROM rooms WHERE org_id=$1 AND inspection_id=$2 AND category_id=$3 AND id<>$4`, r.PathValue("org"), r.PathValue("inspection"), category.ID, in.ID).Scan(&count); e != nil {
-				return e
-			}
-			if count > 0 {
-				return fail(422, "Deze ruimtecategorie is al toegevoegd")
-			}
-		}
+		// The inspector records the actual room inventory, including additional
+		// kitchens or toilets. Each instance retains the pinned category questions.
 		if e = instantiateScope(r.Context(), tx, r.PathValue("org"), r.PathValue("inspection"), in.ID, strings.TrimSpace(in.Name), *category); e != nil {
 			return e
 		}
@@ -547,7 +569,10 @@ func (a *app) finalise(w http.ResponseWriter, r *http.Request) error {
 	}
 	defer tx.Rollback(r.Context())
 	var in struct {
-		Signatures []signatureInput `json:"signatures"`
+		Signatures       []signatureInput  `json:"signatures"`
+		Version          int               `json:"version"`
+		SigningException *signingException `json:"signingException"`
+		Disagreement     string            `json:"disagreement"`
 	}
 	if r.ContentLength != 0 {
 		if e = readJSON(w, r, &in); e != nil {
@@ -568,6 +593,31 @@ func (a *app) finalise(w http.ResponseWriter, r *http.Request) error {
 	format, err := inspectionFormat(r.Context(), tx, org, inspection)
 	if err != nil {
 		return err
+	}
+	var correction bool
+	if e = tx.QueryRow(r.Context(), `SELECT corrects_inspection_id IS NOT NULL FROM inspections WHERE id=$1 AND org_id=$2`, inspection, org).Scan(&correction); e != nil {
+		return e
+	}
+	var reissue bool
+	if e = tx.QueryRow(r.Context(), `SELECT latest_report_id IS NOT NULL FROM inspections WHERE id=$1 AND org_id=$2`, inspection, org).Scan(&reissue); e != nil {
+		return e
+	}
+	strictSigning := reissue || correction || (format != nil && format.SigningPolicy == "resident_or_exception")
+	if strictSigning {
+		var revision int
+		var visited *time.Time
+		if e = tx.QueryRow(r.Context(), `SELECT revision,visited_at FROM inspections WHERE id=$1 AND org_id=$2`, inspection, org).Scan(&revision, &visited); e != nil {
+			return e
+		}
+		if in.Version != revision {
+			return fail(409, "De inhoud is gewijzigd. Controleer het rapport en verzamel opnieuw de handtekeningen.")
+		}
+		if visited == nil {
+			return fail(422, "Vul eerst de werkelijke bezoekdatum in")
+		}
+		if e = validateSigningPolicy(in.Signatures, in.SigningException, in.Disagreement); e != nil {
+			return e
+		}
 	}
 	if format != nil {
 		if e = validateFormatCompletion(r.Context(), tx, org, inspection); e != nil {
@@ -601,7 +651,17 @@ func (a *app) finalise(w http.ResponseWriter, r *http.Request) error {
 		signature.Name = strings.TrimSpace(signature.Name)
 		signatures = append(signatures, reportSignature{Input: signature, SignedAt: now, CollectedBy: u.ID})
 	}
+	acknowledgement := ""
+	if strictSigning {
+		acknowledgement = defaultSigningAcknowledgement
+		if format != nil && strings.TrimSpace(format.Acknowledgement) != "" {
+			acknowledgement = format.Acknowledgement
+		}
+	}
+	snapshot["acknowledgement"], _ = json.Marshal(acknowledgement)
 	snapshot["signatures"], _ = json.Marshal(signatures)
+	snapshot["signingException"], _ = json.Marshal(in.SigningException)
+	snapshot["disagreement"], _ = json.Marshal(in.Disagreement)
 	var frozenInspection map[string]any
 	if e = json.Unmarshal(snapshot["inspection"], &frozenInspection); e != nil {
 		return e
@@ -611,11 +671,26 @@ func (a *app) finalise(w http.ResponseWriter, r *http.Request) error {
 	snapshot["createdAt"], _ = json.Marshal(now)
 	reportID := id()
 	snapshot["id"], _ = json.Marshal(reportID)
-	raw, _ := json.Marshal(snapshot)
-	if _, e = tx.Exec(r.Context(), "INSERT INTO reports(id,org_id,inspection_id,snapshot,created_by) VALUES($1,$2,$3,$4,$5)", reportID, org, inspection, raw, u.ID); e != nil {
+	var reportNumber int
+	if e = tx.QueryRow(r.Context(), `SELECT COALESCE(max(number),0)+1 FROM reports WHERE org_id=$1 AND inspection_id=$2`, org, inspection).Scan(&reportNumber); e != nil {
 		return e
 	}
-	if _, e = tx.Exec(r.Context(), "UPDATE inspections SET status='final' WHERE id=$1 AND org_id=$2", inspection, org); e != nil {
+	snapshot["number"], _ = json.Marshal(reportNumber)
+	snapshot["rendererVersion"], _ = json.Marshal(2)
+	raw, _ := json.Marshal(snapshot)
+	if _, e = tx.Exec(r.Context(), "INSERT INTO reports(id,org_id,inspection_id,snapshot,created_by,number) VALUES($1,$2,$3,$4,$5,$6)", reportID, org, inspection, raw, u.ID, reportNumber); e != nil {
+		return e
+	}
+	if _, e = tx.Exec(r.Context(), `INSERT INTO report_artifacts(report_id,org_id,inspection_id,object_key) VALUES($1,$2,$3,$4)`, reportID, org, inspection, org+"/reports/"+reportID+".pdf"); e != nil {
+		return e
+	}
+	if _, e = tx.Exec(r.Context(), "UPDATE inspections SET status='final',latest_report_id=$3 WHERE id=$1 AND org_id=$2", inspection, org, reportID); e != nil {
+		return e
+	}
+	if _, e = tx.Exec(r.Context(), `UPDATE inspections SET superseded_by=$1,revision=revision+1 WHERE id=(SELECT corrects_inspection_id FROM inspections WHERE id=$1 AND org_id=$2) AND org_id=$2`, inspection, org); e != nil {
+		return e
+	}
+	if e = recordEvent(r.Context(), tx, org, inspection, u.ID, "report_finalised", map[string]string{"reportId": reportID}); e != nil {
 		return e
 	}
 	if e = tx.Commit(r.Context()); e != nil {
@@ -632,7 +707,11 @@ func (a *app) report(w http.ResponseWriter, r *http.Request) error {
 		return fail(404, "Rapport niet gevonden")
 	}
 	var raw json.RawMessage
-	e := a.db.QueryRow(r.Context(), "SELECT snapshot FROM reports WHERE inspection_id=$1 AND org_id=$2", r.PathValue("inspection"), r.PathValue("org")).Scan(&raw)
+	reportID := r.URL.Query().Get("reportId")
+	if reportID != "" && !validID(reportID) {
+		return fail(404, "Rapportversie niet gevonden")
+	}
+	e := a.db.QueryRow(r.Context(), `SELECT snapshot FROM reports WHERE inspection_id=$1 AND org_id=$2 AND ($3='' OR id::text=$3) ORDER BY number DESC LIMIT 1`, r.PathValue("inspection"), r.PathValue("org"), reportID).Scan(&raw)
 	if e != nil {
 		return e
 	}

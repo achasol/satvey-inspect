@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api, ApiError } from './api';
 import { cacheGet, cachePut } from './outbox';
+import { prepareResponseResources } from './platform';
 
 export function useResource<T>(scope: string, path: string) {
   const [data, setData] = useState<T>(),
@@ -40,6 +41,21 @@ export function useResource<T>(scope: string, path: string) {
         if (!(e instanceof ApiError)) {
           const value = await cacheGet<T>(`${scope}:${path}`).catch(() => undefined);
           if (valid() && value !== undefined) {
+            try {
+              await prepareResponseResources(value, path);
+            } catch (resourceError) {
+              if (valid()) {
+                setData(undefined);
+                setCached(false);
+                setError(
+                  resourceError instanceof Error
+                    ? resourceError.message
+                    : 'Lokale bronnen zijn niet beschikbaar',
+                );
+              }
+              return;
+            }
+            if (!valid()) return;
             setData(value);
             setCached(true);
           }

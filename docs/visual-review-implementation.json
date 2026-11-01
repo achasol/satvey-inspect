@@ -1,0 +1,1167 @@
+{
+  "source": "docs/visual-review-feedback.json",
+  "status": "implemented_external_acceptance_pending",
+  "phases": [
+    {
+      "id": 1,
+      "name": "Responsive navigation and property selection",
+      "status": "implemented"
+    },
+    {
+      "id": 2,
+      "name": "Same-dossier editing, audit and administration",
+      "status": "implemented"
+    },
+    {
+      "id": 3,
+      "name": "Continuous camera and automatic room audio",
+      "status": "implemented"
+    },
+    {
+      "id": 4,
+      "name": "Review, scoring and responsibilities",
+      "status": "implemented"
+    },
+    {
+      "id": 5,
+      "name": "Illustrated reports and organisation branding",
+      "status": "implemented"
+    },
+    {
+      "id": 6,
+      "name": "Automatic internal VERA synchronization",
+      "status": "implemented"
+    },
+    {
+      "id": 7,
+      "name": "Administrator Analytics and automatic activity",
+      "status": "implemented"
+    }
+  ],
+  "decisions": {
+    "reports": "Same dossier; new issued version, original artifacts and signatures preserved",
+    "scoring": "1–6; outcome mapping per criterion; separate repair/cost responsibilities",
+    "quality": "Independent, non-blocking oversight",
+    "vera": "Configurable confirmed data; raw audio/transcripts opt-in; read test and separate sandbox write test",
+    "analytics": "Equal inspector/property emphasis; automatic estimates only"
+  },
+  "validation": [
+    {
+      "check": "TypeScript, ESLint, Prettier and production web build",
+      "result": "passed",
+      "logs": [
+        ".cache/visual-implementation/typecheck-verified.log",
+        ".cache/visual-implementation/lint-verified.log",
+        ".cache/visual-implementation/format-verified.log",
+        ".cache/visual-implementation/build-web-verified.log"
+      ]
+    },
+    {
+      "check": "Frontend unit suite",
+      "result": "55 tests passed across 11 files",
+      "log": ".cache/visual-implementation/unit-verified.log"
+    },
+    {
+      "check": "Full isolated Go race suite through migration 028",
+      "result": "passed",
+      "log": ".cache/visual-implementation/backend-verified.log"
+    },
+    {
+      "check": "Final migration 029, raw transcript audit, retention and report-version regression checks with race detection",
+      "result": "passed",
+      "log": ".cache/visual-implementation/audit-retention.log"
+    },
+    {
+      "check": "Actual PDF bounds, typography, bookmarks, evidence links, draft labels and annotation alignment",
+      "result": "passed",
+      "logs": [
+        ".cache/visual-implementation/pdf-verified.log",
+        ".cache/visual-implementation/pdf-illustrated-verified.log"
+      ],
+      "note": "Modern structured sample has 3 pages with its photo beside the result, no duplicate appendix and correct UTF-8 text. Historical fixtures retain their legacy renderer."
+    },
+    {
+      "check": "Broad Chromium suite and workspace reruns",
+      "result": "All discovered failures resolved in subsequent focused runs",
+      "logs": [
+        ".cache/visual-implementation/browser-final.log",
+        ".cache/visual-implementation/browser-regression.log",
+        ".cache/visual-implementation/browser-final-fixes.log",
+        ".cache/visual-implementation/browser-matrix.log"
+      ],
+      "note": "Initial failures included obsolete UI selectors. The property observer and mobile header spacing were actual application defects and were fixed. Live Chromium camera/microphone verified one video stream, separate room audio and proper track shutdown."
+    },
+    {
+      "check": "Final critical browser matrix",
+      "result": "Chromium 10 passed; mobile Chrome 10 passed; mobile Safari 8 passed plus one screenshot failure and one screenshot retry",
+      "log": ".cache/visual-implementation/browser-matrix.log"
+    },
+    {
+      "check": "Final mobile Safari visual and functional follow-up",
+      "result": "4 passed, including both screenshot cases",
+      "log": ".cache/visual-implementation/safari-verified.log",
+      "note": "Capture long administration pages at viewport size in CSS pixels to avoid oversized headless WebKit screenshots. Functional assertions are retained. Mobile is 390 x 844, landscape tablet is 1194 x 834."
+    },
+    {
+      "check": "Final Android Docker build",
+      "result": "assembleDebug and bundleRelease passed; container exit 0; both archive integrity checks passed",
+      "log": ".cache/visual-implementation/android-verified.log",
+      "manifest": ".cache/android-build/visual-review/manifest.json",
+      "note": "Compilation uses https://inspect.invalid. Debug APK and unsigned release AAB; no physical-device installation or store submission."
+    }
+  ],
+  "research": [
+    {
+      "feedback": ["VR-048", "VR-049", "VR-051", "VR-052"],
+      "source": "NEN - Achtergrond conditiemeting",
+      "url": "https://www.nen.nl/bouw/beheer-en-onderhoud/conditiemeting/achtergrond-conditiemeting",
+      "finding": "NEN describes a six-point condition result derived from severity, extent and intensity, organized by building parts. Condition is distinct from risk and business policy.",
+      "decision": "Keep an optional 1-6 criterion scale with explicit customer definitions and per-criterion outcome mapping. Store repair and cost responsibility separately as customer policy. Do not label the implementation NEN compliant or copy a proprietary defects library."
+    },
+    {
+      "feedback": ["VR-024", "VR-025", "VR-026"],
+      "source": "RICS - Home Survey sample reports",
+      "url": "https://www.rics.org/profession-standards/rics-standards-and-guidance/sector-standards/building-surveying-standards/home-surveys",
+      "sample": "https://www.rics.org/content/dam/ricsglobal/documents/standards/Sample-Home-Survey-Level-3-Report.pdf",
+      "finding": "Primary sample reports provide a structured survey reference with condition-led sections. RICS report products require a licence.",
+      "decision": "Use an original Satvey format: concise overview, room hierarchy, confirmed findings, visible supporting photographs and action responsibilities. Do not copy RICS wording, branding or claim RICS compliance."
+    },
+    {
+      "feedback": ["VR-024", "VR-025", "VR-026"],
+      "source": "UK Department for Education - condition survey report guidance",
+      "url": "https://www.gov.uk/government/publications/commissioning-a-condition-survey-for-school-and-college-buildings/condition-surveys-for-school-and-college-buildings-guidance-for-responsible-bodies",
+      "finding": "Reports should combine a clear summary, condition assessment, priority/actions and supporting photographs.",
+      "decision": "Present a short overview before detailed evidence and show photos beside the associated findings rather than relying solely on an appendix."
+    },
+    {
+      "feedback": ["VR-016", "VR-025", "VR-052"],
+      "source": "ConditionHQ - product workflow",
+      "url": "https://conditionhq.app/",
+      "finding": "The vendor organizes property inspections by rooms and items and connects notes, ratings and photos to each item, with progress and report review. These are vendor claims, not an independent product test.",
+      "decision": "Retain room identity for capture/audio/evidence and quiet element identifiers for reusable criteria and analytics. Inspectors do not need an extra element-selection task while walking. Administration remains in the catalog and framework editor."
+    }
+  ],
+  "feedback": [
+    {
+      "id": "VR-001",
+      "phase": 1,
+      "status": "implemented",
+      "evidence": [
+        "apps/web/src/workspace/Sidebar.tsx",
+        "apps/web/src/workspace/ResponsiveTabs.tsx",
+        "apps/web/src/workspace/Properties.tsx",
+        "apps/web/src/workspace/inspections.tsx",
+        "apps/web/src/workspace/Settings.tsx",
+        "apps/web/src/workspace/Elements.tsx",
+        "apps/web/src/components/ui.tsx",
+        "apps/web/src/workspace/Norms.tsx",
+        "apps/web/src/workspace/Formats.tsx",
+        "apps/web/src/workspace/workspace.module.css"
+      ]
+    },
+    {
+      "id": "VR-002",
+      "phase": 1,
+      "status": "implemented",
+      "evidence": [
+        "apps/web/src/workspace/Sidebar.tsx",
+        "apps/web/src/workspace/ResponsiveTabs.tsx",
+        "apps/web/src/workspace/Properties.tsx",
+        "apps/web/src/workspace/inspections.tsx",
+        "apps/web/src/workspace/Settings.tsx",
+        "apps/web/src/workspace/Elements.tsx",
+        "apps/web/src/components/ui.tsx",
+        "apps/web/src/workspace/Norms.tsx",
+        "apps/web/src/workspace/Formats.tsx",
+        "apps/web/src/workspace/workspace.module.css"
+      ]
+    },
+    {
+      "id": "VR-003",
+      "phase": 1,
+      "status": "implemented",
+      "evidence": [
+        "apps/web/src/workspace/Sidebar.tsx",
+        "apps/web/src/workspace/ResponsiveTabs.tsx",
+        "apps/web/src/workspace/Properties.tsx",
+        "apps/web/src/workspace/inspections.tsx",
+        "apps/web/src/workspace/Settings.tsx",
+        "apps/web/src/workspace/Elements.tsx",
+        "apps/web/src/components/ui.tsx",
+        "apps/web/src/workspace/Norms.tsx",
+        "apps/web/src/workspace/Formats.tsx",
+        "apps/web/src/workspace/workspace.module.css"
+      ]
+    },
+    {
+      "id": "VR-004",
+      "phase": 1,
+      "status": "implemented",
+      "evidence": [
+        "apps/web/src/workspace/Sidebar.tsx",
+        "apps/web/src/workspace/ResponsiveTabs.tsx",
+        "apps/web/src/workspace/Properties.tsx",
+        "apps/web/src/workspace/inspections.tsx",
+        "apps/web/src/workspace/Settings.tsx",
+        "apps/web/src/workspace/Elements.tsx",
+        "apps/web/src/components/ui.tsx",
+        "apps/web/src/workspace/Norms.tsx",
+        "apps/web/src/workspace/Formats.tsx",
+        "apps/web/src/workspace/workspace.module.css"
+      ]
+    },
+    {
+      "id": "VR-005",
+      "phase": 1,
+      "status": "implemented",
+      "evidence": [
+        "apps/web/src/workspace/Sidebar.tsx",
+        "apps/web/src/workspace/ResponsiveTabs.tsx",
+        "apps/web/src/workspace/Properties.tsx",
+        "apps/web/src/workspace/inspections.tsx",
+        "apps/web/src/workspace/Settings.tsx",
+        "apps/web/src/workspace/Elements.tsx",
+        "apps/web/src/components/ui.tsx",
+        "apps/web/src/workspace/Norms.tsx",
+        "apps/web/src/workspace/Formats.tsx",
+        "apps/web/src/workspace/workspace.module.css"
+      ]
+    },
+    {
+      "id": "VR-006",
+      "phase": 1,
+      "status": "implemented",
+      "evidence": [
+        "apps/web/src/workspace/Sidebar.tsx",
+        "apps/web/src/workspace/ResponsiveTabs.tsx",
+        "apps/web/src/workspace/Properties.tsx",
+        "apps/web/src/workspace/inspections.tsx",
+        "apps/web/src/workspace/Settings.tsx",
+        "apps/web/src/workspace/Elements.tsx",
+        "apps/web/src/components/ui.tsx",
+        "apps/web/src/workspace/Norms.tsx",
+        "apps/web/src/workspace/Formats.tsx",
+        "apps/web/src/workspace/workspace.module.css"
+      ]
+    },
+    {
+      "id": "VR-007",
+      "phase": 1,
+      "status": "implemented",
+      "evidence": [
+        "apps/web/src/workspace/Sidebar.tsx",
+        "apps/web/src/workspace/ResponsiveTabs.tsx",
+        "apps/web/src/workspace/Properties.tsx",
+        "apps/web/src/workspace/inspections.tsx",
+        "apps/web/src/workspace/Settings.tsx",
+        "apps/web/src/workspace/Elements.tsx",
+        "apps/web/src/components/ui.tsx",
+        "apps/web/src/workspace/Norms.tsx",
+        "apps/web/src/workspace/Formats.tsx",
+        "apps/web/src/workspace/workspace.module.css"
+      ]
+    },
+    {
+      "id": "VR-008",
+      "phase": 1,
+      "status": "implemented",
+      "evidence": [
+        "apps/web/src/workspace/Sidebar.tsx",
+        "apps/web/src/workspace/ResponsiveTabs.tsx",
+        "apps/web/src/workspace/Properties.tsx",
+        "apps/web/src/workspace/inspections.tsx",
+        "apps/web/src/workspace/Settings.tsx",
+        "apps/web/src/workspace/Elements.tsx",
+        "apps/web/src/components/ui.tsx",
+        "apps/web/src/workspace/Norms.tsx",
+        "apps/web/src/workspace/Formats.tsx",
+        "apps/web/src/workspace/workspace.module.css"
+      ]
+    },
+    {
+      "id": "VR-009",
+      "phase": 2,
+      "status": "implemented",
+      "evidence": [
+        "apps/web/src/workspace/dossier.tsx",
+        "apps/web/src/workspace/VisitWorkflow.tsx",
+        "apps/web/src/workspace/DossierActions.tsx",
+        "apps/web/src/workspace/ReportVersions.tsx",
+        "apps/api/internal/app/report_versions.go",
+        "apps/api/internal/app/migrations/023_report_versions_audit.sql",
+        "apps/api/internal/app/migrations/029_transcript_audit_metadata.sql",
+        "apps/api/internal/app/workflow.go"
+      ]
+    },
+    {
+      "id": "VR-010",
+      "phase": 2,
+      "status": "implemented",
+      "evidence": [
+        "apps/web/src/workspace/dossier.tsx",
+        "apps/web/src/workspace/VisitWorkflow.tsx",
+        "apps/web/src/workspace/DossierActions.tsx",
+        "apps/web/src/workspace/ReportVersions.tsx",
+        "apps/api/internal/app/report_versions.go",
+        "apps/api/internal/app/migrations/023_report_versions_audit.sql",
+        "apps/api/internal/app/migrations/029_transcript_audit_metadata.sql",
+        "apps/api/internal/app/workflow.go"
+      ]
+    },
+    {
+      "id": "VR-011",
+      "phase": 3,
+      "status": "implemented",
+      "evidence": [
+        "apps/web/src/workspace/CameraSession.tsx",
+        "apps/web/src/workspace/roomAudio.ts",
+        "apps/web/src/workspace/capture.tsx",
+        "apps/web/src/workspace/outbox.ts",
+        "apps/web/src/workspace/platform.ts",
+        "apps/api/internal/app/media.go"
+      ]
+    },
+    {
+      "id": "VR-012",
+      "phase": 3,
+      "status": "implemented",
+      "evidence": [
+        "apps/web/src/workspace/CameraSession.tsx",
+        "apps/web/src/workspace/roomAudio.ts",
+        "apps/web/src/workspace/capture.tsx",
+        "apps/web/src/workspace/outbox.ts",
+        "apps/web/src/workspace/platform.ts",
+        "apps/api/internal/app/media.go"
+      ]
+    },
+    {
+      "id": "VR-013",
+      "phase": 3,
+      "status": "implemented",
+      "evidence": [
+        "apps/web/src/workspace/CameraSession.tsx",
+        "apps/web/src/workspace/roomAudio.ts",
+        "apps/web/src/workspace/capture.tsx",
+        "apps/web/src/workspace/outbox.ts",
+        "apps/web/src/workspace/platform.ts",
+        "apps/api/internal/app/media.go"
+      ]
+    },
+    {
+      "id": "VR-014",
+      "phase": 3,
+      "status": "implemented",
+      "evidence": [
+        "apps/web/src/workspace/CameraSession.tsx",
+        "apps/web/src/workspace/roomAudio.ts",
+        "apps/web/src/workspace/capture.tsx",
+        "apps/web/src/workspace/outbox.ts",
+        "apps/web/src/workspace/platform.ts",
+        "apps/api/internal/app/media.go"
+      ]
+    },
+    {
+      "id": "VR-015",
+      "phase": 3,
+      "status": "implemented",
+      "evidence": [
+        "apps/web/src/workspace/CameraSession.tsx",
+        "apps/web/src/workspace/roomAudio.ts",
+        "apps/web/src/workspace/capture.tsx",
+        "apps/web/src/workspace/outbox.ts",
+        "apps/web/src/workspace/platform.ts",
+        "apps/api/internal/app/media.go"
+      ]
+    },
+    {
+      "id": "VR-016",
+      "phase": 3,
+      "status": "implemented",
+      "evidence": [
+        "apps/web/src/workspace/CameraSession.tsx",
+        "apps/web/src/workspace/roomAudio.ts",
+        "apps/web/src/workspace/capture.tsx",
+        "apps/web/src/workspace/outbox.ts",
+        "apps/web/src/workspace/platform.ts",
+        "apps/api/internal/app/media.go"
+      ]
+    },
+    {
+      "id": "VR-017",
+      "phase": 3,
+      "status": "implemented",
+      "evidence": [
+        "apps/web/src/workspace/CameraSession.tsx",
+        "apps/web/src/workspace/roomAudio.ts",
+        "apps/web/src/workspace/capture.tsx",
+        "apps/web/src/workspace/outbox.ts",
+        "apps/web/src/workspace/platform.ts",
+        "apps/api/internal/app/media.go"
+      ]
+    },
+    {
+      "id": "VR-018",
+      "phase": 4,
+      "status": "implemented",
+      "evidence": [
+        "apps/web/src/workspace/NormReview.tsx",
+        "apps/web/src/workspace/FormatReview.tsx",
+        "apps/web/src/workspace/Scoring.tsx",
+        "apps/web/src/workspace/PhotoLocation.tsx",
+        "apps/web/src/workspace/observations.tsx",
+        "apps/web/src/workspace/EvidenceThumbnail.tsx",
+        "apps/api/internal/app/scoring.go",
+        "apps/api/internal/quality/quality.go"
+      ]
+    },
+    {
+      "id": "VR-019",
+      "phase": 4,
+      "status": "implemented",
+      "evidence": [
+        "apps/web/src/workspace/NormReview.tsx",
+        "apps/web/src/workspace/FormatReview.tsx",
+        "apps/web/src/workspace/Scoring.tsx",
+        "apps/web/src/workspace/PhotoLocation.tsx",
+        "apps/web/src/workspace/observations.tsx",
+        "apps/web/src/workspace/EvidenceThumbnail.tsx",
+        "apps/api/internal/app/scoring.go",
+        "apps/api/internal/quality/quality.go"
+      ]
+    },
+    {
+      "id": "VR-020",
+      "phase": 4,
+      "status": "implemented",
+      "evidence": [
+        "apps/web/src/workspace/NormReview.tsx",
+        "apps/web/src/workspace/FormatReview.tsx",
+        "apps/web/src/workspace/Scoring.tsx",
+        "apps/web/src/workspace/PhotoLocation.tsx",
+        "apps/web/src/workspace/observations.tsx",
+        "apps/web/src/workspace/EvidenceThumbnail.tsx",
+        "apps/api/internal/app/scoring.go",
+        "apps/api/internal/quality/quality.go"
+      ]
+    },
+    {
+      "id": "VR-021",
+      "phase": 4,
+      "status": "implemented",
+      "evidence": [
+        "apps/web/src/workspace/NormReview.tsx",
+        "apps/web/src/workspace/FormatReview.tsx",
+        "apps/web/src/workspace/Scoring.tsx",
+        "apps/web/src/workspace/PhotoLocation.tsx",
+        "apps/web/src/workspace/observations.tsx",
+        "apps/web/src/workspace/EvidenceThumbnail.tsx",
+        "apps/api/internal/app/scoring.go",
+        "apps/api/internal/quality/quality.go"
+      ]
+    },
+    {
+      "id": "VR-022",
+      "phase": 4,
+      "status": "implemented",
+      "evidence": [
+        "apps/web/src/workspace/NormReview.tsx",
+        "apps/web/src/workspace/FormatReview.tsx",
+        "apps/web/src/workspace/Scoring.tsx",
+        "apps/web/src/workspace/PhotoLocation.tsx",
+        "apps/web/src/workspace/observations.tsx",
+        "apps/web/src/workspace/EvidenceThumbnail.tsx",
+        "apps/api/internal/app/scoring.go",
+        "apps/api/internal/quality/quality.go"
+      ]
+    },
+    {
+      "id": "VR-023",
+      "phase": 4,
+      "status": "implemented",
+      "evidence": [
+        "apps/web/src/workspace/NormReview.tsx",
+        "apps/web/src/workspace/FormatReview.tsx",
+        "apps/web/src/workspace/Scoring.tsx",
+        "apps/web/src/workspace/PhotoLocation.tsx",
+        "apps/web/src/workspace/observations.tsx",
+        "apps/web/src/workspace/EvidenceThumbnail.tsx",
+        "apps/api/internal/app/scoring.go",
+        "apps/api/internal/quality/quality.go"
+      ]
+    },
+    {
+      "id": "VR-024",
+      "phase": 5,
+      "status": "implemented",
+      "evidence": [
+        "apps/web/src/workspace/ReportContent.tsx",
+        "apps/web/src/workspace/report.tsx",
+        "apps/web/src/workspace/theme.ts",
+        "apps/web/src/workspace/ReportIdentity.tsx",
+        "apps/api/internal/app/report_assets/index.html",
+        "apps/api/internal/app/report_assets/legacy.html",
+        "apps/api/internal/app/report_pdf.go",
+        "apps/api/internal/app/report_theme.go",
+        "apps/api/internal/app/branding.go"
+      ]
+    },
+    {
+      "id": "VR-025",
+      "phase": 5,
+      "status": "implemented",
+      "evidence": [
+        "apps/web/src/workspace/ReportContent.tsx",
+        "apps/web/src/workspace/report.tsx",
+        "apps/web/src/workspace/theme.ts",
+        "apps/web/src/workspace/ReportIdentity.tsx",
+        "apps/api/internal/app/report_assets/index.html",
+        "apps/api/internal/app/report_assets/legacy.html",
+        "apps/api/internal/app/report_pdf.go",
+        "apps/api/internal/app/report_theme.go",
+        "apps/api/internal/app/branding.go"
+      ]
+    },
+    {
+      "id": "VR-026",
+      "phase": 5,
+      "status": "implemented",
+      "evidence": [
+        "apps/web/src/workspace/ReportContent.tsx",
+        "apps/web/src/workspace/report.tsx",
+        "apps/web/src/workspace/theme.ts",
+        "apps/web/src/workspace/ReportIdentity.tsx",
+        "apps/api/internal/app/report_assets/index.html",
+        "apps/api/internal/app/report_assets/legacy.html",
+        "apps/api/internal/app/report_pdf.go",
+        "apps/api/internal/app/report_theme.go",
+        "apps/api/internal/app/branding.go"
+      ]
+    },
+    {
+      "id": "VR-027",
+      "phase": 5,
+      "status": "implemented",
+      "evidence": [
+        "apps/web/src/workspace/ReportContent.tsx",
+        "apps/web/src/workspace/report.tsx",
+        "apps/web/src/workspace/theme.ts",
+        "apps/web/src/workspace/ReportIdentity.tsx",
+        "apps/api/internal/app/report_assets/index.html",
+        "apps/api/internal/app/report_assets/legacy.html",
+        "apps/api/internal/app/report_pdf.go",
+        "apps/api/internal/app/report_theme.go",
+        "apps/api/internal/app/branding.go"
+      ]
+    },
+    {
+      "id": "VR-028",
+      "phase": 5,
+      "status": "implemented",
+      "evidence": [
+        "apps/web/src/workspace/ReportContent.tsx",
+        "apps/web/src/workspace/report.tsx",
+        "apps/web/src/workspace/theme.ts",
+        "apps/web/src/workspace/ReportIdentity.tsx",
+        "apps/api/internal/app/report_assets/index.html",
+        "apps/api/internal/app/report_assets/legacy.html",
+        "apps/api/internal/app/report_pdf.go",
+        "apps/api/internal/app/report_theme.go",
+        "apps/api/internal/app/branding.go"
+      ]
+    },
+    {
+      "id": "VR-029",
+      "phase": 6,
+      "status": "implemented",
+      "evidence": [
+        "apps/web/src/workspace/InternalSync.tsx",
+        "apps/web/src/workspace/HandoverSettings.tsx",
+        "apps/api/internal/app/internal_sync.go",
+        "apps/api/internal/app/internal_sync_worker.go",
+        "apps/api/internal/veradelivery/internal_sync.go"
+      ]
+    },
+    {
+      "id": "VR-030",
+      "phase": 6,
+      "status": "deferred_by_user",
+      "evidence": [
+        "apps/web/src/workspace/InternalSync.tsx",
+        "apps/web/src/workspace/HandoverSettings.tsx",
+        "apps/api/internal/app/internal_sync.go",
+        "apps/api/internal/app/internal_sync_worker.go",
+        "apps/api/internal/veradelivery/internal_sync.go"
+      ],
+      "note": "DICO chain-partner maintenance ordering is explicitly excluded from this delivery."
+    },
+    {
+      "id": "VR-031",
+      "phase": 6,
+      "status": "implemented",
+      "evidence": [
+        "apps/web/src/workspace/InternalSync.tsx",
+        "apps/web/src/workspace/HandoverSettings.tsx",
+        "apps/api/internal/app/internal_sync.go",
+        "apps/api/internal/app/internal_sync_worker.go",
+        "apps/api/internal/veradelivery/internal_sync.go"
+      ],
+      "note": "Legacy maintenance handover inputs/filter removed from the active inspector flow; historical records retained."
+    },
+    {
+      "id": "VR-032",
+      "phase": 6,
+      "status": "implemented",
+      "evidence": [
+        "apps/web/src/workspace/InternalSync.tsx",
+        "apps/web/src/workspace/HandoverSettings.tsx",
+        "apps/api/internal/app/internal_sync.go",
+        "apps/api/internal/app/internal_sync_worker.go",
+        "apps/api/internal/veradelivery/internal_sync.go"
+      ],
+      "note": "Legacy maintenance handover inputs/filter removed from the active inspector flow; historical records retained."
+    },
+    {
+      "id": "VR-033",
+      "phase": 6,
+      "status": "implemented",
+      "evidence": [
+        "apps/web/src/workspace/InternalSync.tsx",
+        "apps/web/src/workspace/HandoverSettings.tsx",
+        "apps/api/internal/app/internal_sync.go",
+        "apps/api/internal/app/internal_sync_worker.go",
+        "apps/api/internal/veradelivery/internal_sync.go"
+      ],
+      "note": "Legacy maintenance handover inputs/filter removed from the active inspector flow; historical records retained."
+    },
+    {
+      "id": "VR-034",
+      "phase": 2,
+      "status": "implemented",
+      "evidence": [
+        "apps/web/src/workspace/dossier.tsx",
+        "apps/web/src/workspace/VisitWorkflow.tsx",
+        "apps/web/src/workspace/DossierActions.tsx",
+        "apps/web/src/workspace/ReportVersions.tsx",
+        "apps/api/internal/app/report_versions.go",
+        "apps/api/internal/app/migrations/023_report_versions_audit.sql",
+        "apps/api/internal/app/migrations/029_transcript_audit_metadata.sql",
+        "apps/api/internal/app/workflow.go"
+      ]
+    },
+    {
+      "id": "VR-035",
+      "phase": 2,
+      "status": "implemented",
+      "evidence": [
+        "apps/web/src/workspace/dossier.tsx",
+        "apps/web/src/workspace/VisitWorkflow.tsx",
+        "apps/web/src/workspace/DossierActions.tsx",
+        "apps/web/src/workspace/ReportVersions.tsx",
+        "apps/api/internal/app/report_versions.go",
+        "apps/api/internal/app/migrations/023_report_versions_audit.sql",
+        "apps/api/internal/app/migrations/029_transcript_audit_metadata.sql",
+        "apps/api/internal/app/workflow.go"
+      ]
+    },
+    {
+      "id": "VR-036",
+      "phase": 2,
+      "status": "implemented",
+      "evidence": [
+        "apps/web/src/workspace/dossier.tsx",
+        "apps/web/src/workspace/VisitWorkflow.tsx",
+        "apps/web/src/workspace/DossierActions.tsx",
+        "apps/web/src/workspace/ReportVersions.tsx",
+        "apps/api/internal/app/report_versions.go",
+        "apps/api/internal/app/migrations/023_report_versions_audit.sql",
+        "apps/api/internal/app/migrations/029_transcript_audit_metadata.sql",
+        "apps/api/internal/app/workflow.go"
+      ]
+    },
+    {
+      "id": "VR-037",
+      "phase": 2,
+      "status": "implemented",
+      "evidence": [
+        "apps/web/src/workspace/dossier.tsx",
+        "apps/web/src/workspace/VisitWorkflow.tsx",
+        "apps/web/src/workspace/DossierActions.tsx",
+        "apps/web/src/workspace/ReportVersions.tsx",
+        "apps/api/internal/app/report_versions.go",
+        "apps/api/internal/app/migrations/023_report_versions_audit.sql",
+        "apps/api/internal/app/migrations/029_transcript_audit_metadata.sql",
+        "apps/api/internal/app/workflow.go"
+      ]
+    },
+    {
+      "id": "VR-038",
+      "phase": 2,
+      "status": "implemented",
+      "evidence": [
+        "apps/web/src/workspace/dossier.tsx",
+        "apps/web/src/workspace/VisitWorkflow.tsx",
+        "apps/web/src/workspace/DossierActions.tsx",
+        "apps/web/src/workspace/ReportVersions.tsx",
+        "apps/api/internal/app/report_versions.go",
+        "apps/api/internal/app/migrations/023_report_versions_audit.sql",
+        "apps/api/internal/app/migrations/029_transcript_audit_metadata.sql",
+        "apps/api/internal/app/workflow.go"
+      ]
+    },
+    {
+      "id": "VR-039",
+      "phase": 2,
+      "status": "implemented",
+      "evidence": [
+        "apps/web/src/workspace/dossier.tsx",
+        "apps/web/src/workspace/VisitWorkflow.tsx",
+        "apps/web/src/workspace/DossierActions.tsx",
+        "apps/web/src/workspace/ReportVersions.tsx",
+        "apps/api/internal/app/report_versions.go",
+        "apps/api/internal/app/migrations/023_report_versions_audit.sql",
+        "apps/api/internal/app/migrations/029_transcript_audit_metadata.sql",
+        "apps/api/internal/app/workflow.go"
+      ]
+    },
+    {
+      "id": "VR-040",
+      "phase": 7,
+      "status": "implemented",
+      "evidence": [
+        "apps/web/src/workspace/Analytics.tsx",
+        "apps/web/src/workspace/activity.ts",
+        "apps/api/internal/app/analytics.go",
+        "apps/api/internal/app/migrations/027_automatic_activity.sql"
+      ]
+    },
+    {
+      "id": "VR-041",
+      "phase": 7,
+      "status": "implemented",
+      "evidence": [
+        "apps/web/src/workspace/Analytics.tsx",
+        "apps/web/src/workspace/activity.ts",
+        "apps/api/internal/app/analytics.go",
+        "apps/api/internal/app/migrations/027_automatic_activity.sql"
+      ]
+    },
+    {
+      "id": "VR-042",
+      "phase": 2,
+      "status": "implemented",
+      "evidence": [
+        "apps/web/src/workspace/dossier.tsx",
+        "apps/web/src/workspace/VisitWorkflow.tsx",
+        "apps/web/src/workspace/DossierActions.tsx",
+        "apps/web/src/workspace/ReportVersions.tsx",
+        "apps/api/internal/app/report_versions.go",
+        "apps/api/internal/app/migrations/023_report_versions_audit.sql",
+        "apps/api/internal/app/migrations/029_transcript_audit_metadata.sql",
+        "apps/api/internal/app/workflow.go"
+      ]
+    },
+    {
+      "id": "VR-043",
+      "phase": 2,
+      "status": "implemented",
+      "evidence": [
+        "apps/web/src/workspace/dossier.tsx",
+        "apps/web/src/workspace/VisitWorkflow.tsx",
+        "apps/web/src/workspace/DossierActions.tsx",
+        "apps/web/src/workspace/ReportVersions.tsx",
+        "apps/api/internal/app/report_versions.go",
+        "apps/api/internal/app/migrations/023_report_versions_audit.sql",
+        "apps/api/internal/app/migrations/029_transcript_audit_metadata.sql",
+        "apps/api/internal/app/workflow.go"
+      ]
+    },
+    {
+      "id": "VR-044",
+      "phase": 2,
+      "status": "implemented",
+      "evidence": [
+        "apps/web/src/workspace/dossier.tsx",
+        "apps/web/src/workspace/VisitWorkflow.tsx",
+        "apps/web/src/workspace/DossierActions.tsx",
+        "apps/web/src/workspace/ReportVersions.tsx",
+        "apps/api/internal/app/report_versions.go",
+        "apps/api/internal/app/migrations/023_report_versions_audit.sql",
+        "apps/api/internal/app/migrations/029_transcript_audit_metadata.sql",
+        "apps/api/internal/app/workflow.go"
+      ]
+    },
+    {
+      "id": "VR-045",
+      "phase": 2,
+      "status": "implemented",
+      "evidence": [
+        "apps/web/src/workspace/dossier.tsx",
+        "apps/web/src/workspace/VisitWorkflow.tsx",
+        "apps/web/src/workspace/DossierActions.tsx",
+        "apps/web/src/workspace/ReportVersions.tsx",
+        "apps/api/internal/app/report_versions.go",
+        "apps/api/internal/app/migrations/023_report_versions_audit.sql",
+        "apps/api/internal/app/migrations/029_transcript_audit_metadata.sql",
+        "apps/api/internal/app/workflow.go"
+      ]
+    },
+    {
+      "id": "VR-046",
+      "phase": 1,
+      "status": "implemented",
+      "evidence": [
+        "apps/web/src/workspace/Sidebar.tsx",
+        "apps/web/src/workspace/ResponsiveTabs.tsx",
+        "apps/web/src/workspace/Properties.tsx",
+        "apps/web/src/workspace/inspections.tsx",
+        "apps/web/src/workspace/Settings.tsx",
+        "apps/web/src/workspace/Elements.tsx",
+        "apps/web/src/components/ui.tsx",
+        "apps/web/src/workspace/Norms.tsx",
+        "apps/web/src/workspace/Formats.tsx",
+        "apps/web/src/workspace/workspace.module.css"
+      ]
+    },
+    {
+      "id": "VR-047",
+      "phase": 1,
+      "status": "implemented",
+      "evidence": [
+        "apps/web/src/workspace/Sidebar.tsx",
+        "apps/web/src/workspace/ResponsiveTabs.tsx",
+        "apps/web/src/workspace/Properties.tsx",
+        "apps/web/src/workspace/inspections.tsx",
+        "apps/web/src/workspace/Settings.tsx",
+        "apps/web/src/workspace/Elements.tsx",
+        "apps/web/src/components/ui.tsx",
+        "apps/web/src/workspace/Norms.tsx",
+        "apps/web/src/workspace/Formats.tsx",
+        "apps/web/src/workspace/workspace.module.css"
+      ]
+    },
+    {
+      "id": "VR-048",
+      "phase": 4,
+      "status": "implemented",
+      "evidence": [
+        "apps/web/src/workspace/NormReview.tsx",
+        "apps/web/src/workspace/FormatReview.tsx",
+        "apps/web/src/workspace/Scoring.tsx",
+        "apps/web/src/workspace/PhotoLocation.tsx",
+        "apps/web/src/workspace/observations.tsx",
+        "apps/web/src/workspace/EvidenceThumbnail.tsx",
+        "apps/api/internal/app/scoring.go",
+        "apps/api/internal/quality/quality.go"
+      ]
+    },
+    {
+      "id": "VR-049",
+      "phase": 4,
+      "status": "implemented",
+      "evidence": [
+        "apps/web/src/workspace/NormReview.tsx",
+        "apps/web/src/workspace/FormatReview.tsx",
+        "apps/web/src/workspace/Scoring.tsx",
+        "apps/web/src/workspace/PhotoLocation.tsx",
+        "apps/web/src/workspace/observations.tsx",
+        "apps/web/src/workspace/EvidenceThumbnail.tsx",
+        "apps/api/internal/app/scoring.go",
+        "apps/api/internal/quality/quality.go"
+      ]
+    },
+    {
+      "id": "VR-050",
+      "phase": 4,
+      "status": "implemented",
+      "evidence": [
+        "apps/web/src/workspace/NormReview.tsx",
+        "apps/web/src/workspace/FormatReview.tsx",
+        "apps/web/src/workspace/Scoring.tsx",
+        "apps/web/src/workspace/PhotoLocation.tsx",
+        "apps/web/src/workspace/observations.tsx",
+        "apps/web/src/workspace/EvidenceThumbnail.tsx",
+        "apps/api/internal/app/scoring.go",
+        "apps/api/internal/quality/quality.go"
+      ]
+    },
+    {
+      "id": "VR-051",
+      "phase": 4,
+      "status": "implemented",
+      "evidence": [
+        "apps/web/src/workspace/NormReview.tsx",
+        "apps/web/src/workspace/FormatReview.tsx",
+        "apps/web/src/workspace/Scoring.tsx",
+        "apps/web/src/workspace/PhotoLocation.tsx",
+        "apps/web/src/workspace/observations.tsx",
+        "apps/web/src/workspace/EvidenceThumbnail.tsx",
+        "apps/api/internal/app/scoring.go",
+        "apps/api/internal/quality/quality.go"
+      ]
+    },
+    {
+      "id": "VR-052",
+      "phase": 4,
+      "status": "implemented",
+      "evidence": [
+        "apps/web/src/workspace/NormReview.tsx",
+        "apps/web/src/workspace/FormatReview.tsx",
+        "apps/web/src/workspace/Scoring.tsx",
+        "apps/web/src/workspace/PhotoLocation.tsx",
+        "apps/web/src/workspace/observations.tsx",
+        "apps/web/src/workspace/EvidenceThumbnail.tsx",
+        "apps/api/internal/app/scoring.go",
+        "apps/api/internal/quality/quality.go"
+      ]
+    },
+    {
+      "id": "VR-053",
+      "phase": 1,
+      "status": "implemented",
+      "evidence": [
+        "apps/web/src/workspace/Sidebar.tsx",
+        "apps/web/src/workspace/ResponsiveTabs.tsx",
+        "apps/web/src/workspace/Properties.tsx",
+        "apps/web/src/workspace/inspections.tsx",
+        "apps/web/src/workspace/Settings.tsx",
+        "apps/web/src/workspace/Elements.tsx",
+        "apps/web/src/components/ui.tsx",
+        "apps/web/src/workspace/Norms.tsx",
+        "apps/web/src/workspace/Formats.tsx",
+        "apps/web/src/workspace/workspace.module.css"
+      ]
+    },
+    {
+      "id": "VR-054",
+      "phase": 1,
+      "status": "implemented",
+      "evidence": [
+        "apps/web/src/workspace/Sidebar.tsx",
+        "apps/web/src/workspace/ResponsiveTabs.tsx",
+        "apps/web/src/workspace/Properties.tsx",
+        "apps/web/src/workspace/inspections.tsx",
+        "apps/web/src/workspace/Settings.tsx",
+        "apps/web/src/workspace/Elements.tsx",
+        "apps/web/src/components/ui.tsx",
+        "apps/web/src/workspace/Norms.tsx",
+        "apps/web/src/workspace/Formats.tsx",
+        "apps/web/src/workspace/workspace.module.css"
+      ]
+    },
+    {
+      "id": "VR-055",
+      "phase": 1,
+      "status": "implemented",
+      "evidence": [
+        "apps/web/src/workspace/Sidebar.tsx",
+        "apps/web/src/workspace/ResponsiveTabs.tsx",
+        "apps/web/src/workspace/Properties.tsx",
+        "apps/web/src/workspace/inspections.tsx",
+        "apps/web/src/workspace/Settings.tsx",
+        "apps/web/src/workspace/Elements.tsx",
+        "apps/web/src/components/ui.tsx",
+        "apps/web/src/workspace/Norms.tsx",
+        "apps/web/src/workspace/Formats.tsx",
+        "apps/web/src/workspace/workspace.module.css"
+      ]
+    },
+    {
+      "id": "VR-056",
+      "phase": 1,
+      "status": "implemented",
+      "evidence": [
+        "apps/web/src/workspace/Sidebar.tsx",
+        "apps/web/src/workspace/ResponsiveTabs.tsx",
+        "apps/web/src/workspace/Properties.tsx",
+        "apps/web/src/workspace/inspections.tsx",
+        "apps/web/src/workspace/Settings.tsx",
+        "apps/web/src/workspace/Elements.tsx",
+        "apps/web/src/components/ui.tsx",
+        "apps/web/src/workspace/Norms.tsx",
+        "apps/web/src/workspace/Formats.tsx",
+        "apps/web/src/workspace/workspace.module.css"
+      ]
+    },
+    {
+      "id": "VR-057",
+      "phase": 1,
+      "status": "implemented",
+      "evidence": [
+        "apps/web/src/workspace/Sidebar.tsx",
+        "apps/web/src/workspace/ResponsiveTabs.tsx",
+        "apps/web/src/workspace/Properties.tsx",
+        "apps/web/src/workspace/inspections.tsx",
+        "apps/web/src/workspace/Settings.tsx",
+        "apps/web/src/workspace/Elements.tsx",
+        "apps/web/src/components/ui.tsx",
+        "apps/web/src/workspace/Norms.tsx",
+        "apps/web/src/workspace/Formats.tsx",
+        "apps/web/src/workspace/workspace.module.css"
+      ]
+    },
+    {
+      "id": "VR-058",
+      "phase": 1,
+      "status": "implemented",
+      "evidence": [
+        "apps/web/src/workspace/Sidebar.tsx",
+        "apps/web/src/workspace/ResponsiveTabs.tsx",
+        "apps/web/src/workspace/Properties.tsx",
+        "apps/web/src/workspace/inspections.tsx",
+        "apps/web/src/workspace/Settings.tsx",
+        "apps/web/src/workspace/Elements.tsx",
+        "apps/web/src/components/ui.tsx",
+        "apps/web/src/workspace/Norms.tsx",
+        "apps/web/src/workspace/Formats.tsx",
+        "apps/web/src/workspace/workspace.module.css"
+      ]
+    },
+    {
+      "id": "VR-059",
+      "phase": 1,
+      "status": "implemented",
+      "evidence": [
+        "apps/web/src/workspace/Sidebar.tsx",
+        "apps/web/src/workspace/ResponsiveTabs.tsx",
+        "apps/web/src/workspace/Properties.tsx",
+        "apps/web/src/workspace/inspections.tsx",
+        "apps/web/src/workspace/Settings.tsx",
+        "apps/web/src/workspace/Elements.tsx",
+        "apps/web/src/components/ui.tsx",
+        "apps/web/src/workspace/Norms.tsx",
+        "apps/web/src/workspace/Formats.tsx",
+        "apps/web/src/workspace/workspace.module.css"
+      ]
+    },
+    {
+      "id": "VR-060",
+      "phase": 1,
+      "status": "implemented",
+      "evidence": [
+        "apps/web/src/workspace/Sidebar.tsx",
+        "apps/web/src/workspace/ResponsiveTabs.tsx",
+        "apps/web/src/workspace/Properties.tsx",
+        "apps/web/src/workspace/inspections.tsx",
+        "apps/web/src/workspace/Settings.tsx",
+        "apps/web/src/workspace/Elements.tsx",
+        "apps/web/src/components/ui.tsx",
+        "apps/web/src/workspace/Norms.tsx",
+        "apps/web/src/workspace/Formats.tsx",
+        "apps/web/src/workspace/workspace.module.css"
+      ]
+    },
+    {
+      "id": "VR-061",
+      "phase": 7,
+      "status": "implemented",
+      "evidence": [
+        "apps/web/src/workspace/Analytics.tsx",
+        "apps/web/src/workspace/activity.ts",
+        "apps/api/internal/app/analytics.go",
+        "apps/api/internal/app/migrations/027_automatic_activity.sql"
+      ]
+    },
+    {
+      "id": "VR-062",
+      "phase": 7,
+      "status": "implemented",
+      "evidence": [
+        "apps/web/src/workspace/Analytics.tsx",
+        "apps/web/src/workspace/activity.ts",
+        "apps/api/internal/app/analytics.go",
+        "apps/api/internal/app/migrations/027_automatic_activity.sql"
+      ]
+    },
+    {
+      "id": "VR-063",
+      "phase": 1,
+      "status": "implemented",
+      "evidence": [
+        "apps/web/src/workspace/Sidebar.tsx",
+        "apps/web/src/workspace/ResponsiveTabs.tsx",
+        "apps/web/src/workspace/Properties.tsx",
+        "apps/web/src/workspace/inspections.tsx",
+        "apps/web/src/workspace/Settings.tsx",
+        "apps/web/src/workspace/Elements.tsx",
+        "apps/web/src/components/ui.tsx",
+        "apps/web/src/workspace/Norms.tsx",
+        "apps/web/src/workspace/Formats.tsx",
+        "apps/web/src/workspace/workspace.module.css"
+      ]
+    },
+    {
+      "id": "VR-064",
+      "phase": 1,
+      "status": "implemented",
+      "evidence": [
+        "apps/web/src/workspace/Sidebar.tsx",
+        "apps/web/src/workspace/ResponsiveTabs.tsx",
+        "apps/web/src/workspace/Properties.tsx",
+        "apps/web/src/workspace/inspections.tsx",
+        "apps/web/src/workspace/Settings.tsx",
+        "apps/web/src/workspace/Elements.tsx",
+        "apps/web/src/components/ui.tsx",
+        "apps/web/src/workspace/Norms.tsx",
+        "apps/web/src/workspace/Formats.tsx",
+        "apps/web/src/workspace/workspace.module.css"
+      ]
+    },
+    {
+      "id": "VR-065",
+      "phase": 1,
+      "status": "implemented",
+      "evidence": [
+        "apps/web/src/workspace/Sidebar.tsx",
+        "apps/web/src/workspace/ResponsiveTabs.tsx",
+        "apps/web/src/workspace/Properties.tsx",
+        "apps/web/src/workspace/inspections.tsx",
+        "apps/web/src/workspace/Settings.tsx",
+        "apps/web/src/workspace/Elements.tsx",
+        "apps/web/src/components/ui.tsx",
+        "apps/web/src/workspace/Norms.tsx",
+        "apps/web/src/workspace/Formats.tsx",
+        "apps/web/src/workspace/workspace.module.css"
+      ]
+    }
+  ],
+  "migrations": [
+    "023_report_versions_audit.sql",
+    "024_scoring_capture.sql",
+    "025_organisation_theme.sql",
+    "026_internal_sync.sql",
+    "027_automatic_activity.sql",
+    "028_score_suggestions.sql",
+    "029_transcript_audit_metadata.sql"
+  ],
+  "externalGates": [
+    "Customer-specific ERP mappings and sandbox receipts",
+    "iOS/Mac compilation and signed physical iPad/Android acceptance",
+    "Production hosting/operator configuration, backup/restore and customer sign-off"
+  ],
+  "auditRetention": "Transcript version changes are audited without retaining raw transcript text in the audit payload; migration 029 also removes earlier duplicate raw-text change payloads.",
+  "artifacts": {
+    "screenshots": "tests/artifacts/review-*",
+    "pdf": "tests/artifacts/report-format.pdf",
+    "android": ".cache/android-build/visual-review",
+    "sourceBackup": ".cache/visual-implementation/before.zip"
+  },
+  "followUpChanges": [
+    {
+      "date": "2026-11-01",
+      "changes": [
+        "Room creation dialog with type selection and editable numbered names; pencil opens rename dialog beside each room.",
+        "All pinned physical room types support additional instances with independent questions; follow-up inspections retain custom room names.",
+        "Compact organisation branding actions on desktop/tablet and a styled logo chooser with preview, validation, replacement and removal.",
+        "Removed the redundant suggested-name helper sentence from the room dialog."
+      ],
+      "validation": {
+        "frontend": "TypeScript, ESLint, Prettier, production build and 55 unit tests passed.",
+        "backend": "Full Go race suite passed, including duplicate room types and follow-up name preservation.",
+        "browsers": "12 focused checks passed across Chromium, mobile Chrome and mobile Safari; final room-type changes rerun with 3 passed.",
+        "logs": ".cache/room-dialog-fix/",
+        "screenshots": "tests/artifacts/room-dialog-*",
+        "local": "Demo API updated; readiness HTTP 200; main demo data preserved."
+      }
+    }
+  ]
+}

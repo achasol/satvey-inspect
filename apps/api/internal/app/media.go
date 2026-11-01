@@ -94,6 +94,18 @@ func (a *app) upload(w http.ResponseWriter, r *http.Request) error {
 	if duration < 0 || duration > 601 || math.IsNaN(duration) || math.IsInf(duration, 0) {
 		duration = 0
 	}
+	session, segment := r.Header.Get("X-Capture-Session"), r.Header.Get("X-Audio-Segment")
+	if session != "" && !validID(session) || segment != "" && !validID(segment) {
+		return fail(422, "Ongeldige opnamecontext")
+	}
+	var recorded *time.Time
+	if raw := r.Header.Get("X-Recorded-At"); raw != "" {
+		value, err := time.Parse(time.RFC3339Nano, raw)
+		if err != nil {
+			return fail(422, "Ongeldige opnamedatum")
+		}
+		recorded = &value
+	}
 	tx, _, e := a.edit(r)
 	if e != nil {
 		return e
@@ -133,7 +145,7 @@ func (a *app) upload(w http.ResponseWriter, r *http.Request) error {
 			_, _ = a.storage.DeleteObject(ctx, &s3.DeleteObjectInput{Bucket: &a.bucket, Key: &key})
 		}
 	}()
-	if _, e = tx.Exec(r.Context(), "INSERT INTO media(id,org_id,inspection_id,batch_id,kind,name,mime,size,object_key,sha256,duration) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)", mid, org, inspection, batch, kind, name, typ, size, key, sha, duration); e != nil {
+	if _, e = tx.Exec(r.Context(), "INSERT INTO media(id,org_id,inspection_id,batch_id,kind,name,mime,size,object_key,sha256,duration,capture_session_id,audio_segment_id,recorded_at) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)", mid, org, inspection, batch, kind, name, typ, size, key, sha, duration, nullableID(session), nullableID(segment), recorded); e != nil {
 		return e
 	}
 	var complete bool
@@ -170,9 +182,13 @@ func (a *app) download(w http.ResponseWriter, r *http.Request) error {
 		return fail(404, "Bestand niet gevonden")
 	}
 	var key, typ, name string
-	e := a.db.QueryRow(r.Context(), "SELECT object_key,mime,name FROM media WHERE id=$1 AND org_id=$2", r.PathValue("media"), r.PathValue("org")).Scan(&key, &typ, &name)
+	var retired *time.Time
+	e := a.db.QueryRow(r.Context(), "SELECT object_key,mime,name,content_deleted_at FROM media WHERE id=$1 AND org_id=$2", r.PathValue("media"), r.PathValue("org")).Scan(&key, &typ, &name, &retired)
 	if e != nil {
 		return e
+	}
+	if retired != nil {
+		return fail(410, "Het originele bestand is verwijderd volgens het bewaarbeleid")
 	}
 	input := &s3.GetObjectInput{Bucket: &a.bucket, Key: &key}
 	if h := r.Header.Get("Range"); h != "" {

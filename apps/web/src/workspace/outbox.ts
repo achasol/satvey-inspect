@@ -1,7 +1,12 @@
+import { networkOnline } from './connectivity';
 import { useEffect, useState } from 'react';
 import { api, ApiError, json, uuid } from './api';
+import { persistNativeDatabase, clearNativeDeviceStorage } from './nativeStorage';
 
 export type LocalMedia = {
+  captureSessionId?: string;
+  audioSegmentId?: string;
+  recordedAt?: string;
   id: string;
   name: string;
   mime: string;
@@ -57,7 +62,12 @@ async function dbCall<T>(
   return new Promise((resolve, reject) => {
     const tx = db.transaction(store, mode),
       request = fn(tx.objectStore(store));
-    tx.oncomplete = () => resolve(request.result as T);
+    tx.oncomplete = () => {
+      void (mode === 'readwrite' ? persistNativeDatabase(db) : Promise.resolve()).then(
+        () => resolve(request.result as T),
+        reject,
+      );
+    };
     tx.onerror = () => reject(tx.error || new Error('Opslag op apparaat mislukt'));
     tx.onabort = () => reject(tx.error || new Error('Opslag op apparaat afgebroken'));
   });
@@ -75,7 +85,9 @@ export async function saveAction(action: Action) {
     deleted.onsuccess = () => {
       if (!deleted.result) tx.objectStore('outbox').put(action, action.id);
     };
-    tx.oncomplete = () => resolve();
+    tx.oncomplete = () => {
+      void persistNativeDatabase(db).then(() => resolve(), reject);
+    };
     tx.onerror = () => reject(tx.error);
     tx.onabort = () => reject(tx.error || new Error('Opslaan mislukt'));
   });
@@ -92,7 +104,9 @@ export async function commitCaptureDraft(key: string, action: Action) {
     const tx = db.transaction(['outbox', 'drafts'], 'readwrite');
     tx.objectStore('outbox').put(action, action.id);
     tx.objectStore('drafts').delete(key);
-    tx.oncomplete = () => resolve();
+    tx.oncomplete = () => {
+      void persistNativeDatabase(db).then(() => resolve(), reject);
+    };
     tx.onerror = () => reject(tx.error);
     tx.onabort = () => reject(tx.error || new Error('Opslaan mislukt'));
   });
@@ -104,6 +118,12 @@ export async function actions(scope: string) {
     .filter((a) => a.scope === scope)
     .sort((a, b) => a.createdAt - b.createdAt);
 }
+export const cacheKeys = async (prefix: string) =>
+  (await dbCall<IDBValidKey[]>('cache', 'readonly', (store) => store.getAllKeys())).filter(
+    (key): key is string => typeof key === 'string' && key.startsWith(prefix),
+  );
+export const cacheRemove = (key: string) =>
+  dbCall('cache', 'readwrite', (store) => store.delete(key));
 export const cacheGet = <T>(key: string) =>
   dbCall<T | undefined>('cache', 'readonly', (s) => s.get(key));
 export const cachePut = (key: string, value: unknown) =>
@@ -137,6 +157,7 @@ export async function forgetInspection(
             cursor.value.inspectionId === inspectionId) ||
           (name === 'drafts' &&
             (key.startsWith(`${scope}:capture:${inspectionId}:`) ||
+              key === `${scope}:handover:${inspectionId}` ||
               key.startsWith(`${scope}:inspectionDraft:${inspectionId}:`) ||
               observationKeys.has(key))) ||
           (name === 'cache' && (key === `${scope}:${path}` || key.startsWith(`${scope}:${path}/`)))
@@ -152,7 +173,9 @@ export async function forgetInspection(
         cursor.continue();
       };
     }
-    tx.oncomplete = () => resolve();
+    tx.oncomplete = () => {
+      void persistNativeDatabase(db).then(() => resolve(), reject);
+    };
     tx.onerror = () => reject(tx.error);
     tx.onabort = () =>
       reject(tx.error || new Error('Lokale inspectiegegevens verwijderen mislukt'));
@@ -226,7 +249,7 @@ export function setScope(scope: string) {
   activeScope = scope;
 }
 export async function sync(scope: string, retryNow = false) {
-  if (activeScope !== scope || !navigator.onLine) return;
+  if (activeScope !== scope || !networkOnline()) return;
   if (syncing) {
     resyncScope = scope;
     return;
@@ -246,7 +269,7 @@ export async function sync(scope: string, retryNow = false) {
         })
         .catch(() => controller.abort());
     }, 10_000);
-    const valid = () => activeScope === scope && !controller.signal.aborted && navigator.onLine;
+    const valid = () => activeScope === scope && !controller.signal.aborted && networkOnline();
     for (const action of await actions(scope)) {
       if (!valid()) break;
       if (
@@ -276,6 +299,9 @@ export async function sync(scope: string, retryNow = false) {
                 'Content-Type': file.mime,
                 'X-File-Name': encodeURIComponent(file.name),
                 'X-Audio-Duration': String(file.duration),
+                ...(file.captureSessionId ? { 'X-Capture-Session': file.captureSessionId } : {}),
+                ...(file.audioSegmentId ? { 'X-Audio-Segment': file.audioSegmentId } : {}),
+                ...(file.recordedAt ? { 'X-Recorded-At': file.recordedAt } : {}),
               },
               body: new Blob([file.bytes], { type: file.mime }),
             });
@@ -398,9 +424,73 @@ export async function enqueueEdit(
         store.put(action, action.id);
       };
     };
-    tx.oncomplete = () => resolve();
+    tx.oncomplete = () => {
+      void persistNativeDatabase(db).then(() => resolve(), reject);
+    };
     tx.onerror = tx.onabort = () => reject(failure || tx.error || new Error('Opslaan mislukt'));
   });
   notify();
   void sync(scope).catch(() => notify());
+}
+
+export async function deviceHasPendingWork() {
+  if ((await dbCall<Action[]>('outbox', 'readonly', (store) => store.getAll())).length) return true;
+  const drafts = await dbCall<{ id?: string; draft?: boolean; files?: unknown[] }[]>(
+    'drafts',
+    'readonly',
+    (store) => store.getAll(),
+  );
+  return drafts.some((value) => value && (value.id || value.draft || value.files?.length));
+}
+export async function clearDeviceStorage() {
+  if (await deviceHasPendingWork()) throw new Error('Synchroniseer eerst het lokale werk.');
+  const db = await database();
+  db.close();
+  connection = undefined;
+  await new Promise<void>((resolve, reject) => {
+    const request = indexedDB.deleteDatabase('satvey-workspace');
+    request.onsuccess = () => resolve();
+    request.onerror = () => reject(request.error);
+    request.onblocked = () =>
+      reject(new Error('Sluit andere Satvey-tabbladen en verwijder daarna de lokale gegevens.'));
+  });
+  await clearNativeDeviceStorage();
+}
+
+export async function scopeDraftCount(scope: string) {
+  const db = await database();
+  return new Promise<number>((resolve, reject) => {
+    const tx = db.transaction('drafts', 'readonly');
+    const request = tx.objectStore('drafts').openCursor();
+    let count = 0;
+    request.onsuccess = () => {
+      const c = request.result;
+      if (!c) return;
+      const v = c.value as { id?: string; draft?: boolean; files?: unknown[] };
+      if (String(c.key).startsWith(`${scope}:`) && v && (v.id || v.draft || v.files?.length))
+        count++;
+      c.continue();
+    };
+    tx.oncomplete = () => resolve(count);
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+export async function removeInspectionCache(scope: string, path: string) {
+  const db = await database();
+  await new Promise<void>((resolve, reject) => {
+    const tx = db.transaction('cache', 'readwrite');
+    const request = tx.objectStore('cache').openCursor();
+    request.onsuccess = () => {
+      const c = request.result;
+      if (!c) return;
+      const key = String(c.key);
+      if (key === `${scope}:${path}` || key.startsWith(`${scope}:${path}/`)) c.delete();
+      c.continue();
+    };
+    tx.oncomplete = () => {
+      void persistNativeDatabase(db).then(resolve, reject);
+    };
+    tx.onerror = () => reject(tx.error);
+  });
 }

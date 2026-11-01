@@ -23,7 +23,7 @@ func writeNormChecks(ctx context.Context, tx pgx.Tx, org, inspection, batch, ver
 		if c.AudioIDs == nil {
 			c.AudioIDs = []string{}
 		}
-		if _, e := tx.Exec(ctx, "INSERT INTO norm_assessments(id,org_id,inspection_id,batch_id,norm_version_id,rule_id,outcome,reason,photo_ids,audio_ids,source,transcript_versions) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) ON CONFLICT(batch_id,rule_id) DO UPDATE SET outcome=EXCLUDED.outcome,reason=EXCLUDED.reason,photo_ids=EXCLUDED.photo_ids,audio_ids=EXCLUDED.audio_ids,source=EXCLUDED.source,transcript_versions=EXCLUDED.transcript_versions,stale=false,reviewed_outcome=NULL,review_note='',reviewed_by=NULL,reviewed_at=NULL,version=norm_assessments.version+1", id(), org, inspection, batch, version, c.RuleID, c.Outcome, c.Reason, c.PhotoIDs, c.AudioIDs, source, raw); e != nil {
+		if _, e := tx.Exec(ctx, "INSERT INTO norm_assessments(id,org_id,inspection_id,batch_id,norm_version_id,rule_id,outcome,reason,photo_ids,audio_ids,source,transcript_versions,proposed_score) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) ON CONFLICT(batch_id,rule_id) DO UPDATE SET proposed_score=EXCLUDED.proposed_score,outcome=EXCLUDED.outcome,reason=EXCLUDED.reason,photo_ids=EXCLUDED.photo_ids,audio_ids=EXCLUDED.audio_ids,source=EXCLUDED.source,transcript_versions=EXCLUDED.transcript_versions,stale=false,reviewed_outcome=NULL,review_note='',reviewed_by=NULL,reviewed_at=NULL,version=norm_assessments.version+1", id(), org, inspection, batch, version, c.RuleID, c.Outcome, c.Reason, c.PhotoIDs, c.AudioIDs, source, raw, c.Score); e != nil {
 			return e
 		}
 	}
@@ -56,9 +56,10 @@ func seedAssessments(ctx context.Context, tx pgx.Tx, org, inspection, batch stri
 }
 func (a *app) reviewNormAssessment(w http.ResponseWriter, r *http.Request) error {
 	var in struct {
-		Outcome string `json:"outcome"`
-		Note    string `json:"note"`
-		Version int    `json:"version"`
+		ScoreDetail *scoreDetail `json:"scoreDetail"`
+		Outcome     string       `json:"outcome"`
+		Note        string       `json:"note"`
+		Version     int          `json:"version"`
 	}
 	if e := readJSON(w, r, &in); e != nil {
 		return e
@@ -89,7 +90,15 @@ func (a *app) reviewNormAssessment(w http.ResponseWriter, r *http.Request) error
 	if (in.Outcome != aiOutcome || reason == "Nog niet beoordeeld") && strings.TrimSpace(in.Note) == "" {
 		return fail(422, "Licht een handmatige of afwijkende beoordeling toe")
 	}
-	tag, e := tx.Exec(r.Context(), "UPDATE norm_assessments SET reviewed_outcome=$1,review_note=$2,previous_reviewed_outcome=NULL,previous_review_note='',reviewed_by=$3,reviewed_at=now(),version=version+1 WHERE id=$4 AND org_id=$5 AND inspection_id=$6 AND version=$7", in.Outcome, in.Note, u.ID, r.PathValue("assessment"), r.PathValue("org"), r.PathValue("inspection"), in.Version)
+	var ruleID string
+	if e = tx.QueryRow(r.Context(), `SELECT rule_id::text FROM norm_assessments WHERE id=$1 AND org_id=$2 AND inspection_id=$3`, r.PathValue("assessment"), r.PathValue("org"), r.PathValue("inspection")).Scan(&ruleID); e != nil {
+		return e
+	}
+	if e = validateScored(r.Context(), tx, r.PathValue("org"), r.PathValue("inspection"), ruleID, in.Outcome, "confirmed", in.ScoreDetail); e != nil {
+		return e
+	}
+	scoreJSON, _ := json.Marshal(in.ScoreDetail)
+	tag, e := tx.Exec(r.Context(), "UPDATE norm_assessments SET reviewed_outcome=$1,review_note=$2,previous_reviewed_outcome=NULL,previous_review_note='',reviewed_by=$3,reviewed_at=now(),version=version+1,score_detail=$8 WHERE id=$4 AND org_id=$5 AND inspection_id=$6 AND version=$7", in.Outcome, in.Note, u.ID, r.PathValue("assessment"), r.PathValue("org"), r.PathValue("inspection"), in.Version, scoreJSON)
 	if e != nil {
 		return e
 	}

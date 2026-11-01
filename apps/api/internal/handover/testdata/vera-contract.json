@@ -1,0 +1,1202 @@
+{
+  "Onderhoud": {
+    "version": "4.3.3+261002.6",
+    "source": "https://github.com/Aedes-datastandaarden/vera-openapi/blob/main/Informatiedomeinen/Onderhoud.yaml",
+    "schemas": {
+      "Defectbericht": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Defect"
+          },
+          {
+            "$ref": "#/components/schemas/Bericht-basis"
+          }
+        ]
+      },
+      "Defect": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "De unieke, primaire sleutel van het gegeven binnen het systeem waarin het is vastgelegd, die wordt gebruikt om associaties met andere entiteiten binnen hetzelfde systeem te leggen."
+          },
+          "idExtern": {
+            "type": "string",
+            "description": "De unieke, primaire sleutel van het gegeven in het bronsysteem waarin het wordt beheerd. Het bronsysteem verwijst naar het systeem waarin de entiteit wordt beheerd binnen het ICT-landschap van een organisatie. Dit bronsysteem fungeert als de single-source-of-truth."
+          },
+          "idGegevensbeheerder": {
+            "type": "string",
+            "description": "De primaire sleutel van het gegeven van de gegevensbeheerder. Bijv. de overheid of andere standaarden."
+          },
+          "idOrganisatie": {
+            "type": "string",
+            "description": "Dit verwijst naar de organisatie die verantwoordelijk is voor het gegeven. Horende bij de idExtern."
+          },
+          "idAdministratie": {
+            "type": "string",
+            "description": "De verwijzing naar de administratie binnen de specifieke organisatie die verantwoordelijk is voor de bron van het gegeven. Dit hoort bij idExtern."
+          },
+          "code": {
+            "type": "string",
+            "description": "De unieke code (Bijvoorbeeld om te tonen of te zoeken)"
+          },
+          "soort": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Referentiedata"
+              }
+            ],
+            "description": "Typering van het soort defect. Bijvoorbeeld lekt, klemt, gebroken etc. Referentiedata: DEFECTSOORT."
+          },
+          "omschrijving": {
+            "type": "string",
+            "description": "De korte omschrijving van het defect. Bijvoorbeeld: Keuken: kraan lekt. Meestal wordt deze omschrijving automatisch samengesteld uit de LEDO."
+          },
+          "status": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Referentiedata"
+              }
+            ],
+            "description": "De status van een defect. Bijvoorbeeld een huurder heeft een defect gemeld en een inspecteur heeft het defect geïnspecteerd. Referentiedata: DEFECTSTATUS."
+          },
+          "melddatum": {
+            "type": "string",
+            "format": "date-time",
+            "description": "De datum en tijd waarop het defect is gemeld."
+          },
+          "aangetroffenOorzaak": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Referentiedata"
+              }
+            ],
+            "description": "De achteraf vastgestelde oorzaak. Een voorbeeld is: de voetafdruk van een huurder tegen de deur die nu \"\"opeens\"\" klemt. De oorzaak was door de huurder als normale slijtage opgegeven maar de vakman heeft vastgesteld dat het bewonersgedrag is. Referentiedata: DEFECTOORZAAK."
+          },
+          "bouwkundigElement": {
+            "type": "string",
+            "format": "uri",
+            "description": "URI naar BouwkundigElement in domeinsysteem Vastgoed."
+          },
+          "cluster": {
+            "type": "string",
+            "format": "uri",
+            "description": "URI naar Cluster in domeinsysteem Vastgoed."
+          },
+          "collectiefObject": {
+            "type": "string",
+            "format": "uri",
+            "description": "URI naar CollectiefObject in domeinsysteem Vastgoed."
+          },
+          "eenheid": {
+            "type": "string",
+            "format": "uri",
+            "description": "URI naar Eenheid in domeinsysteem Vastgoed."
+          },
+          "inspectierapport": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Inspectierapport-sleutels"
+              }
+            ],
+            "description": "Het inspectierapport waarmee het defect is gemeld."
+          },
+          "locatie": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Referentiedata"
+              }
+            ],
+            "description": "De locatie waar het onderhoud moet plaatsvinden. Bijvoorbeeld huiskamer of toilet. Referentiedata: DEFECTLOCATIE."
+          },
+          "onderhoudsverzoeken": {
+            "description": "De onderhoudsverzoeken waarmee het defect is gemeld.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Onderhoudsverzoek-sleutels"
+            }
+          },
+          "oorzaak": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Referentiedata"
+              }
+            ],
+            "description": "De oorzaak van het defect zoals initieel bij het melden van het defect is vastgelegd. Dit is vaak de oorzaak die de huurder aangeeft bij de melding. Referentiedata: DEFECTOORZAAK."
+          },
+          "relaties": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uri"
+            },
+            "description": "URI's naar Relaties in domeinsysteem Relaties."
+          }
+        }
+      },
+      "Referentiedata": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "De unieke, primaire sleutel van het gegeven binnen het systeem waarin het is vastgelegd, die wordt gebruikt om associaties met andere entiteiten binnen hetzelfde systeem te leggen. Dit veld is verplicht, behalve bij een POST"
+          },
+          "idExtern": {
+            "type": "string",
+            "description": "De unieke, primaire sleutel van het gegeven in het bronsysteem waarin het wordt beheerd. Het bronsysteem verwijst naar het systeem waarin de entiteit wordt beheerd binnen het ICT-landschap van een organisatie. Dit bronsysteem fungeert als de single-source-of-truth."
+          },
+          "idGegevensbeheerder": {
+            "type": "string",
+            "description": "De primaire sleutel van het gegeven van de gegevensbeheerder. Bijv. de overheid of andere standaarden."
+          },
+          "idOrganisatie": {
+            "type": "string",
+            "description": "Dit verwijst naar de organisatie die verantwoordelijk is voor het gegeven. Horende bij de idExtern."
+          },
+          "idAdministratie": {
+            "type": "string",
+            "description": "De verwijzing naar de administratie binnen de specifieke organisatie die verantwoordelijk is voor de bron van het gegeven. Dit hoort bij idExtern."
+          },
+          "code": {
+            "type": "string",
+            "description": "De unieke code (Bijvoorbeeld om te tonen of te zoeken) Bijvoorbeeld NL."
+          },
+          "soort": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Referentiedata-sleutels"
+              }
+            ],
+            "description": "De soort van het referentiedata item. Bijvoorbeeld nationaliteit."
+          },
+          "naam": {
+            "type": "string",
+            "description": "De te tonen waarde van het referentiedata item. Bijvoorbeeld Nederlandse."
+          },
+          "omschrijving": {
+            "type": "string",
+            "description": "De omschrijving van de referentiedata. Bijvoorbeeld De Nederlandse nationaliteit."
+          },
+          "parent": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Referentiedata-sleutels"
+              }
+            ],
+            "description": "De bovenliggende referentiedata in het geval er sprake is van een hierarchische relatie tussen referentiedata."
+          },
+          "begindatum": {
+            "type": "string",
+            "format": "date",
+            "description": "De begindatum van het klasse item."
+          },
+          "einddatum": {
+            "type": "string",
+            "format": "date",
+            "description": "De einddatum van het klasse item."
+          },
+          "sortering": {
+            "type": "string",
+            "description": "De sorteervolgorde van de referentiedata anders dan alfabetisch."
+          }
+        }
+      },
+      "Referentiedata-sleutels": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "De unieke, primaire sleutel van het gegeven binnen het systeem waarin het is vastgelegd, die wordt gebruikt om associaties met andere entiteiten binnen hetzelfde systeem te leggen. Dit veld is verplicht, behalve bij een POST"
+          },
+          "idExtern": {
+            "type": "string",
+            "description": "De unieke, primaire sleutel van het gegeven in het bronsysteem waarin het wordt beheerd. Het bronsysteem verwijst naar het systeem waarin de entiteit wordt beheerd binnen het ICT-landschap van een organisatie. Dit bronsysteem fungeert als de single-source-of-truth."
+          },
+          "idGegevensbeheerder": {
+            "type": "string",
+            "description": "De primaire sleutel van het gegeven van de gegevensbeheerder. Bijv. de overheid of andere standaarden."
+          },
+          "idOrganisatie": {
+            "type": "string",
+            "description": "Dit verwijst naar de organisatie die verantwoordelijk is voor het gegeven. Horende bij de idExtern."
+          },
+          "idAdministratie": {
+            "type": "string",
+            "description": "De verwijzing naar de administratie binnen de specifieke organisatie die verantwoordelijk is voor de bron van het gegeven. Dit hoort bij idExtern."
+          },
+          "code": {
+            "type": "string",
+            "description": "De unieke code (Bijvoorbeeld om te tonen of te zoeken) Bijvoorbeeld NL."
+          },
+          "naam": {
+            "type": "string",
+            "description": "De te tonen waarde van het referentiedata item. Bijvoorbeeld Nederlandse."
+          }
+        }
+      },
+      "Inspectierapport-sleutels": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "De unieke, primaire sleutel van het gegeven binnen het systeem waarin het is vastgelegd, die wordt gebruikt om associaties met andere entiteiten binnen hetzelfde systeem te leggen."
+          },
+          "idExtern": {
+            "type": "string",
+            "description": "De unieke, primaire sleutel van het gegeven in het bronsysteem waarin het wordt beheerd. Het bronsysteem verwijst naar het systeem waarin de entiteit wordt beheerd binnen het ICT-landschap van een organisatie. Dit bronsysteem fungeert als de single-source-of-truth."
+          },
+          "idGegevensbeheerder": {
+            "type": "string",
+            "description": "De primaire sleutel van het gegeven van de gegevensbeheerder. Bijv. de overheid of andere standaarden."
+          },
+          "idOrganisatie": {
+            "type": "string",
+            "description": "Dit verwijst naar de organisatie die verantwoordelijk is voor het gegeven. Horende bij de idExtern."
+          },
+          "idAdministratie": {
+            "type": "string",
+            "description": "De verwijzing naar de administratie binnen de specifieke organisatie die verantwoordelijk is voor de bron van het gegeven. Dit hoort bij idExtern."
+          },
+          "code": {
+            "type": "string",
+            "description": "De unieke code (Bijvoorbeeld om te tonen of te zoeken)"
+          }
+        }
+      },
+      "Onderhoudsverzoek-sleutels": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "De unieke, primaire sleutel van het gegeven binnen het systeem waarin het is vastgelegd, die wordt gebruikt om associaties met andere entiteiten binnen hetzelfde systeem te leggen. Dit veld is verplicht, behalve bij een POST"
+          },
+          "idExtern": {
+            "type": "string",
+            "description": "De unieke, primaire sleutel van het gegeven in het bronsysteem waarin het wordt beheerd. Het bronsysteem verwijst naar het systeem waarin de entiteit wordt beheerd binnen het ICT-landschap van een organisatie. Dit bronsysteem fungeert als de single-source-of-truth."
+          },
+          "idGegevensbeheerder": {
+            "type": "string",
+            "description": "De primaire sleutel van het gegeven van de gegevensbeheerder. Bijv. de overheid of andere standaarden."
+          },
+          "idOrganisatie": {
+            "type": "string",
+            "description": "Dit verwijst naar de organisatie die verantwoordelijk is voor het gegeven. Horende bij de idExtern."
+          },
+          "idAdministratie": {
+            "type": "string",
+            "description": "De verwijzing naar de administratie binnen de specifieke organisatie die verantwoordelijk is voor de bron van het gegeven. Dit hoort bij idExtern."
+          },
+          "code": {
+            "type": "string",
+            "description": "De unieke code (Bijvoorbeeld om te tonen of te zoeken)"
+          }
+        }
+      },
+      "Inspectierapportbericht": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Inspectierapport"
+          },
+          {
+            "$ref": "#/components/schemas/Bericht-basis"
+          }
+        ]
+      },
+      "Inspectierapport": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "De unieke, primaire sleutel van het gegeven binnen het systeem waarin het is vastgelegd, die wordt gebruikt om associaties met andere entiteiten binnen hetzelfde systeem te leggen."
+          },
+          "idExtern": {
+            "type": "string",
+            "description": "De unieke, primaire sleutel van het gegeven in het bronsysteem waarin het wordt beheerd. Het bronsysteem verwijst naar het systeem waarin de entiteit wordt beheerd binnen het ICT-landschap van een organisatie. Dit bronsysteem fungeert als de single-source-of-truth."
+          },
+          "idGegevensbeheerder": {
+            "type": "string",
+            "description": "De primaire sleutel van het gegeven van de gegevensbeheerder. Bijv. de overheid of andere standaarden."
+          },
+          "idOrganisatie": {
+            "type": "string",
+            "description": "Dit verwijst naar de organisatie die verantwoordelijk is voor het gegeven. Horende bij de idExtern."
+          },
+          "idAdministratie": {
+            "type": "string",
+            "description": "De verwijzing naar de administratie binnen de specifieke organisatie die verantwoordelijk is voor de bron van het gegeven. Dit hoort bij idExtern."
+          },
+          "code": {
+            "type": "string",
+            "description": "De unieke code (Bijvoorbeeld om te tonen of te zoeken)"
+          },
+          "soort": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Referentiedata"
+              }
+            ],
+            "description": "Bijvoorbeeld: Voorinspectierapport, eindinspectierapport. Referentiedata: INSPECTIERAPPORTSOORT."
+          },
+          "omschrijving": {
+            "type": "string",
+            "description": "De korte omschrijving van de uitgevoerde inspectie. Bijvoorbeeld: Voorinspectie ten behoeve van mutatieonderhoud"
+          },
+          "status": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Referentiedata"
+              }
+            ],
+            "description": "De status van het inspectierapport. Bijvoorbeeld Concept, Definitief, Getekend etc. Referentiedata: INSPECTIERAPPORTSTATUS."
+          },
+          "geconstateerdeDefecten": {
+            "description": "De defecten die zijn geconstateerd tijdens de inspectie.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Defect-sleutels"
+            }
+          },
+          "inspectieOrder": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Onderhoudsorder-sleutels"
+              }
+            ],
+            "description": "De inspectieorder waardoor de inspectie heeft plaatsgevonden."
+          },
+          "relaties": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uri"
+            },
+            "description": "URI's naar Relaties in domeinsysteem Relaties."
+          },
+          "voorgesteldeOnderhoudstaken": {
+            "description": "In de situatie dat de inspecteur ook uit te voeren onderhoudstaken vaststelt tijdens de inspectie kunnen deze als voorgestelde onderhoudstaken opgenomen worden bij het inspectierapport",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Onderhoudstaak-sleutels"
+            }
+          }
+        }
+      },
+      "Defect-sleutels": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "De unieke, primaire sleutel van het gegeven binnen het systeem waarin het is vastgelegd, die wordt gebruikt om associaties met andere entiteiten binnen hetzelfde systeem te leggen."
+          },
+          "idExtern": {
+            "type": "string",
+            "description": "De unieke, primaire sleutel van het gegeven in het bronsysteem waarin het wordt beheerd. Het bronsysteem verwijst naar het systeem waarin de entiteit wordt beheerd binnen het ICT-landschap van een organisatie. Dit bronsysteem fungeert als de single-source-of-truth."
+          },
+          "idGegevensbeheerder": {
+            "type": "string",
+            "description": "De primaire sleutel van het gegeven van de gegevensbeheerder. Bijv. de overheid of andere standaarden."
+          },
+          "idOrganisatie": {
+            "type": "string",
+            "description": "Dit verwijst naar de organisatie die verantwoordelijk is voor het gegeven. Horende bij de idExtern."
+          },
+          "idAdministratie": {
+            "type": "string",
+            "description": "De verwijzing naar de administratie binnen de specifieke organisatie die verantwoordelijk is voor de bron van het gegeven. Dit hoort bij idExtern."
+          },
+          "code": {
+            "type": "string",
+            "description": "De unieke code (Bijvoorbeeld om te tonen of te zoeken)"
+          }
+        }
+      },
+      "Onderhoudstaak-sleutels": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "De unieke, primaire sleutel van het gegeven binnen het systeem waarin het is vastgelegd, die wordt gebruikt om associaties met andere entiteiten binnen hetzelfde systeem te leggen."
+          },
+          "idExtern": {
+            "type": "string",
+            "description": "De unieke, primaire sleutel van het gegeven in het bronsysteem waarin het wordt beheerd. Het bronsysteem verwijst naar het systeem waarin de entiteit wordt beheerd binnen het ICT-landschap van een organisatie. Dit bronsysteem fungeert als de single-source-of-truth."
+          },
+          "idGegevensbeheerder": {
+            "type": "string",
+            "description": "De primaire sleutel van het gegeven van de gegevensbeheerder. Bijv. de overheid of andere standaarden."
+          },
+          "idOrganisatie": {
+            "type": "string",
+            "description": "Dit verwijst naar de organisatie die verantwoordelijk is voor het gegeven. Horende bij de idExtern."
+          },
+          "idAdministratie": {
+            "type": "string",
+            "description": "De verwijzing naar de administratie binnen de specifieke organisatie die verantwoordelijk is voor de bron van het gegeven. Dit hoort bij idExtern."
+          },
+          "code": {
+            "type": "string",
+            "description": "De unieke code (Bijvoorbeeld om te tonen of te zoeken)"
+          }
+        }
+      },
+      "Onderhoudstaakbericht": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Onderhoudstaak"
+          },
+          {
+            "$ref": "#/components/schemas/Bericht-basis"
+          }
+        ]
+      },
+      "Onderhoudstaak": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "De unieke, primaire sleutel van het gegeven binnen het systeem waarin het is vastgelegd, die wordt gebruikt om associaties met andere entiteiten binnen hetzelfde systeem te leggen."
+          },
+          "idExtern": {
+            "type": "string",
+            "description": "De unieke, primaire sleutel van het gegeven in het bronsysteem waarin het wordt beheerd. Het bronsysteem verwijst naar het systeem waarin de entiteit wordt beheerd binnen het ICT-landschap van een organisatie. Dit bronsysteem fungeert als de single-source-of-truth."
+          },
+          "idGegevensbeheerder": {
+            "type": "string",
+            "description": "De primaire sleutel van het gegeven van de gegevensbeheerder. Bijv. de overheid of andere standaarden."
+          },
+          "idOrganisatie": {
+            "type": "string",
+            "description": "Dit verwijst naar de organisatie die verantwoordelijk is voor het gegeven. Horende bij de idExtern."
+          },
+          "idAdministratie": {
+            "type": "string",
+            "description": "De verwijzing naar de administratie binnen de specifieke organisatie die verantwoordelijk is voor de bron van het gegeven. Dit hoort bij idExtern."
+          },
+          "code": {
+            "type": "string",
+            "description": "De unieke code (Bijvoorbeeld om te tonen of te zoeken)"
+          },
+          "omschrijving": {
+            "type": "string",
+            "description": "De korte omschrijving van de taak."
+          },
+          "status": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Referentiedata"
+              }
+            ],
+            "description": "De status van de onderhoudstaak. Bijvoorbeeld: aangemaakt, ingepland, in uitvoer, afgerond. Referentiedata: ONDERHOUDSTAAKSTATUS."
+          },
+          "detailStatus": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Referentiedata"
+              }
+            ],
+            "description": "De detail status van de onderhoudstaak. Bijvoorbeeld: Klant niet aanwezig Referentiedata: ONDERHOUDSTAAKDETAILSTATUS."
+          },
+          "afspraken": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uri"
+            },
+            "description": "URI's naar Afspraken in domeinsysteem Relaties."
+          },
+          "defecten": {
+            "description": "De geconstateerde defecten die met de onderhoudstaak worden verholpen",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Defect-sleutels"
+            }
+          },
+          "onderhoudsbestedingen": {
+            "description": "De onderhoudsbestedingen behorend bij de onderhoudstaak.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Onderhoudsbesteding-sleutels"
+            }
+          },
+          "onderhoudsorder": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Onderhoudsorder-sleutels"
+              }
+            ],
+            "description": "De onderhoudsorder behorend bij de onderhoudstaak."
+          },
+          "onderhoudsverzoek": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Onderhoudsverzoek-sleutels"
+              }
+            ],
+            "description": "Het onderhoudsverzoek behorend bij de onderhoudstaak. Ook als er (nog) geen onderhoudsorder is bij de onderhoudstaak, kan op deze manier het bijbehorende onderhoudsverzoek worden gevonden."
+          },
+          "relaties": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uri"
+            },
+            "description": "URI's naar Relaties in domeinsysteem Relaties."
+          },
+          "specialisme": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Referentiedata"
+              }
+            ],
+            "description": "Het specialisme dat nodig is om de taak uit te voeren. Voorbeelden zijn Timmerman, Loodgieter, etc. Referentiedata: ONDERHOUDSPECIALISME."
+          },
+          "voorcalculaties": {
+            "description": "De onderhoudstaakvoorcalculaties behorende bij de onderhoudstaak.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Onderhoudstaakvoorcalculatie-sleutels"
+            }
+          }
+        }
+      },
+      "Onderhoudsverzoekbericht": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Onderhoudsverzoek"
+          },
+          {
+            "$ref": "#/components/schemas/Bericht-basis"
+          }
+        ]
+      },
+      "Onderhoudsverzoek": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "De unieke, primaire sleutel van het gegeven binnen het systeem waarin het is vastgelegd, die wordt gebruikt om associaties met andere entiteiten binnen hetzelfde systeem te leggen. Dit veld is verplicht, behalve bij een POST"
+          },
+          "idExtern": {
+            "type": "string",
+            "description": "De unieke, primaire sleutel van het gegeven in het bronsysteem waarin het wordt beheerd. Het bronsysteem verwijst naar het systeem waarin de entiteit wordt beheerd binnen het ICT-landschap van een organisatie. Dit bronsysteem fungeert als de single-source-of-truth."
+          },
+          "idGegevensbeheerder": {
+            "type": "string",
+            "description": "De primaire sleutel van het gegeven van de gegevensbeheerder. Bijv. de overheid of andere standaarden."
+          },
+          "idOrganisatie": {
+            "type": "string",
+            "description": "Dit verwijst naar de organisatie die verantwoordelijk is voor het gegeven. Horende bij de idExtern."
+          },
+          "idAdministratie": {
+            "type": "string",
+            "description": "De verwijzing naar de administratie binnen de specifieke organisatie die verantwoordelijk is voor de bron van het gegeven. Dit hoort bij idExtern."
+          },
+          "code": {
+            "type": "string",
+            "description": "De unieke code (Bijvoorbeeld om te tonen of te zoeken)"
+          },
+          "onderhoudSoort": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Referentiedata"
+              }
+            ],
+            "description": "Het soort onderhoud dat wordt verzocht. Bijvoorbeeld: reparatie, mutatieonderhoud etc. Referentiedata: ONDERHOUDSOORT."
+          },
+          "omschrijving": {
+            "type": "string",
+            "description": "De korte omschrijving van het verzoek. Bijvoorbeeld: Keuken: kraan lekt."
+          },
+          "status": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Referentiedata"
+              }
+            ],
+            "description": "De status van het verzoek. Bijvoorbeeld: Geregistreerd, In behandeling, Geannuleerd, Afgehandeld Referentiedata: ONDERHOUDSVERZOEKSTATUS."
+          },
+          "melddatum": {
+            "type": "string",
+            "format": "date-time",
+            "description": "De datum en tijdwaarop het onderhoudsverzoek is gemeld. Validatie-regex: ^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?Z$"
+          },
+          "alternatiefContactgegeven": {
+            "type": "string",
+            "description": "Tekstveld waarin contactgegevens van een alternatieve contactpersoon opgenomen kunnen worden. Voorbeeld is het verzoek van een huurder (student) waarbij hij aangeeft contact op te nemen met zijn ouders voor de afhandeling van het verzoek."
+          },
+          "contactmomenten": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uri"
+            },
+            "description": "URI's naar Contactmomenten in domeinsysteem Relaties."
+          },
+          "defecten": {
+            "description": "De defecten die via zijn gemeld en gekoppeld aan het onderhoudsverzoek.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Defect-sleutels"
+            }
+          },
+          "onderhoudsorders": {
+            "description": "De onderhoudsorders behorend bij het onderhoudsverzoek.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Onderhoudsorder-sleutels"
+            }
+          },
+          "onderhoudstaken": {
+            "description": "De taken die via het verzoek zijn gemeld.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Onderhoudstaak-sleutels"
+            }
+          },
+          "onderhoudsverzoeken": {
+            "description": "Gerelateerde onderhoudsverzoeken bij het onderhoudsverzoek.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Onderhoudsverzoek-sleutels"
+            }
+          },
+          "relaties": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uri"
+            },
+            "description": "URI's naar Relaties in domeinsysteem Relaties."
+          },
+          "verrekeningen": {
+            "description": "De verrekeningen van het onderhoudsverzoek met de melder.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Onderhoudsverzoekverrekening-sleutels"
+            }
+          },
+          "voorkeurAfspraken": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uri"
+            },
+            "description": "URI's naar Afspraken in domeinsysteem Relaties."
+          }
+        }
+      },
+      "Bericht-basis": {
+        "type": "object",
+        "properties": {
+          "extra-attributen": {
+            "description": "Mogelijkheid om het bericht uit te breiden met attributen die nog niet in het logisch datamodel beschikbaar zijn",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ExtraAttribuut"
+            }
+          },
+          "informatieobjecten": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uri"
+            },
+            "description": "URI's naar Informatieobjecten in domeinsysteem Dossier."
+          },
+          "sturingslabels": {
+            "description": "Mogelijkheid om het bericht uit te breiden met sturingslabels",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Sturingslabel"
+            }
+          },
+          "archivering": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Archivering"
+              }
+            ],
+            "description": "Mogelijkheid om het bericht uit te breiden met archiveringsinformatie"
+          }
+        }
+      },
+      "Onderhoudsorder-sleutels": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "De unieke, primaire sleutel van het gegeven binnen het systeem waarin het is vastgelegd, die wordt gebruikt om associaties met andere entiteiten binnen hetzelfde systeem te leggen."
+          },
+          "idExtern": {
+            "type": "string",
+            "description": "De unieke, primaire sleutel van het gegeven in het bronsysteem waarin het wordt beheerd. Het bronsysteem verwijst naar het systeem waarin de entiteit wordt beheerd binnen het ICT-landschap van een organisatie. Dit bronsysteem fungeert als de single-source-of-truth."
+          },
+          "idGegevensbeheerder": {
+            "type": "string",
+            "description": "De primaire sleutel van het gegeven van de gegevensbeheerder. Bijv. de overheid of andere standaarden."
+          },
+          "idOrganisatie": {
+            "type": "string",
+            "description": "Dit verwijst naar de organisatie die verantwoordelijk is voor het gegeven. Horende bij de idExtern."
+          },
+          "idAdministratie": {
+            "type": "string",
+            "description": "De verwijzing naar de administratie binnen de specifieke organisatie die verantwoordelijk is voor de bron van het gegeven. Dit hoort bij idExtern."
+          },
+          "code": {
+            "type": "string",
+            "description": "De unieke code (Bijvoorbeeld om te tonen of te zoeken)"
+          }
+        }
+      }
+    }
+  },
+  "Dossier": {
+    "version": "4.3.3+261002.6",
+    "source": "https://github.com/Aedes-datastandaarden/vera-openapi/blob/main/Informatiedomeinen/Dossier.yaml",
+    "schemas": {
+      "Referentiedata": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "De unieke, primaire sleutel van het gegeven binnen het systeem waarin het is vastgelegd, die wordt gebruikt om associaties met andere entiteiten binnen hetzelfde systeem te leggen. Dit veld is verplicht, behalve bij een POST"
+          },
+          "idExtern": {
+            "type": "string",
+            "description": "De unieke, primaire sleutel van het gegeven in het bronsysteem waarin het wordt beheerd. Het bronsysteem verwijst naar het systeem waarin de entiteit wordt beheerd binnen het ICT-landschap van een organisatie. Dit bronsysteem fungeert als de single-source-of-truth."
+          },
+          "idGegevensbeheerder": {
+            "type": "string",
+            "description": "De primaire sleutel van het gegeven van de gegevensbeheerder. Bijv. de overheid of andere standaarden."
+          },
+          "idOrganisatie": {
+            "type": "string",
+            "description": "Dit verwijst naar de organisatie die verantwoordelijk is voor het gegeven. Horende bij de idExtern."
+          },
+          "idAdministratie": {
+            "type": "string",
+            "description": "De verwijzing naar de administratie binnen de specifieke organisatie die verantwoordelijk is voor de bron van het gegeven. Dit hoort bij idExtern."
+          },
+          "code": {
+            "type": "string",
+            "description": "De unieke code (Bijvoorbeeld om te tonen of te zoeken) Bijvoorbeeld NL."
+          },
+          "soort": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Referentiedata-sleutels"
+              }
+            ],
+            "description": "De soort van het referentiedata item. Bijvoorbeeld nationaliteit."
+          },
+          "naam": {
+            "type": "string",
+            "description": "De te tonen waarde van het referentiedata item. Bijvoorbeeld Nederlandse."
+          },
+          "omschrijving": {
+            "type": "string",
+            "description": "De omschrijving van de referentiedata. Bijvoorbeeld De Nederlandse nationaliteit."
+          },
+          "parent": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Referentiedata-sleutels"
+              }
+            ],
+            "description": "De bovenliggende referentiedata in het geval er sprake is van een hierarchische relatie tussen referentiedata."
+          },
+          "begindatum": {
+            "type": "string",
+            "format": "date",
+            "description": "De begindatum van het klasse item."
+          },
+          "einddatum": {
+            "type": "string",
+            "format": "date",
+            "description": "De einddatum van het klasse item."
+          },
+          "sortering": {
+            "type": "string",
+            "description": "De sorteervolgorde van de referentiedata anders dan alfabetisch."
+          }
+        }
+      },
+      "Referentiedata-sleutels": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "De unieke, primaire sleutel van het gegeven binnen het systeem waarin het is vastgelegd, die wordt gebruikt om associaties met andere entiteiten binnen hetzelfde systeem te leggen. Dit veld is verplicht, behalve bij een POST"
+          },
+          "idExtern": {
+            "type": "string",
+            "description": "De unieke, primaire sleutel van het gegeven in het bronsysteem waarin het wordt beheerd. Het bronsysteem verwijst naar het systeem waarin de entiteit wordt beheerd binnen het ICT-landschap van een organisatie. Dit bronsysteem fungeert als de single-source-of-truth."
+          },
+          "idGegevensbeheerder": {
+            "type": "string",
+            "description": "De primaire sleutel van het gegeven van de gegevensbeheerder. Bijv. de overheid of andere standaarden."
+          },
+          "idOrganisatie": {
+            "type": "string",
+            "description": "Dit verwijst naar de organisatie die verantwoordelijk is voor het gegeven. Horende bij de idExtern."
+          },
+          "idAdministratie": {
+            "type": "string",
+            "description": "De verwijzing naar de administratie binnen de specifieke organisatie die verantwoordelijk is voor de bron van het gegeven. Dit hoort bij idExtern."
+          },
+          "code": {
+            "type": "string",
+            "description": "De unieke code (Bijvoorbeeld om te tonen of te zoeken) Bijvoorbeeld NL."
+          },
+          "naam": {
+            "type": "string",
+            "description": "De te tonen waarde van het referentiedata item. Bijvoorbeeld Nederlandse."
+          }
+        }
+      },
+      "Informatieobjectbericht": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Informatieobject"
+          },
+          {
+            "$ref": "#/components/schemas/Bericht-basis"
+          }
+        ]
+      },
+      "Informatieobject": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "De unieke, primaire sleutel van het gegeven binnen het systeem waarin het is vastgelegd, die wordt gebruikt om associaties met andere entiteiten binnen hetzelfde systeem te leggen. Dit veld is verplicht, behalve bij een POST"
+          },
+          "idExtern": {
+            "type": "string",
+            "description": "De unieke, primaire sleutel van het gegeven in het bronsysteem waarin het wordt beheerd. Het bronsysteem verwijst naar het systeem waarin de entiteit wordt beheerd binnen het ICT-landschap van een organisatie. Dit bronsysteem fungeert als de single-source-of-truth."
+          },
+          "idGegevensbeheerder": {
+            "type": "string",
+            "description": "De primaire sleutel van het gegeven van de gegevensbeheerder. Bijv. de overheid of andere standaarden."
+          },
+          "idOrganisatie": {
+            "type": "string",
+            "description": "Dit verwijst naar de organisatie die verantwoordelijk is voor het gegeven. Horende bij de idExtern."
+          },
+          "idAdministratie": {
+            "type": "string",
+            "description": "De verwijzing naar de administratie binnen de specifieke organisatie die verantwoordelijk is voor de bron van het gegeven. Dit hoort bij idExtern."
+          },
+          "code": {
+            "type": "string",
+            "description": "De unieke code (Bijvoorbeeld om te tonen of te zoeken)"
+          },
+          "soort": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Referentiedata"
+              }
+            ],
+            "description": "Specificatie van het documenttype. Bijvoorbeeld verslag, rapport etc. Referentiedata: INFORMATIEOBJECTSOORT."
+          },
+          "detailSoort": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Referentiedata"
+              }
+            ],
+            "description": "Detail specificatie van het documenttype. Bijvoorbeeld notulen, adviesrapport etc. Referentiedata: INFORMATIEOBJECTDETAILSOORT."
+          },
+          "onderwerp": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Referentiedata"
+              }
+            ],
+            "description": "Onderwerp van het informatieobject. Referentiedata: INFORMATIEOBJECTONDERWERP."
+          },
+          "subonderwerp": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Referentiedata"
+              }
+            ],
+            "description": "Subonderwerp van het informatieobject. Referentiedata: INFORMATIEOBJECTSUBONDERWERP."
+          },
+          "titel": {
+            "type": "string",
+            "description": "Titel van het informatieobject."
+          },
+          "beschrijving": {
+            "type": "string",
+            "description": "Beschrijving van het informatieobject. Dit kan ook de (volledige) inhoud zijn van een memo of notitie."
+          },
+          "status": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Referentiedata"
+              }
+            ],
+            "description": "De fase waarin het informatieobject zich vanuit het perspectief van archivering bevindt. Referentiedata: INFORMATIEOBJECTSTATUS."
+          },
+          "detailStatus": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Referentiedata"
+              }
+            ],
+            "description": "Detaillering van de fase waarin het informatieobject zich vanuit het perspectief van archivering bevindt. Referentiedata: INFORMATIEOBJECTDETAILSTATUS."
+          },
+          "registratiedatum": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Registratiedatum en tijd van het informatieobject. Validatie-regex: ^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?Z$"
+          },
+          "ontvangstdatum": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Ontvangstdatum en tijd van het informatieobject. Validatie-regex: ^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?Z$"
+          },
+          "publicatiedatum": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Publicatiedatum of verzenddatum en tijd van het informatieobject. Validatie-regex: ^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?Z$"
+          },
+          "archiefActiedatum": {
+            "type": "string",
+            "format": "date-time",
+            "description": "De datum waarop het gearchiveerde informatieobject vernietigd moet worden dan wel overgebracht moet worden naar een archiefbewaarplaats. Validatie-regex: ^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?Z$"
+          },
+          "archiefnominatie": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Referentiedata"
+              }
+            ],
+            "description": "Aanduiding of het informatieobject blijvend bewaard of na een bepaalde termijn vernietigd moet worden. Referentiedata: ARCHIEFNOMINATIE."
+          },
+          "auteur": {
+            "type": "string",
+            "description": "De persoon of organisatie die in de eerste plaats verantwoordelijk is voor het creëren van de inhoud van het informatieobject."
+          },
+          "bestand": {
+            "type": "string",
+            "format": "byte",
+            "description": "De binaire representatie van het informatieobject."
+          },
+          "bestandsgrootte": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Omvang van het bestand in bytes."
+          },
+          "bestandslocatie": {
+            "type": "string",
+            "format": "uri",
+            "description": "Een link (URI) naar de binaire representatie van het informatieobject. Validatie-regex: ^https?:\\/\\/[^\\s/$.?#].[^\\s]*$"
+          },
+          "bestandsnaam": {
+            "type": "string",
+            "description": "De naam van het fysieke bestand waarin de inhoud van het informatieobject is vastgelegd."
+          },
+          "bijlagen": {
+            "description": "De bijlagen behorend bij het informatieobject.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Informatieobject-sleutels"
+            }
+          },
+          "clusters": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uri"
+            },
+            "description": "URI's naar Clusters in domeinsysteem Vastgoed."
+          },
+          "collectiefObjecten": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uri"
+            },
+            "description": "URI's naar CollectiefObjecten in domeinsysteem Vastgoed."
+          },
+          "contactmomenten": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uri"
+            },
+            "description": "URI's naar Contactmomenten in domeinsysteem Relaties."
+          },
+          "dossiers": {
+            "description": "Het informatieobject is gekoppeld aan/heeft betrekking op dossier(s).",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Dossier-sleutels"
+            }
+          },
+          "eenheden": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uri"
+            },
+            "description": "URI's naar Eenheden in domeinsysteem Vastgoed."
+          },
+          "externePublicatie": {
+            "type": "boolean",
+            "description": "Aanduiding of dit informatieobject extern gepubliceerd dient te worden."
+          },
+          "externePublicatietekst": {
+            "type": "string",
+            "description": "Tekstuele omschrijving ten behoeve van externe publicatie van dit informatieobject."
+          },
+          "formaat": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Referentiedata"
+              }
+            ],
+            "description": "Het digitale formaat (IANA media type) van het informatieobject. Bijv. code:png naam:image/png. Referentiedata: INFORMATIEOBJECTFORMAAT."
+          },
+          "gebruiksrechten": {
+            "type": "string",
+            "description": "Informatie omtrent rechten die geassocieerd zijn met het informatieobject zoals intellectueel eigendom."
+          },
+          "inkoopfacturen": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uri"
+            },
+            "description": "URI's naar Facturen in domeinsysteem Financien."
+          },
+          "inkoopopdrachten": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uri"
+            },
+            "description": "URI's naar Inkoopopdrachten in domeinsysteem Financien."
+          },
+          "isBijlageVan": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Informatieobject-sleutels"
+              }
+            ],
+            "description": "Geeft aan dat het informatieobject een bijlage is van een ander informatieobject."
+          },
+          "objecten": {
+            "description": "De gegevensobjecten die bij de zaak horen. Kan iedere klasse uit ons model zijn. Bijv. Overeenkomst, Onderhoudsverzoek etc.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Zaakobject-sleutels"
+            }
+          },
+          "onderhoudsverzoeken": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uri"
+            },
+            "description": "URI's naar Onderhoudsverzoeken in domeinsysteem Onderhoud."
+          },
+          "overeenkomsten": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uri"
+            },
+            "description": "URI's naar Overeenkomsten in domeinsysteem Overeenkomsten."
+          },
+          "processen": {
+            "description": "Het informatieobject is gekoppeld aan/heeft betrekking op proces(sen).",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Proces-sleutels"
+            }
+          },
+          "relaties": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uri"
+            },
+            "description": "URI's naar Relaties in domeinsysteem Relaties."
+          },
+          "taal": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Referentiedata"
+              }
+            ],
+            "description": "De taal waarin het informatieobject is opgesteld. Referentiedata: TAAL."
+          },
+          "verantwoordelijkeOrganisatie": {
+            "type": "string",
+            "description": "Het RSIN (Rechtspersonen en Samenwerkingsverbanden Informatienummer) van de organisatie die verantwoordelijk is voor het informatieobject."
+          },
+          "versie": {
+            "type": "number",
+            "format": "float",
+            "description": "Het versienummer van het informatieobject."
+          },
+          "vertrouwelijkheid": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Referentiedata"
+              }
+            ],
+            "description": "De classificatie van het vertrouwelijkheidsniveau van het informatieobject. Referentiedata: VERTROUWELIJKHEID."
+          },
+          "zaken": {
+            "description": "Het informatieobject is gekoppeld aan/heeft betrekking op zaak(-en).",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Zaak-sleutels"
+            }
+          }
+        }
+      },
+      "Bericht-basis": {
+        "type": "object",
+        "properties": {
+          "extra-attributen": {
+            "description": "Mogelijkheid om het bericht uit te breiden met attributen die nog niet in het logisch datamodel beschikbaar zijn",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ExtraAttribuut"
+            }
+          },
+          "informatieobjecten": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uri"
+            },
+            "description": "URI's naar Informatieobjecten in domeinsysteem Dossier."
+          },
+          "sturingslabels": {
+            "description": "Mogelijkheid om het bericht uit te breiden met sturingslabels",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Sturingslabel"
+            }
+          },
+          "archivering": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Archivering"
+              }
+            ],
+            "description": "Mogelijkheid om het bericht uit te breiden met archiveringsinformatie"
+          }
+        }
+      }
+    }
+  }
+}

@@ -298,7 +298,7 @@ export function Dialog({
   open,
   onOpenChange,
   wide,
-  fullOnMobile,
+  fullOnMobile = true,
   touch,
   closeLabel = 'Close dialog',
 }: {
@@ -349,7 +349,7 @@ export function Dialog({
               </IconButton>
             </RDialog.Close>
           </div>
-          {children}
+          <div className={s.dialogBody}>{children}</div>
         </RDialog.Content>
       </RDialog.Portal>
     </RDialog.Root>

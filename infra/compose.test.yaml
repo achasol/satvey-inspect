@@ -10,6 +10,7 @@ x-api-env: &api-env
   S3_SECRET_KEY: test-object-storage-password
   APP_ENCRYPTION_KEY: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
   PROPERTY_ENCRYPTION_KEY: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+  VERA_CA_FILE: /vera-certificates/vera-receiver-ca.pem
   ALLOW_MOCK_ANALYSIS: 'true'
   ALLOW_HTTP_OIDC: 'true'
   ALLOW_HTTP_PROPERTY_API: 'true'
@@ -24,6 +25,40 @@ x-api-env: &api-env
   TEST_RELAX_RATE_LIMITS: 'true'
 
 services:
+  vera-receiver:
+    init: true
+    mem_limit: 128m
+    memswap_limit: 128m
+    cpus: 0.10
+    pids_limit: 128
+    build: ./tools/vera-receiver
+    volumes: [test_vera_certificates:/tmp]
+    environment:
+      VERA_RECEIVER_TEST_MODE: '1'
+      VERA_RECEIVER_LISTEN: 0.0.0.0:8090
+      VERA_RECEIVER_BASE_URL: https://vera-receiver:8090
+      VERA_RECEIVER_CLIENT_ID: satvey-test
+      VERA_RECEIVER_CLIENT_SECRET: dummy-client-secret-only-for-tests
+      VERA_RECEIVER_CONTROL_KEY: dummy-control-secret-only-for-tests
+      GOMEMLIMIT: 96MiB
+      GOMAXPROCS: '1'
+    healthcheck:
+      test: [CMD, wget, --no-check-certificate, -q, -O, /dev/null, https://localhost:8090/healthz]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+  vera-tests:
+    mem_limit: 1024m
+    memswap_limit: 1024m
+    cpus: 1.0
+    pids_limit: 128
+    build:
+      context: ./tools/vera-receiver
+      target: build
+    environment:
+      GOMAXPROCS: '1'
+      GOFLAGS: '-p=1'
+    command: [go, test, -race, -count=1, ./...]
   postgres: &postgres
     mem_limit: 256m
     memswap_limit: 256m
@@ -100,6 +135,7 @@ services:
     cpus: 0.50
     pids_limit: 256
     build: ./apps/api
+    volumes: [test_vera_certificates:/vera-certificates:ro]
     environment: *api-env
     depends_on:
       browser-postgres: { condition: service_healthy }
@@ -126,11 +162,14 @@ services:
       GOMAXPROCS: '2'
       GOFLAGS: '-p=1'
       REQUIRE_INTEGRATION: '1'
+      VERA_RECEIVER_URL: https://vera-receiver:8090
       PDF_ARTIFACT_DIR: /artifacts
       TEST_RELAX_RATE_LIMITS: 'false'
     volumes:
       - test_artifacts:/artifacts
+      - test_vera_certificates:/vera-certificates:ro
     depends_on:
+      vera-receiver: { condition: service_healthy }
       postgres: { condition: service_healthy }
       rustfs: { condition: service_healthy }
       pdf: { condition: service_healthy }
@@ -179,6 +218,7 @@ services:
       E2E_EMAIL: admin@satvey.local
       E2E_PASSWORD: local-inspection-2026
       MAILPIT_URL: http://mail:8025
+      VERA_RECEIVER_URL: https://vera-receiver:8090
     volumes:
       - test_artifacts:/app/tests/artifacts
       - test_results:/app/test-results
@@ -209,6 +249,7 @@ services:
       - test_report:/export/playwright-report
     command: [sleep, '300']
 volumes:
+  test_vera_certificates:
   test_go_database:
   test_browser_database:
   test_artifacts:

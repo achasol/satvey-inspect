@@ -16,7 +16,7 @@ import (
 
 func (a *app) worker(ctx context.Context) {
 	var group sync.WaitGroup
-	for _, work := range []func(context.Context){a.inspectionDeletionWorker, a.audioWorker, a.scopeWorker, a.propertyWorker, a.mailWorker} {
+	for _, work := range []func(context.Context){a.inspectionDeletionWorker, a.audioWorker, a.scopeWorker, a.propertyWorker, a.mailWorker, a.handoverWorker, a.internalSyncWorker, a.reportArtifactWorker, a.retentionWorker} {
 		group.Add(1)
 		go func(work func(context.Context)) { defer group.Done(); work(ctx) }(work)
 	}

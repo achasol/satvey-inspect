@@ -1,3 +1,4 @@
+import { captureFiles } from './helpers/capture';
 import { test, expect } from '@playwright/test';
 import type { Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
@@ -17,14 +18,15 @@ async function login(page: Page) {
 test('format builder publishes questions, norm links, examples and talking prompts', async ({
   page,
 }, info) => {
+  await page.setViewportSize({ width: 1194, height: 834 });
   const base = await login(page),
     fixture = await createTestFormat(page, base);
   await page.goto('/app/formats');
-  await page.getByRole('button', { name: 'Format toevoegen', exact: true }).click();
+  await page.getByRole('button', { name: 'Inspectiesjabloon toevoegen', exact: true }).click();
   const dialog = page.getByRole('dialog'),
     name = `E2E Format builder ${randomUUID()}`;
   await dialog.getByLabel(/^Naam/).fill(name);
-  await dialog.getByLabel('Normenkader', { exact: true }).selectOption(fixture.normVersionId);
+  await dialog.getByLabel('Kwaliteitskader', { exact: true }).selectOption(fixture.normVersionId);
   await dialog.getByRole('button', { name: 'Concept aanmaken', exact: true }).click();
   await expect(page.getByRole('heading', { name, exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Badkamer 1', exact: true }).click();
@@ -36,7 +38,7 @@ test('format builder publishes questions, norm links, examples and talking promp
   await question.getByLabel('Antwoordtype', { exact: true }).selectOption('quality');
   const norm = await (await page.request.get(`${base}/norms/${fixture.normVersionId}`)).json();
   await question
-    .getByLabel('Gekoppelde norm', { exact: true })
+    .getByLabel('Gekoppeld criterium', { exact: true })
     .selectOption(norm.rules.find((r: { code: string }) => r.code === 'AFWERK').id);
   await question.getByText('Criteria en voorbeelden bekijken', { exact: true }).click();
   await expect(question.getByText('Acceptabel:', { exact: true })).toBeVisible();
@@ -111,16 +113,27 @@ test('talking prompts guide capture and conditional requirements close through e
       : route.continue(),
   );
   await page.goto(`/app/inspections/${iid}/capture`);
-  const guide = page.getByRole('complementary', { name: 'Spreekhulp' });
-  await expect(guide).toContainText('Beschrijf de wanden en benoem eventuele schade.');
-  await guide
-    .getByRole('button', { name: 'Spreekhulp overslaan: Is schade zichtbaar?', exact: true })
-    .click();
-  await expect(guide).toContainText('Benoem de plek van de schade');
+  await page.evaluate(() =>
+    Object.defineProperty(navigator, 'mediaDevices', {
+      configurable: true,
+      value: {
+        getUserMedia: async () => {
+          throw new DOMException('Unavailable', 'NotAllowedError');
+        },
+      },
+    }),
+  );
+  await page.getByRole('button', { name: /Inspectie (starten|hervatten)/ }).click();
+  const camera = page.getByRole('dialog', { name: 'Inspectie opnemen', exact: true });
+  await expect(
+    camera
+      .locator('summary')
+      .filter({ hasText: 'Beschrijf de wanden en benoem eventuele schade.' }),
+  ).toBeVisible();
   const initial = await (await page.request.get(`${base}/inspections/${iid}`)).json();
   expect(initial.answers.every((a: { status: string }) => a.status === 'missing')).toBe(true);
-  await guide.getByRole('button', { name: 'Verborgen gesprekspunten tonen', exact: true }).click();
-  await page.getByLabel("Foto's toevoegen", { exact: true }).setInputFiles({
+  await camera.getByRole('button', { name: 'Gereed', exact: true }).click();
+  await captureFiles(page, {
     name: 'overzicht.png',
     mimeType: 'image/png',
     buffer: Buffer.from(
@@ -128,7 +141,6 @@ test('talking prompts guide capture and conditional requirements close through e
       'base64',
     ),
   });
-  await page.getByRole('button', { name: 'Opname bewaren', exact: true }).click();
   await expect(page.getByText('Voorbeeldvoorstel', { exact: true })).toBeVisible({
     timeout: 20000,
   });
@@ -136,7 +148,7 @@ test('talking prompts guide capture and conditional requirements close through e
   await expect(
     page
       .getByRole('region', { name: 'Badkamer', exact: true })
-      .getByRole('button', { name: 'Ruimte goedkeuren', exact: true }),
+      .getByRole('button', { name: 'Beoordeling bevestigen', exact: true }),
   ).toBeDisabled();
   await page.getByRole('button', { name: 'Afwijzen', exact: true }).click();
   await page.getByText('Is schade zichtbaar?', { exact: true }).click();
@@ -183,18 +195,22 @@ test('talking prompts guide capture and conditional requirements close through e
   await expect(
     page
       .getByRole('region', { name: 'Badkamer', exact: true })
-      .getByRole('button', { name: 'Ruimte goedkeuren', exact: true }),
+      .getByRole('button', { name: 'Beoordeling bevestigen', exact: true }),
   ).toBeEnabled({
     timeout: 20000,
   });
   await page
     .getByRole('region', { name: 'Badkamer', exact: true })
-    .getByRole('button', { name: 'Ruimte goedkeuren', exact: true })
+    .getByRole('button', { name: 'Beoordeling bevestigen', exact: true })
+    .click();
+  await page
+    .getByRole('navigation', { name: 'Ruimtes', exact: true })
+    .getByRole('button', { name: /^Badkamer/ })
     .click();
   await expect(
     page
       .getByRole('region', { name: 'Badkamer', exact: true })
-      .getByRole('button', { name: 'Ruimte goedkeuren', exact: true }),
+      .getByRole('button', { name: 'Beoordeling bevestigen', exact: true }),
   ).toBeDisabled();
   await expect(
     page
@@ -204,7 +220,7 @@ test('talking prompts guide capture and conditional requirements close through e
   ).toBeVisible();
   await page.getByRole('link', { name: 'Rapport', exact: true }).click();
   await expect(page.getByRole('article', { name: 'Inspectierapport' })).toContainText(
-    'Is schade zichtbaar?: Nee',
+    /Is schade zichtbaar\?\s*Nee/,
   );
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(
     true,

@@ -42,26 +42,26 @@ func TestDeleteInspectionDossierAndFiles(t *testing.T) {
 			// Deleting an inspection must leave the property and its other inspections.
 			sibling := id()
 			f.request("POST", "/orgs/"+f.org+"/inspections", map[string]any{"id": sibling, "propertyId": pid, "kind": "pre", "formatVersionId": doc.ID}, 201)
-			outsider.request("DELETE", path, nil, 404)
-			f.request("DELETE", "/orgs/"+f.org+"/inspections/invalid", nil, 404)
+			outsider.request("DELETE", path+"/purge", map[string]any{"reason": "Test", "version": 1}, 404)
+			f.request("DELETE", "/orgs/"+f.org+"/inspections/invalid/purge", map[string]any{"reason": "Test", "version": 1}, 404)
 			var roleID string
 			var privileges []string
 			if err := f.a.db.QueryRow(ctx, "SELECT ro.id,ro.privileges FROM organisation_roles ro JOIN memberships m ON m.role_id=ro.id WHERE m.org_id=$1 AND m.user_id=$2", f.org, f.uid).Scan(&roleID, &privileges); err != nil {
 				t.Fatal(err)
 			}
 			exec("UPDATE organisation_roles SET privileges=ARRAY['inspections.read'] WHERE id=$1", roleID)
-			f.request("DELETE", path, nil, 403)
+			f.request("DELETE", path+"/purge", map[string]any{"reason": "Test", "version": 1}, 403)
 			exec("UPDATE organisation_roles SET privileges=$1 WHERE id=$2", privileges, roleID)
 			var key string
 			if err := f.a.db.QueryRow(ctx, "SELECT object_key FROM media WHERE id=$1", photo).Scan(&key); err != nil {
 				t.Fatal(err)
 			}
-			f.request("DELETE", path, nil, 204)
+			f.archiveAndPurge(path)
 			for _, suffix := range []string{"", "/report"} {
 				f.request("GET", path+suffix, nil, 404)
 			}
 			f.request("GET", "/orgs/"+f.org+"/media/"+photo, nil, 404)
-			f.request("DELETE", path, nil, 404)
+			f.request("DELETE", path+"/purge", map[string]any{"reason": "Test", "version": 1}, 404)
 			f.request("GET", "/orgs/"+f.org+"/properties/"+pid, nil, 200)
 			f.request("GET", "/orgs/"+f.org+"/inspections/"+sibling, nil, 200)
 			for _, table := range []string{"property_events", "format_review_events", "scope_jobs", "format_answers", "transcription_jobs", "norm_assessments", "reports", "observations", "processing_jobs", "media", "batches", "rooms"} {
@@ -98,4 +98,12 @@ func TestDeleteInspectionDossierAndFiles(t *testing.T) {
 			f.request("POST", path+"/batches", map[string]any{"id": id(), "roomId": room, "mediaIds": []string{id()}}, 404)
 		})
 	}
+}
+
+func (f *fixture) archiveAndPurge(path string) {
+	f.t.Helper()
+	d := f.request("GET", path, nil, 200)
+	version := int(d["inspection"].(map[string]any)["revision"].(float64))
+	f.request("POST", path+"/archive", map[string]any{"reason": "Test cleanup", "version": version}, 200)
+	f.request("DELETE", path+"/purge", map[string]any{"reason": "Test cleanup", "version": version + 1}, 204)
 }

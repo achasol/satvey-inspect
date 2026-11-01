@@ -1,3 +1,4 @@
+import { platformFetch, prepareResponseResources, protectedURL } from './platform';
 export class ApiError extends Error {
   constructor(
     public status: number,
@@ -25,7 +26,7 @@ async function request(path: string, options: RequestInit = {}): Promise<Respons
   if (options.body && typeof options.body === 'string')
     headers.set('Content-Type', 'application/json');
   if (options.method && options.method !== 'GET') headers.set('X-Satvey-Request', '1');
-  const response = await fetch(`/api/v1${path}`, {
+  const response = await platformFetch(`/api/v1${path}`, {
     ...options,
     headers,
     credentials: 'same-origin',
@@ -39,12 +40,16 @@ async function request(path: string, options: RequestInit = {}): Promise<Respons
 }
 export async function api<T>(path: string, options: RequestInit = {}): Promise<T> {
   const response = await request(path, options);
-  return response.headers.get('content-type')?.includes('json')
-    ? response.json()
-    : (undefined as T);
+  if (!response.headers.get('content-type')?.includes('json')) return undefined as T;
+  const value = (await response.json()) as T;
+  await prepareResponseResources(value, path);
+  return value;
 }
-export async function reportPDF(path: string) {
-  const response = await request(`${path}/report/pdf`, json('POST', {}));
+export async function reportPDF(path: string, reportId?: string) {
+  const response = await request(
+    `${path}/report/pdf${reportId ? `?reportId=${encodeURIComponent(reportId)}` : ''}`,
+    json('POST', {}),
+  );
   if (!response.headers.get('content-type')?.includes('application/pdf'))
     throw new Error('De server heeft geen PDF teruggestuurd. Probeer opnieuw.');
   const disposition = response.headers.get('content-disposition') || '';
@@ -60,6 +65,13 @@ export async function reportPDF(path: string) {
   } else if (plain) filename = plain[1] || plain[2];
   return { blob: await response.blob(), filename };
 }
+export async function handoverFile(path: string, id: string, format: 'zip' | 'json' | 'csv') {
+  const response = await request(`${path}/handovers/${id}/export?format=${format}`);
+  const expected = { zip: 'application/zip', json: 'application/json', csv: 'text/csv' }[format];
+  if (!response.headers.get('content-type')?.includes(expected))
+    throw new Error('Het overdrachtsbestand kon niet worden ontvangen. Probeer opnieuw.');
+  return { blob: await response.blob(), filename: `satvey-overdracht-${id}.${format}` };
+}
 export const json = (method: string, body: unknown): RequestInit => ({
   method,
   body: JSON.stringify(body),
@@ -68,4 +80,5 @@ export type * from './types';
 import type { Organisation } from './types';
 export const can = (org: Organisation, privilege: string) =>
   org.privileges?.includes(privilege) ?? false;
-export const mediaURL = (org: string, id: string) => `/api/v1/orgs/${org}/media/${id}`;
+export const mediaURL = (org: string, id: string) =>
+  protectedURL(`/api/v1/orgs/${org}/media/${id}`);

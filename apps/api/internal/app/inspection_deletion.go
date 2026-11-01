@@ -12,7 +12,12 @@ import (
 )
 
 func (a *app) deleteInspection(w http.ResponseWriter, r *http.Request) error {
-	if _, _, err := a.access(r, true); err != nil {
+	u, _, err := a.require(r, "inspections.purge")
+	if err != nil {
+		return err
+	}
+	in, err := readDossierAction(w, r)
+	if err != nil {
 		return err
 	}
 	inspection, org := r.PathValue("inspection"), r.PathValue("org")
@@ -24,28 +29,77 @@ func (a *app) deleteInspection(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 	defer tx.Rollback(r.Context())
-	var locked string
-	// The same lock used by uploads, reviews and worker result commits prevents
-	// new evidence from being added while the dossier is removed.
-	if err = tx.QueryRow(r.Context(), "SELECT id FROM inspections WHERE id=$1 AND org_id=$2 FOR UPDATE", inspection, org).Scan(&locked); err != nil {
-		return err
-	}
-	if _, err = tx.Exec(r.Context(), `INSERT INTO inspection_file_deletions(object_key,org_id)
-	 SELECT object_key,org_id FROM media WHERE inspection_id=$1 AND org_id=$2 ON CONFLICT DO NOTHING`, inspection, org); err != nil {
-		return err
-	}
-	for _, table := range []string{"property_events", "format_review_events", "scope_jobs", "format_answers", "transcription_jobs", "norm_assessments", "reports", "observations", "processing_jobs", "media", "batches", "rooms"} {
-		if _, err = tx.Exec(r.Context(), "DELETE FROM "+table+" WHERE inspection_id=$1 AND org_id=$2", inspection, org); err != nil {
-			return err
-		}
-	}
-	if _, err = tx.Exec(r.Context(), "DELETE FROM inspections WHERE id=$1 AND org_id=$2", inspection, org); err != nil {
+	if err = a.purgeInspection(r.Context(), tx, org, inspection, u.ID, in); err != nil {
 		return err
 	}
 	if err = tx.Commit(r.Context()); err != nil {
 		return err
 	}
 	w.WriteHeader(http.StatusNoContent)
+	return nil
+}
+
+func (a *app) purgeInspection(ctx context.Context, tx pgx.Tx, org, inspection, actor string, in dossierAction) error {
+	var err error
+	var deliveryUnlocked bool
+	if err = tx.QueryRow(ctx, `SELECT pg_try_advisory_xact_lock(hashtextextended($1,0))`, "vera-inspection:"+inspection).Scan(&deliveryUnlocked); err != nil {
+		return err
+	}
+	if !deliveryUnlocked {
+		return fail(409, "Er wordt een overdracht verwerkt. Verwijder de inspectie nadat deze poging is afgerond")
+	}
+	var locked string
+	var archived bool
+	var version int
+	// The same lock used by uploads, reviews and worker result commits prevents
+	// new evidence from being added while the dossier is removed.
+	if err = tx.QueryRow(ctx, "SELECT id,archived_at IS NOT NULL,revision FROM inspections WHERE id=$1 AND org_id=$2 FOR UPDATE", inspection, org).Scan(&locked, &archived, &version); err != nil {
+		return err
+	}
+	if !archived || version != in.Version {
+		return fail(409, "Archiveer eerst het actuele dossier voordat je het permanent verwijdert")
+	}
+	var protected bool
+	if err = tx.QueryRow(ctx, `SELECT (SELECT retention_hold FROM inspections WHERE id=$2 AND org_id=$1) OR EXISTS(SELECT 1 FROM inspections WHERE org_id=$1 AND (corrects_inspection_id=$2 OR superseded_by=$2)) OR EXISTS(SELECT 1 FROM internal_sync_jobs WHERE org_id=$1 AND inspection_id=$2 AND status NOT IN ('done','cancelled')) OR EXISTS(SELECT 1 FROM handover_deliveries WHERE org_id=$1 AND inspection_id=$2 AND status NOT IN ('accepted','manual'))`, org, inspection).Scan(&protected); err != nil {
+		return err
+	}
+	if protected {
+		return fail(409, "Dit dossier hoort bij een correctiereeks of actieve overdracht en kan niet afzonderlijk worden verwijderd")
+	}
+	var activeMail bool
+	if err = tx.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM report_deliveries d JOIN mail_jobs m ON m.id=d.mail_job_id WHERE d.org_id=$1 AND d.inspection_id=$2 AND m.status IN ('pending','processing'))`, org, inspection).Scan(&activeMail); err != nil {
+		return err
+	}
+	if activeMail {
+		return fail(409, "Rond eerst de actieve rapportverzending af")
+	}
+	if _, err = tx.Exec(ctx, `UPDATE mail_jobs SET status='cancelled',payload='' WHERE id IN (SELECT mail_job_id FROM report_deliveries WHERE org_id=$1 AND inspection_id=$2)`, org, inspection); err != nil {
+		return err
+	}
+	if _, err = tx.Exec(ctx, `INSERT INTO inspection_file_deletions(object_key,org_id)
+	 SELECT object_key,org_id FROM media WHERE inspection_id=$1 AND org_id=$2 ON CONFLICT DO NOTHING`, inspection, org); err != nil {
+		return err
+	}
+	if _, err = tx.Exec(ctx, `INSERT INTO inspection_file_deletions(object_key,org_id) SELECT object_key,org_id FROM handover_artifacts WHERE inspection_id=$1 AND org_id=$2 ON CONFLICT DO NOTHING`, inspection, org); err != nil {
+		return err
+	}
+	if _, err = tx.Exec(ctx, `INSERT INTO inspection_file_deletions(object_key,org_id) SELECT object_key,org_id FROM report_artifacts WHERE inspection_id=$1 AND org_id=$2 ON CONFLICT DO NOTHING`, inspection, org); err != nil {
+		return err
+	}
+	for _, table := range []string{"property_events", "format_review_events", "scope_jobs", "format_answers", "transcription_jobs", "norm_assessments", "reports", "observations", "processing_jobs", "media", "batches", "rooms"} {
+		if _, err = tx.Exec(ctx, "DELETE FROM "+table+" WHERE inspection_id=$1 AND org_id=$2", inspection, org); err != nil {
+			return err
+		}
+	}
+	if _, err = tx.Exec(ctx, "DELETE FROM inspections WHERE id=$1 AND org_id=$2", inspection, org); err != nil {
+		return err
+	}
+	if _, err = tx.Exec(ctx, `DELETE FROM inspection_events WHERE org_id=$1 AND inspection_id=$2`, org, inspection); err != nil {
+		return err
+	}
+	if err = recordEvent(ctx, tx, org, inspection, actor, "purged", map[string]string{"reason": in.Reason}); err != nil {
+		return err
+	}
 	return nil
 }
 

@@ -4,11 +4,13 @@
 <meta charset="utf-8">
 <title>Inspectierapport · {{.Inspection.Address}} · {{.Reference}}</title>
 <style>
+
 @font-face { font-family: 'DM Sans'; src: url('dm-sans-regular.ttf') format('truetype'); font-weight: 400; font-style: normal; font-display: block; }
 @font-face { font-family: 'DM Sans'; src: url('dm-sans-semibold.ttf') format('truetype'); font-weight: 600; font-style: normal; font-display: block; }
 @font-face { font-family: 'DM Sans'; src: url('dm-sans-bold.ttf') format('truetype'); font-weight: 700; font-style: normal; font-display: block; }
 * { box-sizing: border-box; }
 html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+ .inline-photos { display:flex; flex-wrap:wrap; gap:3mm; margin:3mm 0; } .inline-photos figure { width:72mm; } .inline-photos img { width:100%; max-height:65mm; object-fit:contain; }
 body { margin: 0; color: #293128; font: 10pt/1.55 'DM Sans', Arial, sans-serif; }
 h1,h2,h3,h4 { line-height: 1.25; break-before: auto; break-after: avoid; break-inside: avoid; font-weight: 600; }
 h1 { font-size: 15pt; margin: 0 0 8mm; color: #536044; }
@@ -69,23 +71,24 @@ figcaption strong { color: #293128; margin-right: 1mm; }
 .endnote { margin-top: 8mm; padding-top: 4mm; border-top: 1px solid #cdd2c4; font-size: 8pt; color: #626c5b; }
 .signature { break-inside: avoid; margin: 5mm 0; padding: 4mm; border: 1px solid #cdd2c4; }
 .signature svg { display: block; width: 90mm; max-width: 100%; height: 27mm; }
+{{if .Organisation.Tint}}h1,h2,h3 {color:{{.Organisation.PrimaryColor}};} .status {border-color:{{.Organisation.PrimaryColor}};}{{end}}
 </style>
 </head>
 <body>
 <div class="hero">
   <div class="brand">
     <svg viewBox="0 0 36 36" aria-hidden="true"><rect width="36" height="36" rx="9" fill="#536044"/><path d="M9 27V14l9-7 9 7v13M13 27V16l5-4 5 4v11M16 27v-9l2-1.5 2 1.5v9" fill="none" stroke="#f7f8f0" stroke-width="1.7" stroke-linejoin="round"/></svg>
-    <span class="wordmark">satvey.</span><span class="organisation">{{.Organisation.Name}}</span>
+    {{if .Organisation.LogoAssetID}}<img src="organisation-logo.png" alt="" style="max-height:18mm;max-width:65mm;object-fit:contain"/>{{else}}<span class="wordmark">satvey.</span>{{end}}<span class="organisation">{{.Organisation.Name}}</span>
   </div>
   <h1>Inspectierapport</h1>
   <p class="address">{{.Inspection.Address}}</p>
   <p class="location">{{.Inspection.Postcode}} {{.Inspection.City}}</p>
   <span class="status {{if not .Final}}draft{{end}}">{{.Kind}} · {{.Status}}</span>
-  {{if not .Final}}<p class="draft-note"><strong>Concept — nog niet definitief.</strong> Dit document bevat alleen beoordeelde opnamen met goedgekeurde bevindingen en bevestigde normbeoordelingen. Openstaande en uitgesloten opnamen zijn niet opgenomen in de inhoud.</p>{{end}}
+  {{if not .Final}}<p class="draft-note"><strong>Concept — nog niet definitief.</strong> Dit document bevat alleen beoordeelde opnamen met goedgekeurde bevindingen en bevestigde kwaliteitsbeoordelingen. Openstaande en uitgesloten opnamen zijn niet opgenomen in de inhoud.</p>{{end}}
   <table class="metadata" aria-label="Rapportgegevens"><tbody>
     <tr><td><span class="key">Rapportreferentie</span><span class="value">{{.Reference}}</span></td><td><span class="key">{{if .Final}}Vastgelegd op{{else}}Concept gegenereerd op{{end}}</span><span class="value">{{.Date}}</span></td></tr>
     <tr><td><span class="key">Afspraak</span><span class="value">{{.Appointment}}</span></td><td><span class="key">Aangemaakt door</span><span class="value">{{.CreatedBy.Name}}</span></td></tr>
-    {{if .Format}}<tr><td><span class="key">Inspectieformat</span><span class="value">{{.Format.Name}} &#183; versie {{.Format.Number}}</span></td><td><span class="key">Beoordeling</span><span class="value">Verplichte vragen en toegelichte uitzonderingen</span></td></tr>{{end}}
+    {{if .Format}}<tr><td><span class="key">Inspectiesjabloon</span><span class="value">{{.Format.Name}} &#183; versie {{.Format.Number}}</span></td><td><span class="key">Beoordeling</span><span class="value">Verplichte vragen en toegelichte uitzonderingen</span></td></tr>{{end}}
   {{if .FinalisedBy.Name}}<tr><td><span class="key">Vastgelegd door</span><span class="value">{{.FinalisedBy.Name}}</span></td><td><span class="key">PDF gegenereerd op</span><span class="value">{{.GeneratedAt}}</span></td></tr>{{end}}
   </tbody></table>
   {{with .Inspection.PropertySnapshot}}
@@ -106,13 +109,18 @@ figcaption strong { color: #293128; margin-right: 1mm; }
   {{end}}
 </div>
 <div class="room-start overview-start"><h2 id="overview" aria-label="1. Overzicht">1. Overzicht</h2>
+{{if .Inspection.VisitedAt}}<p><strong>Bezoekdatum:</strong> {{.Inspection.VisitedAt.Format "02-01-2006 15:04 MST"}}</p>{{end}}
+{{if .Agreements}}<p><strong>{{len .Agreements}} afspraken</strong> vastgelegd. Zie afspraken en opvolging voor toelichting, verantwoordelijkheid en bronfoto’s.</p>{{end}}
+{{if .Disagreement}}<h3>Vastgelegd bezwaar</h3><p>{{.Disagreement}}</p>{{end}}
+{{if .SigningException}}<h3>Bewoner heeft niet ondertekend</h3><p>{{if eq .SigningException.Outcome "absent"}}Afwezig{{else if eq .SigningException.Outcome "refused"}}Geweigerd{{else}}Niet in staat{{end}} - {{.SigningException.Note}}</p>{{end}}
+{{if .Acknowledgement}}<p>{{.Acknowledgement}}</p>{{else if .Format}}{{if .Format.Acknowledgement}}<p>{{.Format.Acknowledgement}}</p>{{end}}{{end}}
 <table class="summary" aria-label="Samenvatting"><tbody><tr>
   <td><strong>{{.Reviewed}}</strong><span>beoordeelde opnamen</span></td>
   <td><strong>{{len .Observations}}</strong><span>goedgekeurde bevindingen</span></td>
   <td><strong>{{len .Media}}</strong><span>bronfoto’s in dit rapport</span></td>
 </tr></tbody></table></div>
 <p class="muted">{{.Pending}} opnamen nog te beoordelen · {{.Excluded}} opnamen uitgesloten. Een niet opgenomen ruimte of een opname zonder bevinding is geen verklaring dat deze vrij is van gebreken.</p>
-{{if .Norms}}<p class="scope"><strong>Normenkader:</strong> {{.Norms.Name}} · versie {{.Norms.Number}}</p>
+{{if .Norms}}<p class="scope"><strong>Kwaliteitskader:</strong> {{.Norms.Name}} · versie {{.Norms.Number}}</p>
 <p class="muted">Bevestigde beoordelingen: {{.Acceptable}} acceptabel · {{.Unacceptable}} niet acceptabel · {{.Unknown}} niet te beoordelen · {{.Inapplicable}} niet van toepassing.</p>{{end}}
 <table class="coverage" aria-label="Overzicht per ruimte">
   <thead><tr><th scope="col">Ruimte</th><th scope="col">Opnamen beoordeeld</th><th scope="col">Status</th></tr></thead>
@@ -124,24 +132,25 @@ figcaption strong { color: #293128; margin-right: 1mm; }
 {{if not .Sections}}<p>Er zijn nog geen beoordeelde opnamen opgenomen in dit rapport.</p>{{end}}
 {{range .Sections}}
 <section class="room" aria-labelledby="{{.Anchor}}">
-  <div class="room-start"><h3 id="{{.Anchor}}">{{.Number}} {{.Name}}</h3><p class="muted">{{.Reviewed}} beoordeelde opnamen · {{len .Observations}} goedgekeurde bevindingen · {{.NormCount}} bevestigde normbeoordelingen</p></div>
+  <div class="room-start"><h3 id="{{.Anchor}}">{{.Number}} {{.Name}}</h3><p class="muted">{{.Reviewed}} beoordeelde opnamen · {{len .Observations}} goedgekeurde bevindingen · {{.NormCount}} bevestigde kwaliteitsbeoordelingen</p></div>
   {{if .Answers}}<h4>Inspectieresultaten</h4>{{end}}
-  {{range .Answers}}<article class="assessment"><div class="finding-head"><h4>{{.Title}}</h4><p class="value">{{.Value}}</p>{{if and .Result (ne .Result .Value)}}<p class="outcome {{.Outcome}}">{{.Result}}</p>{{end}}</div>{{if .Reason}}<p class="text">{{.Reason}}</p>{{end}}{{if .Photos}}<p class="references">Bronfoto's: {{range .Photos}}<a href="#photo-{{.ID}}">{{.Number}}</a>{{end}}</p>{{end}}</article>{{end}}
+  {{range .Answers}}<article class="assessment"><div class="finding-head"><h4>{{.Title}}</h4><p class="value">{{.Value}}</p>{{if and .Result (ne .Result .Value)}}<p class="outcome {{.Outcome}}">{{.Result}}</p>{{end}}</div>{{if .Reason}}<p class="text">{{.Reason}}</p>{{end}}{{if .ScoreDetail}}{{if .ScoreDetail.Score}}<p>Score {{.ScoreDetail.Score}} · Herstel: {{.ScoreDetail.RepairLabel}} · Kosten: {{.ScoreDetail.CostLabel}}</p>{{if .ScoreDetail.Note}}<p class="text">Toelichting verantwoordelijkheid: {{.ScoreDetail.Note}}</p>{{end}}{{end}}{{end}}{{if .Photos}}<div class="inline-photos">{{range .Photos}}<figure{{if .Anchor}} id="{{.Anchor}}"{{end}}><img src="{{.File}}" alt="{{.Number}} · {{.Name}}"><figcaption>{{.Number}} · {{.Name}}</figcaption></figure>{{end}}</div>{{end}}{{if .Photos}}<p class="references">Bronfoto's: {{range .Photos}}<a href="#photo-{{.ID}}">{{.Number}}</a>{{end}}</p>{{end}}</article>{{end}}
   {{if not .Observations}}<p>Geen goedgekeurde bevindingen vastgelegd voor deze ruimte.</p>{{end}}
   {{range .Observations}}<article class="finding">
     <div class="finding-head"><h4>{{.Title}}</h4>{{if .Label}}<span class="label">{{.Label}}</span>{{end}}</div>
     <p class="text">{{.Description}}</p>
-    {{if .Photos}}<p class="references">Bronfoto’s: {{range .Photos}}<a href="#photo-{{.ID}}">{{.Number}}</a>{{end}}</p>{{end}}
+    {{if .Photos}}<div class="inline-photos">{{range .Photos}}<figure{{if .Anchor}} id="{{.Anchor}}"{{end}}><img src="{{.File}}" alt="{{.Number}} · {{.Name}}"><figcaption>{{.Number}} · {{.Name}}</figcaption></figure>{{end}}</div>{{end}}{{if .Photos}}<p class="references">Bronfoto’s: {{range .Photos}}<a href="#photo-{{.ID}}">{{.Number}}</a>{{end}}</p>{{end}}
   </article>{{end}}
-  {{if .Assessments}}<h4>Normbeoordelingen</h4>{{end}}
+  {{if .Assessments}}<h4>Kwaliteitsbeoordelingen</h4>{{end}}
   {{range .Assessments}}<article class="assessment">
     <div class="finding-head"><p><strong>{{if .Code}}{{.Code}} · {{end}}{{.Title}}</strong></p><p class="outcome {{.Outcome}}">{{.Result}}</p></div>
-    <p class="text">{{.Reason}}</p>
-    {{if .Photos}}<p class="references">Bronfoto’s: {{range .Photos}}<a href="#photo-{{.ID}}">{{.Number}}</a>{{end}}</p>{{end}}
+    <p class="text">{{.Reason}}</p>{{if .ScoreDetail}}{{if .ScoreDetail.Score}}<p>Score {{.ScoreDetail.Score}} · Herstel: {{.ScoreDetail.RepairLabel}} · Kosten: {{.ScoreDetail.CostLabel}}</p>{{if .ScoreDetail.Note}}<p class="text">Toelichting verantwoordelijkheid: {{.ScoreDetail.Note}}</p>{{end}}{{end}}{{end}}
+    {{if .Photos}}<div class="inline-photos">{{range .Photos}}<figure{{if .Anchor}} id="{{.Anchor}}"{{end}}><img src="{{.File}}" alt="{{.Number}} · {{.Name}}"><figcaption>{{.Number}} · {{.Name}}</figcaption></figure>{{end}}</div>{{end}}{{if .Photos}}<p class="references">Bronfoto’s: {{range .Photos}}<a href="#photo-{{.ID}}">{{.Number}}</a>{{end}}</p>{{end}}
   </article>{{end}}
-  {{if .Photos}}<h4>Fotobewijs</h4><table class="photos" role="presentation"><tbody>{{range .PhotoRows}}<tr>{{range .}}<td><figure id="photo-{{.ID}}"><img src="{{.File}}" alt="{{.Number}} · {{.Name}}"><figcaption><strong>{{.Number}}</strong> {{.Name}}</figcaption></figure></td>{{end}}{{if eq (len .) 1}}<td></td>{{end}}</tr>{{end}}</tbody></table>{{end}}
+  {{if .Photos}}<p class="photo-heading"><strong>Fotobewijs</strong></p><table class="photos" role="presentation"><tbody>{{range .PhotoRows}}<tr>{{range .}}<td><figure id="photo-{{.ID}}"><img src="{{.File}}" alt="{{.Number}} · {{.Name}}"><figcaption><strong>{{.Number}}</strong> {{.Name}}</figcaption></figure></td>{{end}}{{if eq (len .) 1}}<td></td>{{end}}</tr>{{end}}</tbody></table>{{end}}
 </section>
 {{end}}
+{{if .AgreementSections}}<section aria-label="Afspraken en opvolging"><h2>Afspraken en opvolging</h2>{{range .AgreementSections}}<article class="finding"><h4>{{.Title}}</h4><p class="text">{{.Description}}</p><p>Verantwoordelijk: {{if eq .Responsibility "resident"}}Bewoner{{else}}Corporatie{{end}}{{if .DueDate}} · Uiterlijk {{.DueDate}}{{end}}</p>{{if .Note}}<p>{{.Note}}</p>{{end}}{{if .Photos}}<div class="inline-photos">{{range .Photos}}<figure{{if .Anchor}} id="{{.Anchor}}"{{end}}><img src="{{.File}}" alt="{{.Number}} · {{.Name}}"><figcaption>{{.Number}} · {{.Name}}</figcaption></figure>{{end}}</div>{{end}}</article>{{end}}</section>{{end}}
 {{if .Signatures}}<section aria-label="Handtekeningen"><h2>3. Handtekeningen</h2>
 {{range .Signatures}}<div class="signature"><strong>{{.Name}}</strong><p>{{.RoleLabel}}</p>
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 180" role="img" aria-label="Handtekening van {{.Name}}"><path d="{{.Path}}" fill="none" stroke="#293128" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" /></svg>

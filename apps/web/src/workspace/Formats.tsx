@@ -1,3 +1,5 @@
+import { useMobile } from './ResponsiveTabs';
+import { protectedURL } from './platform';
 import { FormatSelect, evidenceLabels, questionLabels } from './formatFields';
 import { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
@@ -41,6 +43,7 @@ export function FormatsModule({
   scope: string;
   org: Organisation;
 }) {
+  const mobile = useMobile();
   const { data, error } = useResource<InspectionFormat[]>(scope, `${base}/formats`),
     location = useLocation(),
     navigate = useNavigate();
@@ -58,12 +61,12 @@ export function FormatsModule({
     <>
       <div className={s.pageHeading}>
         <div>
-          <h1>Inspectieformats</h1>
+          <h1>Inspectiesjablonen</h1>
           <p className={s.muted}>Vragen, bewijs en spreekhulp per ruimte.</p>
         </div>
-        {can(org, 'formats.manage') && (
+        {!mobile && can(org, 'formats.manage') && (
           <Button icon={<Plus size={17} />} onClick={() => setCreate(true)}>
-            Format toevoegen
+            Inspectiesjabloon toevoegen
           </Button>
         )}
       </div>
@@ -76,8 +79,11 @@ export function FormatsModule({
         {!data?.length && (
           <section className={s.empty}>
             <FileText size={32} />
-            <h2>Nog geen inspectieformats</h2>
-            <p>Maak een concept, koppel normen en publiceer het voordat inspecteurs beginnen.</p>
+            <h2>Nog geen inspectiesjablonen</h2>
+            <p>
+              Maak een concept, koppel beoordelingscriteria en publiceer het voordat inspecteurs
+              beginnen.
+            </p>
           </section>
         )}
         {data?.map((d) => (
@@ -99,7 +105,7 @@ export function FormatsModule({
       <Dialog
         open={create}
         onOpenChange={setCreate}
-        title="Inspectieformat toevoegen"
+        title="Inspectiesjabloon toevoegen"
         description="Begin met een bewerkbaar concept met gangbare ruimtes."
       >
         <form
@@ -140,7 +146,7 @@ export function FormatsModule({
             <option value="pre">Voorinspectie</option>
             <option value="final">Eindinspectie</option>
           </FormatSelect>
-          <FormatSelect label="Normenkader" value={norm} onChange={setNorm}>
+          <FormatSelect label="Kwaliteitskader" value={norm} onChange={setNorm}>
             <option value="">Later koppelen</option>
             {norms
               ?.filter((n) => n.status === 'published')
@@ -174,6 +180,7 @@ function FormatEditor({
   org: Organisation;
   version: string;
 }) {
+  const mobile = useMobile();
   const { data, error, reload } = useResource<InspectionFormat>(
       scope,
       `${base}/formats/${version}`,
@@ -208,8 +215,8 @@ function FormatEditor({
     window.addEventListener('beforeunload', guard);
     return () => window.removeEventListener('beforeunload', guard);
   }, [dirty]);
-  if (!draft) return <p role={error ? 'alert' : 'status'}>{error || 'Format laden…'}</p>;
-  const editable = draft.status === 'draft' && can(org, 'formats.manage'),
+  if (!draft) return <p role={error ? 'alert' : 'status'}>{error || 'Inspectiesjabloon laden…'}</p>;
+  const editable = !mobile && draft.status === 'draft' && can(org, 'formats.manage'),
     category = draft.scopes.find((c) => c.id === selected) || draft.scopes[0];
   function patch(v: Partial<InspectionFormat>) {
     setDraft((d) => (d ? { ...d, ...v } : d));
@@ -256,7 +263,7 @@ function FormatEditor({
           json('POST', { revision: current.revision }),
         );
         await reload();
-        setNotice('Format gepubliceerd');
+        setNotice('Inspectiesjabloon gepubliceerd');
       } else setNotice('Concept bewaard');
     } catch (e) {
       setFailure(message(e));
@@ -275,7 +282,7 @@ function FormatEditor({
         }}
       >
         <ArrowLeft size={16} />
-        Inspectieformats
+        Inspectiesjablonen
       </Link>
       <div className={s.pageHeading}>
         <div>
@@ -303,6 +310,7 @@ function FormatEditor({
               </Button>
             </>
           ) : (
+            !mobile &&
             can(org, 'formats.manage') && (
               <Button
                 onClick={async () => {
@@ -336,7 +344,7 @@ function FormatEditor({
           <fieldset disabled={!editable || busy} className={f.settings}>
             <div className={s.twoColumns}>
               <Field
-                label="Formatnaam"
+                label="Naam inspectiesjabloon"
                 value={draft.name}
                 maxLength={160}
                 onChange={(e) => patch({ name: e.target.value })}
@@ -356,14 +364,25 @@ function FormatEditor({
               value={draft.description}
               onChange={(e) => patch({ description: e.target.value })}
             />
+            <Field
+              label="Ondertekenverklaring"
+              value={draft.acknowledgement || ''}
+              maxLength={4000}
+              onChange={(e) => patch({ acknowledgement: e.target.value })}
+            />
+            <p>
+              {draft.signingPolicy === 'legacy'
+                ? 'Bestaand sjabloon: ondertekening optioneel. Een nieuwe versie gebruikt het nieuwe ondertekenbeleid.'
+                : 'Inspecteur ondertekent; bewoner ondertekent of krijgt een vastgelegde uitzondering.'}
+            </p>
             <FormatSelect
-              label="Gepubliceerd normenkader"
+              label="Gepubliceerd kwaliteitskader"
               value={draft.normVersionId || ''}
               onChange={(v) => {
                 if (
                   draft.scopes.some((s) => s.questions.some((q) => q.ruleId)) &&
                   !window.confirm(
-                    'Ander normenkader kiezen? Bestaande normkoppelingen worden gewist.',
+                    'Ander kwaliteitskader kiezen? Bestaande criteriumkoppelingen worden gewist.',
                   )
                 )
                   return;
@@ -380,7 +399,7 @@ function FormatEditor({
                 });
               }}
             >
-              <option value="">Kies een normenkader</option>
+              <option value="">Kies een kwaliteitskader</option>
               {norms
                 ?.filter((n) => n.status === 'published')
                 .map((n) => (
@@ -436,7 +455,7 @@ function FormatEditor({
                   />
                   {!category.property && (
                     <Field
-                      label="Ruimtetype in normenkader"
+                      label="Ruimtetype in kwaliteitskader"
                       maxLength={100}
                       list="norm-room-types"
                       value={category.normRoom}
@@ -458,11 +477,9 @@ function FormatEditor({
                       checked={category.required}
                       onCheckedChange={(v) => patchScope({ required: v })}
                     />
-                    <Checkbox
-                      label="Meerdere ruimtes mogelijk"
-                      checked={category.repeatable}
-                      onCheckedChange={(v) => patchScope({ repeatable: v })}
-                    />
+                    <p className={s.muted}>
+                      Inspecteurs kunnen extra ruimtes van dit type toevoegen.
+                    </p>
                   </div>
                 )}
                 {category.questions.map((q, index) => (
@@ -552,7 +569,7 @@ function FormatEditor({
                         ))}
                       </FormatSelect>
                       <FormatSelect
-                        label="Benodigd bewijs"
+                        label="Benodigde onderbouwing"
                         value={q.evidence}
                         onChange={(v) =>
                           patchQuestion(q.id, { evidence: v as FormatQuestion['evidence'] })
@@ -600,7 +617,7 @@ function FormatEditor({
                       />
                     )}
                     <FormatSelect
-                      label="Gekoppelde norm"
+                      label="Gekoppeld criterium"
                       value={q.ruleId}
                       onChange={(v) => {
                         const rule = norm?.rules.find((r) => r.id === v);
@@ -611,7 +628,7 @@ function FormatEditor({
                         });
                       }}
                     >
-                      <option value="">Geen normkoppeling</option>
+                      <option value="">Geen criteriumkoppeling</option>
                       {norm?.rules
                         .filter(
                           (r) =>
@@ -646,7 +663,7 @@ function FormatEditor({
                               {ex.assetId && (
                                 <img
                                   alt={ex.caption}
-                                  src={`/api/v1${base}/norm-assets/${ex.assetId}`}
+                                  src={protectedURL(`/api/v1${base}/norm-assets/${ex.assetId}`)}
                                 />
                               )}
                               <figcaption>{ex.caption}</figcaption>
@@ -669,7 +686,7 @@ function FormatEditor({
                         ))}
                     </FormatSelect>
                     <Field
-                      label="Instructie voor bewijs en AI"
+                      label="Instructie voor onderbouwing en AI"
                       maxLength={3000}
                       value={q.instruction}
                       onChange={(e) => patchQuestion(q.id, { instruction: e.target.value })}
@@ -777,7 +794,7 @@ function FormatPreview({ format }: { format: InspectionFormat }) {
               : c.required
                 ? 'Verplicht of expliciet afmelden'
                 : 'Optioneel toe te voegen'}
-            {c.repeatable ? ' · herhaalbaar' : ''}
+            {!c.property ? ' · meerdere ruimtes mogelijk' : ''}
           </p>
           <h3>Bespreek deze punten</h3>
           <ul>
@@ -788,7 +805,7 @@ function FormatPreview({ format }: { format: InspectionFormat }) {
             ))}
           </ul>
           <details>
-            <summary>Alle vragen en bewijseisen ({c.questions.length})</summary>
+            <summary>Alle vragen en vereiste onderbouwing ({c.questions.length})</summary>
             {c.questions.map((q) => (
               <p key={q.id}>
                 <strong>{q.title}</strong> · {questionLabels[q.kind]} · {evidenceLabels[q.evidence]}

@@ -23,8 +23,7 @@
   font-size: 16px;
   margin: 0 0 12px;
 }
-.categories > button:not(:last-child),
-.categories > button.selected {
+.categories > button {
   border: 0;
   background: transparent;
   padding: 12px;
@@ -288,4 +287,17 @@
   white-space: normal;
   overflow-wrap: anywhere;
   max-width: 100%;
+}
+
+.summary {
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 1px solid var(--border);
+}
+.sources img {
+  width: 104px;
+  height: 78px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid var(--border);
 }

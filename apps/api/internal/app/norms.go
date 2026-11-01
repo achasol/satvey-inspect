@@ -28,6 +28,17 @@ func (a *app) normAssetsValid(ctx context.Context, q querier, org string, rules 
 				return fail(422, "Kies een actief element uit deze organisatie")
 			}
 		}
+		for _, level := range rule.ScoreLevels {
+			for _, reference := range level.References {
+				var exists bool
+				if e := q.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM norm_assets WHERE id=$1 AND org_id=$2 AND mime=$3)`, reference.AssetID, org, reference.MIME).Scan(&exists); e != nil {
+					return e
+				}
+				if !exists {
+					return fail(422, "Referentiebestand hoort niet bij deze organisatie of dit bestandstype")
+				}
+			}
+		}
 		for _, ex := range rule.Examples {
 			if ex.AssetID != "" {
 				var exists bool
@@ -45,7 +56,7 @@ func (a *app) normAssetsValid(ctx context.Context, q querier, org string, rules 
 func readNorm(ctx context.Context, q querier, org, version string) (normDocument, error) {
 	var d normDocument
 	if !validID(version) {
-		return d, fail(404, "Normenkader niet gevonden")
+		return d, fail(404, "Kwaliteitskader niet gevonden")
 	}
 	var rules, sources []byte
 	e := q.QueryRow(ctx, `SELECT id,framework_id,number,name,description,status,revision,rules,sources FROM norm_versions WHERE id=$1 AND org_id=$2`, version, org).Scan(&d.ID, &d.FrameworkID, &d.Number, &d.Name, &d.Description, &d.Status, &d.Revision, &rules, &sources)
@@ -80,7 +91,7 @@ func (a *app) normDetail(w http.ResponseWriter, r *http.Request) error {
 		return e
 	}
 	if d.Status != "published" && !a.hasPrivilege(r, "norms.manage") {
-		return fail(404, "Normenkader niet gevonden")
+		return fail(404, "Kwaliteitskader niet gevonden")
 	}
 	send(w, 200, d)
 	return nil
@@ -137,7 +148,7 @@ func (a *app) updateNorm(w http.ResponseWriter, r *http.Request) error {
 		return e
 	}
 	if !validID(r.PathValue("norm")) {
-		return fail(404, "Normenkader niet gevonden")
+		return fail(404, "Kwaliteitskader niet gevonden")
 	}
 	tx, e := a.db.Begin(r.Context())
 	if e != nil {
@@ -178,7 +189,7 @@ func (a *app) publishNorm(w http.ResponseWriter, r *http.Request) error {
 	}
 	defer tx.Rollback(r.Context())
 	if !validID(r.PathValue("norm")) {
-		return fail(404, "Normenkader niet gevonden")
+		return fail(404, "Kwaliteitskader niet gevonden")
 	}
 	if _, e = tx.Exec(r.Context(), "SELECT id FROM norm_versions WHERE id=$1 AND org_id=$2 FOR UPDATE", r.PathValue("norm"), r.PathValue("org")); e != nil {
 		return e

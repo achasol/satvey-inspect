@@ -17,3 +17,12 @@ groups:
         expr: satvey_jobs{status="failed"} > 0
         for: 5m
         annotations: { summary: 'Satvey jobs require investigation or manual continuation' }
+      - alert: SatveyVERAHandoverBlocked
+        expr: satvey_jobs{kind="vera_handover",status="blocked"} > 0
+        for: 5m
+        annotations:
+          { summary: 'VERA handovers require corrected configuration or manual continuation' }
+      - alert: SatveyVERAHandoverStalled
+        expr: satvey_job_oldest_seconds{kind="vera_handover",status=~"queued|processing"} > 900
+        for: 5m
+        annotations: { summary: 'A VERA handover has waited more than 15 minutes' }
