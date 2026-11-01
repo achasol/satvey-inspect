@@ -14,7 +14,7 @@ jobs:
   static:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with: { node-version: '22', cache: npm }
       - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
@@ -61,7 +61,7 @@ jobs:
       SATVEY_TEST_PROFILE: ci
       TEST_BROWSER_ARGS: --project=chromium --workers=1
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with: { node-version: '22' }
       - name: Select full browser matrix for nightly and release verification
@@ -80,7 +80,7 @@ jobs:
   images:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       - run: docker build -t satvey-web:verify . && docker build -t satvey-api:verify apps/api
       - name: Validate production web configuration
         run: docker run --rm --add-host api:127.0.0.1 satvey-web:verify nginx -t
