@@ -1,13 +1,6 @@
 name: Native build verification
 on:
-  pull_request:
-    paths:
-      [
-        'apps/web/**',
-        'package-lock.json',
-        'scripts/build-mobile.mjs',
-        '.github/workflows/mobile.yml',
-      ]
+  # Automatic CI/CD is disabled; run this workflow manually when needed.
   workflow_dispatch:
     inputs:
       api_origin:

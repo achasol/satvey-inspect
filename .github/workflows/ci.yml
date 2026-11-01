@@ -1,9 +1,6 @@
 name: Verify
 on:
-  push:
-  pull_request:
-  schedule:
-    - cron: '17 3 * * *'
+  # Automatic CI/CD is disabled; run this workflow manually when needed.
   workflow_dispatch:
 permissions:
   contents: read

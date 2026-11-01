@@ -10,7 +10,7 @@ Android requires Java 21 and Android SDK 36. From `apps/web/android`, run `./gra
 
 iOS requires a Mac/Xcode supporting the pinned Capacitor SDK. Open `apps/web/ios/App/App.xcodeproj`, select the owner's development team, register bundle identifier/capabilities, set signing and increment marketing/build versions. Archive the **App** scheme for a physical iOS device. Export/upload through Xcode Organizer or the owner's authenticated release pipeline. The checked-in package uses Swift Package Manager.
 
-[Native build verification](../.github/workflows/mobile.yml) builds Android debug/unsigned release and an unsigned iOS simulator app. Pull requests use an explicitly invalid API origin solely for compilation; those artifacts cannot serve customer visits. Dispatch with the real origin for device acceptance. This workflow does not sign, submit or prove store acceptance. Windows execution of `cap sync` does not compile Swift or Android.
+[Native build verification](../.github/workflows/mobile.yml) builds Android debug/unsigned release and an unsigned iOS simulator app. Automatic runs are disabled; dispatch manually with the real API origin for device acceptance. This workflow does not sign, submit or prove store acceptance. Windows execution of `cap sync` does not compile Swift or Android.
 
 ### Android verification in Docker
 
